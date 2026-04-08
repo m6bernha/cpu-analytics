@@ -1,0 +1,102 @@
+name: Refresh OpenIPF data
+
+# Weekly refresh of the OpenIPF bulk export.
+#
+# What this does:
+#   1. Downloads the latest openipf-latest.zip from openpowerlifting.gitlab.io
+#   2. Unzips and finds the dated CSV inside
+#   3. Runs preprocess.py to produce openipf.parquet and qt_standards.parquet
+#   4. Publishes both parquet files as a GitHub Release tagged "data-YYYY-MM-DD"
+#      AND updates the rolling "data-latest" release to point at the newest files
+#
+# The Fly.io backend reads OPENIPF_PARQUET_URL and QT_PARQUET_URL env vars,
+# both pointing at the "data-latest" release assets, so a fresh container
+# always pulls the most recent snapshot.
+
+on:
+  schedule:
+    # Sundays at 06:13 UTC. Off the top-of-hour to be polite to GitLab.
+    - cron: "13 6 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend deps
+        working-directory: cpu-analytics
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Download openipf-latest.zip
+        run: |
+          mkdir -p /tmp/openipf
+          curl -L --fail -o /tmp/openipf/openipf-latest.zip \
+            https://openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip
+          ls -lh /tmp/openipf
+
+      - name: Unzip and locate CSV
+        id: locate
+        run: |
+          cd /tmp/openipf
+          unzip -q openipf-latest.zip
+          CSV_PATH=$(find . -name "openipf-*.csv" | head -n1)
+          if [ -z "$CSV_PATH" ]; then
+            echo "ERROR: no openipf-*.csv found in zip"
+            exit 1
+          fi
+          ABS_CSV=$(realpath "$CSV_PATH")
+          echo "csv_path=$ABS_CSV" >> "$GITHUB_OUTPUT"
+          echo "Found CSV: $ABS_CSV"
+          ls -lh "$ABS_CSV"
+
+      - name: Run preprocess
+        working-directory: cpu-analytics
+        env:
+          OPENIPF_CSV: ${{ steps.locate.outputs.csv_path }}
+        run: |
+          python data/preprocess.py
+          ls -lh data/processed
+
+      - name: Compute release tag
+        id: tag
+        run: |
+          TAG="data-$(date -u +%Y-%m-%d)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Tag: $TAG"
+
+      - name: Publish dated release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body: |
+            Automated weekly OpenIPF data refresh.
+            Source: https://openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip
+          files: |
+            cpu-analytics/data/processed/openipf.parquet
+            cpu-analytics/data/processed/qt_standards.parquet
+
+      - name: Update rolling data-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: data-latest
+          name: data-latest
+          body: |
+            Rolling pointer at the most recent OpenIPF snapshot.
+            Currently: ${{ steps.tag.outputs.tag }}
+          files: |
+            cpu-analytics/data/processed/openipf.parquet
+            cpu-analytics/data/processed/qt_standards.parquet

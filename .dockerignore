@@ -1,0 +1,28 @@
+# Build context exclusions for the Dockerfile.
+
+# Frontend is deployed separately on Vercel.
+frontend/
+
+# Local Python env.
+.venv/
+**/__pycache__/
+**/*.pyc
+
+# Processed data is downloaded at runtime, not baked in.
+data/processed/
+
+# The 285 MB raw CSV must never end up in the image.
+data/raw/
+*.csv
+
+# Dev metadata.
+.git/
+.github/
+.vscode/
+.idea/
+*.md
+LICENSE
+
+# OS junk.
+.DS_Store
+Thumbs.db

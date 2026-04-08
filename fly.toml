@@ -1,0 +1,31 @@
+# Fly.io app config for the cpu-analytics backend.
+#
+# Replace REPLACE_ME_GITHUB_USER and REPLACE_ME_REPO_NAME with your real
+# GitHub username and repo name BEFORE running `fly launch` (or set them
+# via `fly secrets set` after launch — both work).
+#
+# Region "yul" is Montreal, closest to most Canadian users.
+# Free-tier-friendly: auto_stop + min_machines_running = 0 means the machine
+# sleeps when idle and wakes on the first request (~3-5 second cold start
+# plus parquet download on first request after wake).
+
+app = "cpu-analytics-backend"
+primary_region = "yul"
+
+[build]
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[env]
+  OPENIPF_PARQUET_URL = "https://github.com/REPLACE_ME_GITHUB_USER/REPLACE_ME_REPO_NAME/releases/download/data-latest/openipf.parquet"
+  QT_PARQUET_URL = "https://github.com/REPLACE_ME_GITHUB_USER/REPLACE_ME_REPO_NAME/releases/download/data-latest/qt_standards.parquet"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
