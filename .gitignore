@@ -7,3 +7,10 @@ data/processed/*.parquet
 frontend/node_modules/
 frontend/dist/
 .DS_Store
+
+# Verification scratch files from VSCode Claude verification runs.
+# These are ad-hoc curl dumps, not source of truth.
+/prog_*.json
+/qt_blocks.json
+/qt_coverage_*.json
+/manual_test.json
