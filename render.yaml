@@ -1,0 +1,28 @@
+# Render.com Blueprint for the cpu-analytics backend.
+#
+# This file lets Render auto-provision the service from the repo when you
+# click "New Blueprint" in the Render dashboard and point it at this repo.
+#
+# Free tier notes:
+#   - 512 MB RAM, 0.1 CPU, shared
+#   - Spins down after 15 minutes of inactivity
+#   - First request after a spin-down takes ~30-60 seconds to wake, plus
+#     another ~10 seconds on the very first request in that lifetime for
+#     the parquet download from the GitHub Release. Cached after that until
+#     the next spin-down.
+#   - No Canadian region on free tier; "ohio" is the closest to Ontario.
+
+services:
+  - type: web
+    name: cpu-analytics-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: ohio
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENIPF_PARQUET_URL
+        value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/openipf.parquet
+      - key: QT_PARQUET_URL
+        value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/qt_standards.parquet

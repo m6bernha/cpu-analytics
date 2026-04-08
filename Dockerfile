@@ -24,8 +24,9 @@ COPY backend /app/backend
 # data/processed/ is created at runtime by data_loader on first request.
 RUN mkdir -p /app/data/processed
 
-# Fly listens on $PORT (default 8080 in many templates) but we use 8000 to
-# match local dev. fly.toml maps internal_port = 8000.
+# Bind to PORT env var at runtime. Render assigns a random port per service
+# and sets PORT in the environment. Fly.io maps internal_port via fly.toml.
+# Local dev and the fly.toml path use 8000 as the fallback.
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
