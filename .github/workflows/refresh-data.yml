@@ -35,7 +35,6 @@ jobs:
           python-version: "3.11"
 
       - name: Install backend deps
-        working-directory: cpu-analytics
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
@@ -63,7 +62,6 @@ jobs:
           ls -lh "$ABS_CSV"
 
       - name: Run preprocess
-        working-directory: cpu-analytics
         env:
           OPENIPF_CSV: ${{ steps.locate.outputs.csv_path }}
         run: |
@@ -86,8 +84,8 @@ jobs:
             Automated weekly OpenIPF data refresh.
             Source: https://openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip
           files: |
-            cpu-analytics/data/processed/openipf.parquet
-            cpu-analytics/data/processed/qt_standards.parquet
+            data/processed/openipf.parquet
+            data/processed/qt_standards.parquet
 
       - name: Update rolling data-latest release
         uses: softprops/action-gh-release@v2
@@ -98,5 +96,5 @@ jobs:
             Rolling pointer at the most recent OpenIPF snapshot.
             Currently: ${{ steps.tag.outputs.tag }}
           files: |
-            cpu-analytics/data/processed/openipf.parquet
-            cpu-analytics/data/processed/qt_standards.parquet
+            data/processed/openipf.parquet
+            data/processed/qt_standards.parquet
