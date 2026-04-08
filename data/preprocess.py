@@ -41,9 +41,9 @@ PROCESSED_DIR = DATA_DIR / "processed"
 DEFAULT_OPENIPF_CSV = (
     REPO_ROOT.parent / "openipf-2025-11-08" / "openipf-2025-11-08-c1c550e2.csv"
 )
-DEFAULT_QT_CSV = (
-    REPO_ROOT.parent / "openipf-2025-11-08" / "qualifying_totals_canpl.csv"
-)
+# QT standards CSV is vendored into the repo since it's a tiny hand-curated
+# file (32 rows), not an external export. Lives at data/qualifying_totals_canpl.csv.
+DEFAULT_QT_CSV = DATA_DIR / "qualifying_totals_canpl.csv"
 
 KEEP_COLUMNS = [
     "Name",
