@@ -10,8 +10,9 @@
 // The trendline is computed client-side from slope/intercept returned by the
 // backend, so it spans the full x range and doesn't wiggle through noise.
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useUrlState } from '../lib/useUrlState'
 import {
   CartesianGrid,
   Legend,
@@ -96,13 +97,17 @@ function Select({
 // ---------- Component ----------
 
 export default function Progression() {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
+  const [filters, setFilters] = useUrlState<FilterState>(DEFAULT_FILTERS)
 
   // Filter enum values for dropdowns. Fetched once on mount.
+  // staleTime is 10 min (not Infinity) so that if the first fetch happens
+  // during a backend cold-start race and returns bad data, the next navigation
+  // back to this tab will refetch and self-correct.
   const filtersQuery = useQuery<FiltersResponse>({
     queryKey: ['filters'],
     queryFn: fetchFilters,
-    staleTime: Infinity,
+    staleTime: 10 * 60 * 1000,
+    retry: 3,
   })
 
   // Cohort progression data. Refetches whenever any filter changes.
@@ -148,8 +153,7 @@ export default function Progression() {
       }))
   }, [progQuery.data])
 
-  const update = (patch: Partial<FilterState>) =>
-    setFilters((prev) => ({ ...prev, ...patch }))
+  const update = (patch: Partial<FilterState>) => setFilters(patch)
 
   const f = filtersQuery.data
 
@@ -276,7 +280,7 @@ export default function Progression() {
 
             <div className="h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 16, right: 24, bottom: 24, left: 8 }}>
+                <LineChart data={chartData} margin={{ top: 16, right: 32, bottom: 48, left: 16 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="x"
@@ -284,16 +288,17 @@ export default function Progression() {
                     label={{
                       value: progQuery.data.x_label,
                       position: 'insideBottom',
-                      offset: -8,
+                      offset: -16,
                       fill: '#a1a1aa',
                     }}
                   />
                   <YAxis
                     stroke="#a1a1aa"
                     label={{
-                      value: 'Mean change from first meet (kg)',
+                      value: 'Change from first meet (kg)',
                       angle: -90,
                       position: 'insideLeft',
+                      offset: 10,
                       fill: '#a1a1aa',
                     }}
                   />

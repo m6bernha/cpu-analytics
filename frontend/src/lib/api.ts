@@ -63,8 +63,27 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export function fetchFilters(): Promise<FiltersResponse> {
-  return getJson<FiltersResponse>(`${API_BASE}/api/filters`)
+// Required enum arrays on the filters endpoint. If any of these come back
+// empty it's almost certainly a backend init race on a cold Render boot, not
+// a real state of the dataset. We throw so TanStack Query retries instead of
+// caching the partial response forever.
+const REQUIRED_FILTER_ARRAYS: (keyof FiltersResponse)[] = [
+  'sex',
+  'equipment',
+  'event',
+  'age_category',
+  'x_axis',
+]
+
+export async function fetchFilters(): Promise<FiltersResponse> {
+  const data = await getJson<FiltersResponse>(`${API_BASE}/api/filters`)
+  for (const k of REQUIRED_FILTER_ARRAYS) {
+    const v = data[k] as unknown
+    if (!Array.isArray(v) || v.length === 0) {
+      throw new Error(`Filters response missing or empty: ${k}`)
+    }
+  }
+  return data
 }
 
 export type ProgressionQuery = {

@@ -472,7 +472,8 @@ export default function LifterLookup() {
   const standardsQuery = useQuery<QtStandardRow[]>({
     queryKey: ['qt-standards'],
     queryFn: fetchQtStandards,
-    staleTime: Infinity,
+    staleTime: 10 * 60 * 1000,
+    retry: 3,
   })
 
   const manualMutation = useMutation<LifterHistory, Error, { sex: string; rows: ManualFormRow[] }>({

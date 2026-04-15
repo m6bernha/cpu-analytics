@@ -4,10 +4,10 @@
 // react-router. If we ever need shareable URLs per tab, swap in react-router
 // then.
 
-import { useState } from 'react'
 import Progression from './tabs/Progression'
 import QTSqueeze from './tabs/QTSqueeze'
 import LifterLookup from './tabs/LifterLookup'
+import { useUrlState } from './lib/useUrlState'
 
 type TabKey = 'progression' | 'qt' | 'lookup'
 
@@ -17,8 +17,14 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'lookup', label: 'Lifter Lookup' },
 ]
 
+const VALID_TABS: TabKey[] = ['progression', 'qt', 'lookup']
+
 export default function App() {
-  const [tab, setTab] = useState<TabKey>('progression')
+  const [url, setUrl] = useUrlState({ tab: 'progression' as string })
+  const tab: TabKey = VALID_TABS.includes(url.tab as TabKey)
+    ? (url.tab as TabKey)
+    : 'progression'
+  const setTab = (t: TabKey) => setUrl({ tab: t })
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">

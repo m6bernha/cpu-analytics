@@ -176,7 +176,8 @@ export default function QTSqueeze() {
   const blocksQuery = useQuery<QtBlocksResponse>({
     queryKey: ['qt-blocks'],
     queryFn: fetchQtBlocks,
-    staleTime: Infinity,
+    staleTime: 10 * 60 * 1000,
+    retry: 3,
   })
 
   const handleDownloadCsv = () => {
