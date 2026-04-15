@@ -25,10 +25,10 @@ import { fetchQtBlocks, type QtBlockRow, type QtBlocksResponse } from '../lib/ap
 type BlockKey = keyof QtBlocksResponse
 
 const BLOCK_ORDER: { key: BlockKey; title: string }[] = [
-  { key: 'F_Regionals', title: 'Women — Open — Regionals' },
-  { key: 'F_Nationals', title: 'Women — Open — Nationals' },
-  { key: 'M_Regionals', title: 'Men — Open — Regionals' },
-  { key: 'M_Nationals', title: 'Men — Open — Nationals' },
+  { key: 'M_Nationals', title: 'Men · Open · Nationals' },
+  { key: 'M_Regionals', title: 'Men · Open · Regionals' },
+  { key: 'F_Nationals', title: 'Women · Open · Nationals' },
+  { key: 'F_Regionals', title: 'Women · Open · Regionals' },
 ]
 
 const COLORS = {
@@ -199,17 +199,22 @@ export default function QTSqueeze() {
     <div>
       <div className="mb-6">
         <h2 className="text-zinc-100 text-lg font-semibold">QT Squeeze</h2>
-        <p className="text-zinc-400 text-sm mt-1 max-w-3xl">
-          Percentage of Open lifters in each weight class who meet the CPU qualifying total
-          for that era. Three columns per row: the historical pre-2025 standard, the current
-          2025 standard, and a forward-looking metric showing what fraction of today's Open
-          lifters already meet the upcoming 2027 standard.
+        <p className="text-zinc-300 text-sm mt-1 max-w-3xl">
+          Percentage of <span className="text-zinc-100 font-medium">Open</span> lifters in
+          each weight class who meet the CPU qualifying total. Three columns per row:
+          pre-2025, 2025, and the forward-looking fraction of today's Open lifters who
+          already meet the 2027 standard.
         </p>
-        <p className="text-zinc-500 text-xs mt-2 max-w-3xl">
-          Open is defined as Division='Open' in the OpenIPF dataset. Earlier versions of
-          this analysis mixed Juniors and Masters into the denominator and produced
-          inflated coverage; those numbers are superseded by what you see here.
-        </p>
+        <details className="mt-2 max-w-3xl">
+          <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+            Note on denominator
+          </summary>
+          <p className="text-zinc-500 text-xs mt-1">
+            Open here means Division='Open' in OpenIPF. Earlier versions of this analysis
+            mixed Juniors and Masters into the denominator and produced inflated coverage.
+            Those numbers are superseded by what you see here.
+          </p>
+        </details>
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -218,18 +223,25 @@ export default function QTSqueeze() {
           disabled={!blocksQuery.data}
           className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-100 text-sm rounded border border-zinc-700"
         >
-          Download flat CSV
+          Download CSV
         </button>
         <button
           onClick={handleCopyColumns}
           disabled={!blocksQuery.data}
           className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-100 text-sm rounded border border-zinc-700"
         >
-          Copy column-style text for Sheets
+          Copy for Sheets
         </button>
       </div>
 
-      {blocksQuery.isLoading && <div className="text-zinc-500 text-sm">Loading…</div>}
+      {blocksQuery.isLoading && (
+        <div className="text-zinc-500 text-sm">
+          Loading…
+          <div className="text-zinc-600 text-xs mt-1">
+            First visit after a while can take up to ~50 s while the server wakes up.
+          </div>
+        </div>
+      )}
       {blocksQuery.error && (
         <div className="text-red-400 text-sm">
           Load failed: {(blocksQuery.error as Error).message}

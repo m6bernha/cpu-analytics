@@ -52,6 +52,33 @@ export default function App() {
         {tab === 'qt' && <QTSqueeze />}
         {tab === 'lookup' && <LifterLookup />}
       </main>
+
+      <footer className="border-t border-zinc-900 mt-12 px-6 py-4">
+        <div className="max-w-6xl mx-auto text-zinc-500 text-xs flex flex-wrap gap-x-6 gap-y-1 justify-between">
+          <div>
+            Data from{' '}
+            <a
+              href="https://www.openpowerlifting.org"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-zinc-300 underline underline-offset-2"
+            >
+              OpenPowerlifting
+            </a>
+            {' '}(CC0). Refreshed weekly from the official OpenIPF bulk export.
+          </div>
+          <div>
+            <a
+              href="https://github.com/m6bernha/cpu-analytics"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-zinc-300 underline underline-offset-2"
+            >
+              Source on GitHub
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

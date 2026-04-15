@@ -49,6 +49,34 @@ function useDebouncedValue<T>(value: T, delay: number): T {
   return debounced
 }
 
+// ---------- Date / value formatters ----------
+
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  // iso is 'yyyy-mm-dd'. Don't pass through Date(iso) — that would interpret
+  // it as UTC midnight and can round back to the previous day depending on
+  // the viewer's timezone.
+  const parts = iso.slice(0, 10).split('-').map(Number)
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return iso
+  const [y, m, d] = parts
+  return `${MONTHS[m - 1]} ${d}, ${y}`
+}
+
+function fmtKg(v: number | null | undefined, digits = 1): string {
+  if (v == null || !Number.isFinite(v)) return '—'
+  return v.toFixed(digits)
+}
+
+function fmtSbd(s: number | null, b: number | null, d: number | null): string {
+  if (s == null && b == null && d == null) return '—'
+  return `${fmtKg(s)} / ${fmtKg(b)} / ${fmtKg(d)}`
+}
+
 // ---------- QT lookup helper ----------
 
 function findQtForLifter(
@@ -68,6 +96,20 @@ function findQtForLifter(
 
 // ---------- Lifter detail subcomponent ----------
 
+type Era = 'pre2025' | '2025' | '2027'
+
+const ERA_QT_FIELD: Record<Era, 'QT_pre2025' | 'QT_2025' | 'QT_2027'> = {
+  pre2025: 'QT_pre2025',
+  '2025': 'QT_2025',
+  '2027': 'QT_2027',
+}
+
+const ERA_LABEL: Record<Era, string> = {
+  pre2025: 'Pre-2025',
+  '2025': '2025',
+  '2027': '2027',
+}
+
 function LifterDetail({
   history,
   standards,
@@ -75,11 +117,12 @@ function LifterDetail({
   history: LifterHistory
   standards: QtStandardRow[] | undefined
 }) {
-  const [era, setEra] = useState<'2025' | '2027'>('2025')
+  const [era, setEra] = useState<Era>('2025')
 
   const qts = findQtForLifter(standards, history.sex, history.latest_weight_class)
-  const regionalsQt = era === '2025' ? qts.regionals?.QT_2025 : qts.regionals?.QT_2027
-  const nationalsQt = era === '2025' ? qts.nationals?.QT_2025 : qts.nationals?.QT_2027
+  const qtField = ERA_QT_FIELD[era]
+  const regionalsQt = qts.regionals?.[qtField]
+  const nationalsQt = qts.nationals?.[qtField]
 
   const chartData = useMemo(
     () =>
@@ -123,7 +166,7 @@ function LifterDetail({
       <div className="flex items-center gap-3 mb-3 text-sm">
         <span className="text-zinc-400">QT era:</span>
         <div className="flex gap-1">
-          {(['2025', '2027'] as const).map((e) => (
+          {(['pre2025', '2025', '2027'] as const).map((e) => (
             <button
               key={e}
               onClick={() => setEra(e)}
@@ -134,7 +177,7 @@ function LifterDetail({
                   : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800')
               }
             >
-              {e}
+              {ERA_LABEL[e]}
             </button>
           ))}
         </div>
@@ -184,7 +227,7 @@ function LifterDetail({
                 y={regionalsQt}
                 stroke="#94a3b8"
                 strokeDasharray="4 4"
-                label={{ value: `Regionals ${era}`, position: 'right', fill: '#94a3b8', fontSize: 11 }}
+                label={{ value: `Regionals ${ERA_LABEL[era]}`, position: 'right', fill: '#94a3b8', fontSize: 11 }}
               />
             )}
             {nationalsQt && (
@@ -192,7 +235,7 @@ function LifterDetail({
                 y={nationalsQt}
                 stroke="#ce9178"
                 strokeDasharray="4 4"
-                label={{ value: `Nationals ${era}`, position: 'right', fill: '#ce9178', fontSize: 11 }}
+                label={{ value: `Nationals ${ERA_LABEL[era]}`, position: 'right', fill: '#ce9178', fontSize: 11 }}
               />
             )}
             <Line
@@ -217,6 +260,7 @@ function LifterDetail({
               <th className="text-left py-2 pr-4 font-normal">Meet</th>
               <th className="text-left py-2 pr-4 font-normal">Class</th>
               <th className="text-left py-2 pr-4 font-normal">Division</th>
+              <th className="text-right py-2 pl-2 font-normal">S / B / D</th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>
@@ -224,10 +268,15 @@ function LifterDetail({
           <tbody className="text-zinc-200">
             {history.meets.map((m, i) => (
               <tr key={i} className="border-b border-zinc-900">
-                <td className="py-2 pr-4 text-zinc-300">{m.Date}</td>
+                <td className="py-2 pr-4 text-zinc-300 whitespace-nowrap">{fmtDate(m.Date)}</td>
                 <td className="py-2 pr-4 text-zinc-300">{m.MeetName ?? '—'}</td>
-                <td className="py-2 pr-4 text-zinc-400">{m.CanonicalWeightClass}</td>
+                <td className="py-2 pr-4 text-zinc-400 whitespace-nowrap">
+                  {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
+                </td>
                 <td className="py-2 pr-4 text-zinc-400">{m.Division ?? '—'}</td>
+                <td className="py-2 pl-2 text-right tabular-nums text-zinc-400 whitespace-nowrap">
+                  {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
+                </td>
                 <td className="py-2 pl-2 text-right tabular-nums">{m.TotalKg.toFixed(1)}</td>
                 <td className="py-2 pl-2 text-right tabular-nums text-zinc-400">
                   {m.TotalDiffFromFirst >= 0 ? '+' : ''}
@@ -258,11 +307,13 @@ function ManualEntryForm({
   pending,
   result,
   error,
+  standards,
 }: {
   onSubmit: (req: { sex: string; rows: ManualFormRow[] }) => void
   pending: boolean
   result: LifterHistory | null
   error: Error | null
+  standards: QtStandardRow[] | undefined
 }) {
   const [sex, setSex] = useState<'M' | 'F'>('M')
   const [rows, setRows] = useState<ManualFormRow[]>([
@@ -389,7 +440,7 @@ function ManualEntryForm({
 
       {result && (
         <div className="mt-6">
-          <LifterDetail history={result} standards={undefined} />
+          <LifterDetail history={result} standards={standards} />
         </div>
       )}
     </div>
@@ -493,25 +544,33 @@ export default function LifterLookup() {
                 <p className="text-zinc-500 text-sm">No lifters match that name.</p>
               )}
               {searchQuery.data && searchQuery.data.length > 0 && (
-                <ul className="divide-y divide-zinc-800">
-                  {searchQuery.data.map((lifter) => (
-                    <li key={lifter.Name}>
-                      <button
-                        onClick={() => setSelectedName(lifter.Name)}
-                        className={
-                          'w-full text-left py-2 px-2 -mx-2 rounded hover:bg-zinc-900 transition-colors ' +
-                          (selectedName === lifter.Name ? 'bg-zinc-900' : '')
-                        }
-                      >
-                        <div className="text-zinc-100 text-sm">{lifter.Name}</div>
-                        <div className="text-zinc-500 text-xs mt-0.5">
-                          {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
-                          {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="divide-y divide-zinc-800">
+                    {searchQuery.data.map((lifter) => (
+                      <li key={lifter.Name}>
+                        <button
+                          onClick={() => setSelectedName(lifter.Name)}
+                          className={
+                            'w-full text-left py-2 px-2 -mx-2 rounded hover:bg-zinc-900 transition-colors ' +
+                            (selectedName === lifter.Name ? 'bg-zinc-900' : '')
+                          }
+                        >
+                          <div className="text-zinc-100 text-sm">{lifter.Name}</div>
+                          <div className="text-zinc-500 text-xs mt-0.5">
+                            {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
+                            {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {searchQuery.data.length >= 25 && (
+                    <p className="text-zinc-600 text-xs mt-3">
+                      Showing top {searchQuery.data.length} by best total. If you don't see
+                      yourself, type more of your name.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -546,6 +605,7 @@ export default function LifterLookup() {
           pending={manualMutation.isPending}
           result={manualMutation.data ?? null}
           error={(manualMutation.error as Error | null) ?? null}
+          standards={standardsQuery.data}
         />
       )}
     </div>

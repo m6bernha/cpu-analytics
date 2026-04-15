@@ -50,8 +50,14 @@ const DEFAULT_FILTERS: FilterState = {
   event: 'SBD',
   division: 'Open',
   age_category: 'All',
-  x_axis: 'Days',
+  x_axis: 'Years',
 }
+
+// Minimum lifters a point needs to be worth plotting. Below this the chart
+// gets dominated by singleton outliers in the long tail (e.g. one lifter
+// making +200 kg after 14 years). Trend already uses a stricter threshold
+// (5) defined in the backend.
+const MIN_LIFTERS_FOR_POINT = 2
 
 // ---------- Small UI helpers ----------
 
@@ -126,16 +132,20 @@ export default function Progression() {
 
   // Merge API data with client-computed trendline y-values for Recharts.
   // Recharts draws the trendline as a separate series across the same x values.
+  // We drop x-values that represent fewer than MIN_LIFTERS_FOR_POINT distinct
+  // lifters so the chart isn't dragged around by singletons in the long tail.
   const chartData = useMemo(() => {
     const prog = progQuery.data
     if (!prog) return []
     const trend = prog.trend
-    return prog.points.map((p) => ({
-      x: p.x,
-      y: p.y,
-      lifter_count: p.lifter_count,
-      trend_y: trend ? trend.slope * p.x + trend.intercept : null,
-    }))
+    return prog.points
+      .filter((p) => p.lifter_count >= MIN_LIFTERS_FOR_POINT)
+      .map((p) => ({
+        x: p.x,
+        y: p.y,
+        lifter_count: p.lifter_count,
+        trend_y: trend ? trend.slope * p.x + trend.intercept : null,
+      }))
   }, [progQuery.data])
 
   const update = (patch: Partial<FilterState>) =>
@@ -149,7 +159,12 @@ export default function Progression() {
       <aside className="w-64 shrink-0">
         <h2 className="text-zinc-200 text-sm font-semibold mb-3">Filters</h2>
         {filtersQuery.isLoading && (
-          <div className="text-zinc-500 text-sm">Loading filters…</div>
+          <div className="text-zinc-500 text-sm">
+            Loading filters…
+            <div className="text-zinc-600 text-xs mt-1">
+              First visit after a while can take up to ~50 s while the server wakes up.
+            </div>
+          </div>
         )}
         {filtersQuery.error && (
           <div className="text-red-400 text-sm">
@@ -176,12 +191,10 @@ export default function Progression() {
               options={f.equipment}
               onChange={(v) => update({ equipment: v })}
             />
-            <Select
-              label="Tested"
-              value={filters.tested}
-              options={f.tested}
-              onChange={(v) => update({ tested: v })}
-            />
+            {/* Tested filter intentionally hidden: the OpenIPF export is IPF-only,
+                so every row already has Tested='Yes'. Showing a single-option
+                dropdown is just noise. The filter value is still sent to the API
+                so widening scope later is a one-line change. */}
             <Select
               label="Event"
               value={filters.event}
@@ -222,7 +235,12 @@ export default function Progression() {
         </div>
 
         {progQuery.isLoading && (
-          <div className="text-zinc-500 text-sm">Loading progression…</div>
+          <div className="text-zinc-500 text-sm">
+            Loading progression…
+            <div className="text-zinc-600 text-xs mt-1">
+              First visit after a while can take up to ~50 s while the server wakes up.
+            </div>
+          </div>
         )}
         {progQuery.error && (
           <div className="text-red-400 text-sm">
