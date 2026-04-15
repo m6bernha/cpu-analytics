@@ -280,7 +280,7 @@ export default function Progression() {
 
             <div className="h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 16, right: 32, bottom: 48, left: 16 }}>
+                <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="x"
@@ -317,7 +317,7 @@ export default function Progression() {
                       `${progQuery.data?.x_label}: ${String(label ?? '')}`
                     }
                   />
-                  <Legend />
+                  <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
                   <Line
                     type="monotone"
                     dataKey="y"
