@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { useUrlState } from '../lib/useUrlState'
 import {
   CartesianGrid,
   Legend,
@@ -96,6 +97,30 @@ function findQtForLifter(
 
 // ---------- Lifter detail subcomponent ----------
 
+// Event codes from OpenIPF (see backend KEEP_COLUMNS / data-readme).
+// Only SBD (full power) gives a comparable Total. The other event types still
+// produce a TotalKg, but it's the partial sum (e.g. just bench for B), so
+// plotting them together with SBD on the same y-axis is misleading.
+const EVENT_DESCRIPTION: Record<string, string> = {
+  SBD: 'Full power',
+  BD: 'Push-pull',
+  SD: 'Squat + DL',
+  SB: 'Squat + bench',
+  S: 'Squat only',
+  B: 'Bench only',
+  D: 'Deadlift only',
+}
+
+function eventLabel(ev: string | null | undefined): string {
+  if (!ev) return '—'
+  return ev
+}
+
+function eventTitle(ev: string | null | undefined): string {
+  if (!ev) return ''
+  return EVENT_DESCRIPTION[ev] ?? ev
+}
+
 type Era = 'pre2025' | '2025' | '2027'
 
 const ERA_QT_FIELD: Record<Era, 'QT_pre2025' | 'QT_2025' | 'QT_2027'> = {
@@ -124,9 +149,18 @@ function LifterDetail({
   const regionalsQt = qts.regionals?.[qtField]
   const nationalsQt = qts.nationals?.[qtField]
 
+  // Only SBD meets are plotted: the y-axis is "Total (kg)", and on partial
+  // events (B, BD, etc.) TotalKg is the partial sum, not a full-power total.
+  // Plotting them together would be misleading. Non-SBD meets still appear
+  // in the meet table below the chart.
+  const sbdMeets = useMemo(
+    () => history.meets.filter((m) => m.Event === 'SBD'),
+    [history.meets],
+  )
+
   const chartData = useMemo(
     () =>
-      history.meets.map((m: LifterMeet) => ({
+      sbdMeets.map((m: LifterMeet) => ({
         date: m.Date,
         days: m.DaysFromFirst,
         total: m.TotalKg,
@@ -134,15 +168,22 @@ function LifterDetail({
         division: m.Division ?? '',
         weight_class: m.CanonicalWeightClass ?? '',
       })),
-    [history.meets],
+    [sbdMeets],
   )
+
+  const nonSbdCount = history.meets.length - sbdMeets.length
 
   // Y axis padding so reference lines don't sit on the edge.
   const allTotals = chartData.map((d) => d.total)
   if (regionalsQt) allTotals.push(regionalsQt)
   if (nationalsQt) allTotals.push(nationalsQt)
-  const yMin = Math.floor((Math.min(...allTotals) - 25) / 25) * 25
-  const yMax = Math.ceil((Math.max(...allTotals) + 25) / 25) * 25
+  const hasChartData = allTotals.length > 0
+  const yMin = hasChartData
+    ? Math.floor((Math.min(...allTotals) - 25) / 25) * 25
+    : 0
+  const yMax = hasChartData
+    ? Math.ceil((Math.max(...allTotals) + 25) / 25) * 25
+    : 100
 
   return (
     <div>
@@ -191,14 +232,28 @@ function LifterDetail({
         )}
       </div>
 
+      {nonSbdCount > 0 && (
+        <p className="text-zinc-500 text-xs mb-2">
+          Chart shows full-power (SBD) meets only. {nonSbdCount} other meet
+          {nonSbdCount === 1 ? '' : 's'} (bench-only, push-pull, etc.)
+          {' '}appear in the table below.
+        </p>
+      )}
+
+      {!hasChartData ? (
+        <div className="h-[200px] bg-zinc-900 rounded border border-zinc-800 p-6 flex items-center justify-center text-zinc-500 text-sm text-center">
+          No full-power (SBD) meets for this lifter. See the table below for
+          their bench-only or other meets.
+        </div>
+      ) : (
       <div className="h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 16, right: 24, bottom: 24, left: 8 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
             <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
             <XAxis
               dataKey="date"
               stroke="#a1a1aa"
-              label={{ value: 'Date', position: 'insideBottom', offset: -8, fill: '#a1a1aa' }}
+              label={{ value: 'Date', position: 'insideBottom', offset: -16, fill: '#a1a1aa' }}
             />
             <YAxis
               stroke="#a1a1aa"
@@ -207,6 +262,7 @@ function LifterDetail({
                 value: 'Total (kg)',
                 angle: -90,
                 position: 'insideLeft',
+                offset: 10,
                 fill: '#a1a1aa',
               }}
             />
@@ -221,7 +277,7 @@ function LifterDetail({
               }
               labelFormatter={(label) => String(label ?? '')}
             />
-            <Legend />
+            <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
             {regionalsQt && (
               <ReferenceLine
                 y={regionalsQt}
@@ -250,6 +306,7 @@ function LifterDetail({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
 
       {/* Meet table */}
       <div className="mt-6 overflow-x-auto">
@@ -258,6 +315,7 @@ function LifterDetail({
             <tr className="border-b border-zinc-800">
               <th className="text-left py-2 pr-4 font-normal">Date</th>
               <th className="text-left py-2 pr-4 font-normal">Meet</th>
+              <th className="text-left py-2 pr-3 font-normal">Event</th>
               <th className="text-left py-2 pr-4 font-normal">Class</th>
               <th className="text-left py-2 pr-4 font-normal">Division</th>
               <th className="text-right py-2 pl-2 font-normal">S / B / D</th>
@@ -266,24 +324,60 @@ function LifterDetail({
             </tr>
           </thead>
           <tbody className="text-zinc-200">
-            {history.meets.map((m, i) => (
-              <tr key={i} className="border-b border-zinc-900">
-                <td className="py-2 pr-4 text-zinc-300 whitespace-nowrap">{fmtDate(m.Date)}</td>
-                <td className="py-2 pr-4 text-zinc-300">{m.MeetName ?? '—'}</td>
-                <td className="py-2 pr-4 text-zinc-400 whitespace-nowrap">
-                  {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
-                </td>
-                <td className="py-2 pr-4 text-zinc-400">{m.Division ?? '—'}</td>
-                <td className="py-2 pl-2 text-right tabular-nums text-zinc-400 whitespace-nowrap">
-                  {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
-                </td>
-                <td className="py-2 pl-2 text-right tabular-nums">{m.TotalKg.toFixed(1)}</td>
-                <td className="py-2 pl-2 text-right tabular-nums text-zinc-400">
-                  {m.TotalDiffFromFirst >= 0 ? '+' : ''}
-                  {m.TotalDiffFromFirst.toFixed(1)}
-                </td>
-              </tr>
-            ))}
+            {(() => {
+              // Δ-first should be relative to the first SBD meet, since Total
+              // means different things across event types. Non-SBD rows show
+              // "—" for Δ-first.
+              const firstSbdTotal = sbdMeets.length > 0 ? sbdMeets[0].TotalKg : null
+              return history.meets.map((m, i) => {
+                const isSbd = m.Event === 'SBD'
+                const muted = !isSbd
+                const rowClass = muted
+                  ? 'border-b border-zinc-900 text-zinc-500'
+                  : 'border-b border-zinc-900'
+                const totalCellClass = muted
+                  ? 'py-2 pl-2 text-right tabular-nums text-zinc-500'
+                  : 'py-2 pl-2 text-right tabular-nums'
+                const delta =
+                  isSbd && firstSbdTotal != null
+                    ? m.TotalKg - firstSbdTotal
+                    : null
+                return (
+                  <tr key={i} className={rowClass}>
+                    <td className="py-2 pr-4 whitespace-nowrap">{fmtDate(m.Date)}</td>
+                    <td className="py-2 pr-4">{m.MeetName ?? '—'}</td>
+                    <td
+                      className="py-2 pr-3 whitespace-nowrap"
+                      title={eventTitle(m.Event)}
+                    >
+                      <span
+                        className={
+                          'inline-block px-1.5 py-0.5 rounded text-xs font-mono ' +
+                          (isSbd
+                            ? 'bg-zinc-800 text-zinc-300'
+                            : 'bg-zinc-900 text-zinc-500 border border-zinc-800')
+                        }
+                      >
+                        {eventLabel(m.Event)}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 whitespace-nowrap">
+                      {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
+                    </td>
+                    <td className="py-2 pr-4">{m.Division ?? '—'}</td>
+                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap">
+                      {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
+                    </td>
+                    <td className={totalCellClass}>{m.TotalKg.toFixed(1)}</td>
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500">
+                      {delta == null
+                        ? '—'
+                        : (delta >= 0 ? '+' : '') + delta.toFixed(1)}
+                    </td>
+                  </tr>
+                )
+              })
+            })()}
           </tbody>
         </table>
       </div>
@@ -452,9 +546,19 @@ function ManualEntryForm({
 type Mode = 'search' | 'manual'
 
 export default function LifterLookup() {
-  const [mode, setMode] = useState<Mode>('search')
+  // mode + selected lifter live in the URL so links like
+  // ?tab=lookup&lifter=Matthias%20Bernhard deep-link directly to a lifter
+  // and links like ?tab=lookup&mode=manual open the manual entry form.
+  const [urlState, setUrlState] = useUrlState({ mode: 'search', lifter: '' })
+  const mode: Mode = urlState.mode === 'manual' ? 'manual' : 'search'
+  const selectedName: string | null = urlState.lifter ? urlState.lifter : null
+  const setMode = (m: Mode) => setUrlState({ mode: m })
+  const setSelectedName = (name: string | null) =>
+    setUrlState({ lifter: name ?? '' })
+
+  // Search query stays as ephemeral local state — URL-backing every keystroke
+  // would flood history.
   const [query, setQuery] = useState('')
-  const [selectedName, setSelectedName] = useState<string | null>(null)
   const debouncedQuery = useDebouncedValue(query, 300)
 
   const searchQuery = useQuery<LifterSearchResult[]>({
