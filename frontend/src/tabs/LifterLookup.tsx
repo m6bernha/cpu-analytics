@@ -173,8 +173,10 @@ function LifterDetail({
                 border: '1px solid #3f3f46',
                 color: '#e4e4e7',
               }}
-              formatter={(value: number) => value.toFixed(1) + ' kg'}
-              labelFormatter={(label: string) => label}
+              formatter={(value) =>
+                typeof value === 'number' ? value.toFixed(1) + ' kg' : String(value ?? '—')
+              }
+              labelFormatter={(label) => String(label ?? '')}
             />
             <Legend />
             {regionalsQt && (

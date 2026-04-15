@@ -285,11 +285,14 @@ export default function Progression() {
                       border: '1px solid #3f3f46',
                       color: '#e4e4e7',
                     }}
-                    formatter={(value: number | null, name: string) => {
-                      if (value == null) return ['—', name]
-                      return [Number(value).toFixed(2) + ' kg', name]
+                    formatter={(value, name) => {
+                      const n = typeof value === 'number' ? value : Number(value)
+                      if (!Number.isFinite(n)) return ['—', name]
+                      return [n.toFixed(2) + ' kg', name]
                     }}
-                    labelFormatter={(label: number) => `${progQuery.data?.x_label}: ${label}`}
+                    labelFormatter={(label) =>
+                      `${progQuery.data?.x_label}: ${String(label ?? '')}`
+                    }
                   />
                   <Legend />
                   <Line

@@ -154,7 +154,9 @@ function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
               />
               <Tooltip
                 contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', color: '#e4e4e7' }}
-                formatter={(v: number) => v.toFixed(2) + '%'}
+                formatter={(v) =>
+                  typeof v === 'number' ? v.toFixed(2) + '%' : String(v ?? '—')
+                }
               />
               <Legend />
               <Bar dataKey="pre2025" name="Pre-2025" fill={COLORS.pre2025} isAnimationActive={false} />
