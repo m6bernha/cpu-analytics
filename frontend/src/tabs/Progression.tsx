@@ -158,9 +158,9 @@ export default function Progression() {
   const f = filtersQuery.data
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col md:flex-row gap-6">
       {/* ---- Filter panel ---- */}
-      <aside className="w-64 shrink-0">
+      <aside className="w-full md:w-64 md:shrink-0">
         <h2 className="text-zinc-200 text-sm font-semibold mb-3">Filters</h2>
         {filtersQuery.isLoading && (
           <div className="text-zinc-500 text-sm">

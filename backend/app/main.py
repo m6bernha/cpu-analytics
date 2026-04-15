@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import os
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Query
@@ -18,11 +19,38 @@ from . import filters as filters_mod
 from . import lifters as lifters_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
+from .data import get_conn
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
-app = FastAPI(title="CPU Powerlifting Analytics", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Pre-warm the DuckDB connection at container start.
+
+    Without this, the first request after a cold boot pays the cost of
+    downloading the parquet files (~28 MB) and registering the DuckDB
+    views. Worse, the empty-equipment regression we saw on Vercel was
+    consistent with a request landing partway through view registration.
+    Pre-warming runs that work serially before the app accepts traffic.
+    """
+    try:
+        conn = get_conn()
+        # Touch each view so DuckDB actually opens the parquet, not just
+        # records the parquet_scan SQL.
+        n_meets = conn.execute("SELECT COUNT(*) FROM openipf").fetchone()[0]
+        n_qt = conn.execute("SELECT COUNT(*) FROM qt_standards").fetchone()[0]
+        print(f"[startup] warmed: openipf={n_meets:,} rows, qt_standards={n_qt} rows")
+    except Exception as exc:  # pragma: no cover — startup diagnostics
+        print(f"[startup] warmup failed: {exc!r}")
+    yield
+
+
+app = FastAPI(
+    title="CPU Powerlifting Analytics",
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
 # CORS:
 #   - localhost dev origins always allowed

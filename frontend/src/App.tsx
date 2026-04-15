@@ -28,19 +28,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <header className="border-b border-zinc-800 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-baseline justify-between">
+      <header className="border-b border-zinc-800 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold">CPU Powerlifting Analytics</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">CPU Powerlifting Analytics</h1>
             <p className="text-zinc-500 text-xs">Canadian lifters, IPF-sanctioned meets</p>
           </div>
-          <nav className="flex gap-2">
+          <nav className="flex gap-2 -mx-1 px-1 overflow-x-auto">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={
-                  'px-3 py-1.5 rounded text-sm transition-colors ' +
+                  'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
                   (tab === t.key
                     ? 'bg-zinc-800 text-zinc-100'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
@@ -53,13 +53,13 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {tab === 'progression' && <Progression />}
         {tab === 'qt' && <QTSqueeze />}
         {tab === 'lookup' && <LifterLookup />}
       </main>
 
-      <footer className="border-t border-zinc-900 mt-12 px-6 py-4">
+      <footer className="border-t border-zinc-900 mt-12 px-4 sm:px-6 py-4">
         <div className="max-w-6xl mx-auto text-zinc-500 text-xs flex flex-wrap gap-x-6 gap-y-1 justify-between">
           <div>
             Data from{' '}
