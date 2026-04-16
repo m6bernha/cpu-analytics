@@ -207,6 +207,10 @@ def compute_progression(
             "trend": None,
             "n_lifters": 0,
             "n_meets": 0,
+            "n_lifters_before_age_filter": 0,
+            "n_all_lifters": 0,
+            "avg_first_total": None,
+            "projection": None,
         }
 
     # Optional same-class filter: only keep lifters who stayed in the same
@@ -364,4 +368,124 @@ def compute_progression(
         "n_all_lifters": n_all_lifters,
         "avg_first_total": avg_first_total,
         "projection": projection,
+    }
+
+
+# =============================================================================
+# Per-lift progression (squat, bench, deadlift individually)
+# =============================================================================
+
+LIFT_COLS = {
+    "squat": "Best3SquatKg",
+    "bench": "Best3BenchKg",
+    "deadlift": "Best3DeadliftKg",
+}
+
+
+def compute_lift_progression(
+    sex: str | None = None,
+    equipment: str | None = None,
+    tested: str | None = None,
+    event: str | None = None,
+    federation: str | None = None,
+    country: str | None = DEFAULT_COUNTRY,
+    parent_federation: str | None = DEFAULT_PARENT_FEDERATION,
+    weight_class: str | None = None,
+    division: str | None = None,
+    x_axis: str = "Years",
+) -> dict[str, Any]:
+    """Return per-lift mean change from first meet for S/B/D.
+
+    Returns:
+        {
+          "x_label": str,
+          "lifts": {
+            "squat": [{"x": int, "y": float, "lifter_count": int}, ...],
+            "bench": [...],
+            "deadlift": [...],
+          },
+          "n_lifters": int,
+        }
+    """
+    if x_axis not in X_AXIS_COLS:
+        raise ValueError(f"Unknown x_axis: {x_axis}")
+
+    clauses, params = _build_filter_clauses(
+        sex, equipment, tested, event, federation, country, parent_federation,
+        weight_class, division,
+    )
+    where_sql = ""
+    if clauses:
+        where_sql = "WHERE " + " AND ".join(clauses)
+
+    sql = f"""
+        WITH filtered AS (
+            SELECT Name, Date, Best3SquatKg, Best3BenchKg, Best3DeadliftKg, MeetName
+            FROM openipf
+            {where_sql}
+        ),
+        ranked AS (
+            SELECT
+                Name, Date,
+                Best3SquatKg, Best3BenchKg, Best3DeadliftKg,
+                FIRST_VALUE(Best3SquatKg) OVER w AS FirstSquat,
+                FIRST_VALUE(Best3BenchKg) OVER w AS FirstBench,
+                FIRST_VALUE(Best3DeadliftKg) OVER w AS FirstDeadlift,
+                MIN(Date) OVER (PARTITION BY Name) AS FirstDate,
+                COUNT(*) OVER (PARTITION BY Name) AS MeetCount
+            FROM filtered
+            WINDOW w AS (PARTITION BY Name ORDER BY Date, Best3SquatKg DESC NULLS LAST, MeetName)
+        )
+        SELECT
+            Name,
+            DATEDIFF('day', FirstDate, Date) AS DaysFromFirst,
+            (Best3SquatKg - FirstSquat) AS SquatDiff,
+            (Best3BenchKg - FirstBench) AS BenchDiff,
+            (Best3DeadliftKg - FirstDeadlift) AS DeadliftDiff
+        FROM ranked
+        WHERE MeetCount >= 2
+          AND Best3SquatKg IS NOT NULL
+          AND Best3BenchKg IS NOT NULL
+          AND Best3DeadliftKg IS NOT NULL
+    """
+    conn = get_conn()
+    df = conn.execute(sql, params).df()
+
+    if df.empty:
+        x_label = X_AXIS_COLS[x_axis][1]
+        return {
+            "x_label": x_label,
+            "lifts": {"squat": [], "bench": [], "deadlift": []},
+            "n_lifters": 0,
+        }
+
+    # Derive time columns
+    df["WeeksFromFirst"] = (df["DaysFromFirst"] / 7).round().astype(int)
+    df["MonthsFromFirst"] = (df["DaysFromFirst"] / 30.44).round().astype(int)
+    df["YearsFromFirst"] = (df["DaysFromFirst"] / 365.25).round().astype(int)
+
+    x_col, x_label = X_AXIS_COLS[x_axis]
+
+    lifts_result: dict[str, list[dict[str, Any]]] = {}
+    diff_cols = {"squat": "SquatDiff", "bench": "BenchDiff", "deadlift": "DeadliftDiff"}
+
+    for lift_key, diff_col in diff_cols.items():
+        grouped = (
+            df.groupby(x_col)
+            .agg(y=(diff_col, "mean"), lifter_count=("Name", "nunique"))
+            .reset_index()
+            .sort_values(x_col)
+            .rename(columns={x_col: "x"})
+        )
+        # Filter sparse points
+        grouped = grouped[grouped["lifter_count"] >= 2]
+        lifts_result[lift_key] = [
+            {"x": int(r.x), "y": round(float(r.y), 2), "lifter_count": int(r.lifter_count)}
+            for r in grouped.itertuples(index=False)
+        ]
+
+    return {
+        "x_label": x_label,
+        "lifts": lifts_result,
+        "n_lifters": int(df["Name"].nunique()),
     }

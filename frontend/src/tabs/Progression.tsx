@@ -26,8 +26,10 @@ import {
 } from 'recharts'
 import {
   fetchFilters,
+  fetchLiftProgression,
   fetchProgression,
   type FiltersResponse,
+  type LiftProgressionResponse,
   type ProgressionResponse,
 } from '../lib/api'
 
@@ -44,6 +46,7 @@ type FilterState = {
   x_axis: string
   max_gap_months: string
   same_class_only: string
+  per_lift: string
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -57,6 +60,7 @@ const DEFAULT_FILTERS: FilterState = {
   x_axis: 'Years',
   max_gap_months: '',
   same_class_only: '',
+  per_lift: '',
 }
 
 // Minimum lifters a point needs to be worth plotting. Below this the chart
@@ -131,7 +135,21 @@ export default function Progression() {
         max_gap_months: filters.max_gap_months || undefined,
         same_class_only: filters.same_class_only === 'true' ? 'true' : undefined,
       }),
-    enabled: filtersQuery.isSuccess,
+    enabled: filtersQuery.isSuccess && filters.per_lift !== 'true',
+  })
+
+  // Per-lift progression (S/B/D curves) when the toggle is on.
+  const liftProgQuery = useQuery<LiftProgressionResponse>({
+    queryKey: ['lift-progression', filters],
+    queryFn: () =>
+      fetchLiftProgression({
+        sex: filters.sex,
+        equipment: filters.equipment,
+        weight_class: filters.weight_class,
+        division: filters.division,
+        x_axis: filters.x_axis,
+      }),
+    enabled: filtersQuery.isSuccess && filters.per_lift === 'true',
   })
 
   // Weight class options depend on sex. "Overall" is always first.
@@ -272,6 +290,19 @@ export default function Progression() {
               />
               <span className="text-zinc-300 text-xs uppercase tracking-wide">Same class only</span>
             </label>
+            <label className="flex items-center gap-2 mb-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.per_lift === 'true'}
+                onChange={(e) =>
+                  update({ per_lift: e.target.checked ? 'true' : '' })
+                }
+                className="accent-zinc-400"
+              />
+              <span className="text-zinc-300 text-xs uppercase tracking-wide">
+                Per-lift (S/B/D)
+              </span>
+            </label>
             <Select
               label="X axis"
               value={filters.x_axis}
@@ -292,7 +323,99 @@ export default function Progression() {
           </p>
         </div>
 
-        {progQuery.isLoading && (
+        {filters.per_lift === 'true' && liftProgQuery.isLoading && (
+          <div className="text-zinc-500 text-sm">Loading per-lift progression…</div>
+        )}
+        {filters.per_lift === 'true' && liftProgQuery.error && (
+          <div className="text-red-400 text-sm">
+            Lift progression failed: {(liftProgQuery.error as Error).message}
+          </div>
+        )}
+        {filters.per_lift === 'true' && liftProgQuery.data && (
+          <>
+            <div className="text-sm text-zinc-400 mb-2">
+              <span className="text-zinc-200 tabular-nums">
+                {liftProgQuery.data.n_lifters.toLocaleString()}
+              </span>{' '}
+              lifters with complete S/B/D data at every meet
+            </div>
+            <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  margin={{ top: 8, right: 32, bottom: 36, left: 4 }}
+                >
+                  <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
+                  <XAxis
+                    type="number"
+                    dataKey="x"
+                    stroke="#a1a1aa"
+                    domain={[0, 'auto']}
+                    label={{
+                      value: liftProgQuery.data.x_label,
+                      position: 'insideBottom',
+                      offset: -16,
+                      fill: '#a1a1aa',
+                    }}
+                  />
+                  <YAxis
+                    stroke="#a1a1aa"
+                    width={56}
+                    label={{
+                      value: 'Change from first meet (kg)',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 0,
+                      fill: '#a1a1aa',
+                      style: { textAnchor: 'middle' },
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #3f3f46',
+                      color: '#e4e4e7',
+                    }}
+                    formatter={(value) =>
+                      typeof value === 'number' ? value.toFixed(2) + ' kg' : String(value ?? '—')
+                    }
+                  />
+                  <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
+                  <Line
+                    data={liftProgQuery.data.lifts.squat}
+                    type="monotone"
+                    dataKey="y"
+                    name="Squat"
+                    stroke="#569cd6"
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: '#569cd6' }}
+                    isAnimationActive={false}
+                  />
+                  <Line
+                    data={liftProgQuery.data.lifts.bench}
+                    type="monotone"
+                    dataKey="y"
+                    name="Bench"
+                    stroke="#ce9178"
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: '#ce9178' }}
+                    isAnimationActive={false}
+                  />
+                  <Line
+                    data={liftProgQuery.data.lifts.deadlift}
+                    type="monotone"
+                    dataKey="y"
+                    name="Deadlift"
+                    stroke="#4ec9b0"
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: '#4ec9b0' }}
+                    isAnimationActive={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+        {filters.per_lift !== 'true' && progQuery.isLoading && (
           <div className="text-zinc-500 text-sm">
             Loading progression…
             <div className="text-zinc-600 text-xs mt-1">
@@ -300,19 +423,19 @@ export default function Progression() {
             </div>
           </div>
         )}
-        {progQuery.error && (
+        {filters.per_lift !== 'true' && progQuery.error && (
           <div className="text-red-400 text-sm">
             Progression load failed: {(progQuery.error as Error).message}
           </div>
         )}
 
-        {progQuery.data && progQuery.data.points.length === 0 && (
+        {filters.per_lift !== 'true' && progQuery.data && progQuery.data.points.length === 0 && (
           <div className="text-zinc-500 text-sm">
             No data for this filter combination. Try loosening one of the filters.
           </div>
         )}
 
-        {progQuery.data && progQuery.data.points.length > 0 && (
+        {filters.per_lift !== 'true' && progQuery.data && progQuery.data.points.length > 0 && (
           <>
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-zinc-400 mb-2">
               <div>

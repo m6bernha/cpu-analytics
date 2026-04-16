@@ -153,6 +153,7 @@ function LifterDetail({
   standards: QtStandardRow[] | undefined
 }) {
   const [era, setEra] = useState<Era>('2025')
+  const [viewMode, setViewMode] = useState<'total' | 'per_lift'>('total')
 
   const qts = findQtForLifter(standards, history.sex, history.latest_weight_class)
   const qtField = ERA_QT_FIELD[era]
@@ -223,6 +224,22 @@ function LifterDetail({
   }, [sbdMeets, history.projection])
 
   const nonSbdCount = history.meets.length - sbdMeets.length
+
+  // Per-lift chart data: includes SBD meets for all three lifts, plus
+  // partial-event meets contributing to whichever lift(s) they tested.
+  // A bench-only meet contributes to the bench line only.
+  const perLiftChartData = useMemo(() => {
+    return history.meets
+      .filter((m) => m.TotalKg != null)
+      .map((m) => ({
+        date: m.Date,
+        squat: m.Best3SquatKg,
+        bench: m.Best3BenchKg,
+        deadlift: m.Best3DeadliftKg,
+        event: m.Event,
+        meet: m.MeetName ?? '',
+      }))
+  }, [history.meets])
 
   // Y axis padding so reference lines don't sit on the edge.
   const allTotals = chartData
@@ -341,6 +358,26 @@ function LifterDetail({
         )}
       </div>
 
+      <div className="flex items-center gap-3 mb-3 text-sm">
+        <span className="text-zinc-400">View:</span>
+        <div className="flex gap-1">
+          {(['total', 'per_lift'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setViewMode(m)}
+              className={
+                'px-2 py-1 rounded text-xs ' +
+                (viewMode === m
+                  ? 'bg-zinc-700 text-zinc-100'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800')
+              }
+            >
+              {m === 'total' ? 'Total' : 'Per lift (S/B/D)'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {nonSbdCount > 0 && (
         <p className="text-zinc-500 text-xs mb-2">
           Chart shows full-power (SBD) meets only. {nonSbdCount} other meet
@@ -353,6 +390,83 @@ function LifterDetail({
         <div className="h-[200px] bg-zinc-900 rounded border border-zinc-800 p-6 flex items-center justify-center text-zinc-500 text-sm text-center">
           No full-power (SBD) meets for this lifter. See the table below for
           their bench-only or other meets.
+        </div>
+      ) : viewMode === 'per_lift' ? (
+        <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={perLiftChartData}
+              margin={{ top: 8, right: 32, bottom: 36, left: 16 }}
+            >
+              <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
+              <XAxis
+                dataKey="date"
+                stroke="#a1a1aa"
+                tickFormatter={(v) => fmtDateShort(String(v))}
+                minTickGap={40}
+                label={{
+                  value: 'Date',
+                  position: 'insideBottom',
+                  offset: -16,
+                  fill: '#a1a1aa',
+                }}
+              />
+              <YAxis
+                stroke="#a1a1aa"
+                width={56}
+                label={{
+                  value: 'Best lift (kg)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  offset: 0,
+                  fill: '#a1a1aa',
+                  style: { textAnchor: 'middle' },
+                }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#18181b',
+                  border: '1px solid #3f3f46',
+                  color: '#e4e4e7',
+                }}
+                formatter={(value) =>
+                  typeof value === 'number' ? value.toFixed(1) + ' kg' : '—'
+                }
+                labelFormatter={(label) => fmtDate(String(label ?? ''))}
+              />
+              <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
+              <Line
+                type="monotone"
+                dataKey="squat"
+                name="Squat"
+                stroke="#569cd6"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#569cd6' }}
+                connectNulls
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="bench"
+                name="Bench"
+                stroke="#ce9178"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#ce9178' }}
+                connectNulls
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="deadlift"
+                name="Deadlift"
+                stroke="#4ec9b0"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#4ec9b0' }}
+                connectNulls
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       ) : (
       <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">

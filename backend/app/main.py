@@ -158,6 +158,36 @@ def api_progression(
     )
 
 
+@app.get("/api/cohort/lift_progression")
+def api_lift_progression(
+    sex: str | None = Query(None),
+    equipment: str | None = Query(None),
+    tested: str | None = Query(None),
+    event: str | None = Query("SBD"),
+    federation: str | None = Query(None),
+    country: str | None = Query(DEFAULT_COUNTRY),
+    parent_federation: str | None = Query(DEFAULT_PARENT_FEDERATION),
+    weight_class: str | None = Query(None),
+    division: str | None = Query(None),
+    x_axis: str = Query("Years"),
+) -> dict[str, Any]:
+    """Per-lift (squat, bench, deadlift) cohort progression."""
+    return _clean(
+        progression_mod.compute_lift_progression(
+            sex=sex,
+            equipment=equipment,
+            tested=tested,
+            event=event,
+            federation=federation,
+            country=country,
+            parent_federation=parent_federation,
+            weight_class=weight_class,
+            division=division,
+            x_axis=x_axis,
+        )
+    )
+
+
 @app.get("/api/lifters/search")
 def api_lifters_search(
     q: str = Query(..., min_length=2),

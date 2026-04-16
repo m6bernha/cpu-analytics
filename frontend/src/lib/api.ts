@@ -127,6 +127,42 @@ export function fetchProgression(q: ProgressionQuery): Promise<ProgressionRespon
   return getJson<ProgressionResponse>(`${API_BASE}/api/cohort/progression?${params}`)
 }
 
+// ---------- Per-lift cohort progression (S/B/D curves) ----------
+
+export type LiftPoint = {
+  x: number
+  y: number
+  lifter_count: number
+}
+
+export type LiftProgressionResponse = {
+  x_label: string
+  lifts: {
+    squat: LiftPoint[]
+    bench: LiftPoint[]
+    deadlift: LiftPoint[]
+  }
+  n_lifters: number
+}
+
+export type LiftProgressionQuery = {
+  sex?: string
+  equipment?: string
+  weight_class?: string
+  division?: string
+  x_axis?: string
+}
+
+export function fetchLiftProgression(
+  q: LiftProgressionQuery,
+): Promise<LiftProgressionResponse> {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(q)) {
+    if (v != null && v !== '') params.set(k, v)
+  }
+  return getJson<LiftProgressionResponse>(`${API_BASE}/api/cohort/lift_progression?${params}`)
+}
+
 export function fetchLifterSearch(
   q: string,
   limit = 25,
