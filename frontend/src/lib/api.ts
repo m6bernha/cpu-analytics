@@ -24,6 +24,7 @@ export type FiltersResponse = {
 export type ProgressionPoint = {
   x: number
   y: number
+  std: number
   lifter_count: number
 }
 
@@ -31,6 +32,7 @@ export type ProgressionTrend = {
   slope: number
   intercept: number
   unit: string
+  r_squared: number
 }
 
 export type ProgressionResponse = {
@@ -40,6 +42,7 @@ export type ProgressionResponse = {
   trend: ProgressionTrend | null
   n_lifters: number
   n_meets: number
+  n_lifters_before_age_filter: number
 }
 
 export type LifterSearchResult = {

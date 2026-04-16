@@ -14,10 +14,11 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -148,6 +149,8 @@ export default function Progression() {
       .map((p) => ({
         x: p.x,
         y: p.y,
+        // +/- 1 standard deviation band
+        stdBand: [p.y - p.std, p.y + p.std] as [number, number],
         lifter_count: p.lifter_count,
         trend_y: trend ? trend.slope * p.x + trend.intercept : null,
       }))
@@ -300,13 +303,29 @@ export default function Progression() {
                     {progQuery.data.trend.slope >= 0 ? '+' : ''}
                     {progQuery.data.trend.slope.toFixed(3)} kg/{progQuery.data.trend.unit}
                   </span>
+                  <span className="text-zinc-500 ml-2">
+                    R<sup>2</sup> = {progQuery.data.trend.r_squared.toFixed(3)}
+                  </span>
                 </div>
               )}
             </div>
 
+            {/* Age data loss indicator */}
+            {filters.age_category !== 'All' &&
+              progQuery.data.n_lifters_before_age_filter > progQuery.data.n_lifters && (
+              <div className="text-zinc-500 text-xs mb-2">
+                Showing {progQuery.data.n_lifters.toLocaleString()} of{' '}
+                {progQuery.data.n_lifters_before_age_filter.toLocaleString()} lifters.{' '}
+                {Math.round(
+                  100 * (1 - progQuery.data.n_lifters / progQuery.data.n_lifters_before_age_filter)
+                )}
+                % dropped because the Age column is missing for their meet rows.
+              </div>
+            )}
+
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 36, left: 4 }}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 24, bottom: 36, left: 4 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="x"
@@ -346,6 +365,15 @@ export default function Progression() {
                     }
                   />
                   <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="stdBand"
+                    name="+/- 1 SD"
+                    fill="#569cd6"
+                    fillOpacity={0.1}
+                    stroke="none"
+                    isAnimationActive={false}
+                  />
                   <Line
                     type="monotone"
                     dataKey="y"
@@ -369,9 +397,37 @@ export default function Progression() {
                     dot={false}
                     isAnimationActive={false}
                   />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
+
+            {/* Survivorship bias + methodology notes */}
+            <details className="mt-3 max-w-2xl">
+              <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+                Methodology notes
+              </summary>
+              <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+                <p>
+                  <span className="text-zinc-400 font-medium">Survivorship bias:</span> Only
+                  lifters with 2+ meets appear in this chart. Lifters who competed once and
+                  quit are excluded, which biases the curve toward people who improved enough
+                  to keep competing. The shaded band shows +/- 1 standard deviation of the
+                  underlying data at each point.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Population thinning:</span> At
+                  higher x-values, fewer lifters remain (because most careers are short). The
+                  tail of the curve reflects only the most persistent competitors and should
+                  not be read as a prediction for all lifters.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Trendline:</span> Ordinary
+                  least-squares linear fit on x-values with 5+ distinct lifters, unweighted.
+                  R-squared measures how well the line fits the averaged points, not
+                  individual lifter trajectories.
+                </p>
+              </div>
+            </details>
           </>
         )}
       </section>

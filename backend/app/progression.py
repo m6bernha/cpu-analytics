@@ -162,6 +162,10 @@ def compute_progression(
             "n_meets": 0,
         }
 
+    # Track pre-age-filter count so the frontend can show how much data
+    # the sparse Age column costs the user.
+    n_lifters_before_age_filter = int(df["Name"].nunique())
+
     # Apply optional age category filter in pandas — Age is sparse and the
     # category boundaries don't align with any column literal in the dataset.
     #
@@ -216,17 +220,30 @@ def compute_progression(
     x_col, x_label = X_AXIS_COLS[x_axis]
     grouped = (
         df.groupby(x_col)
-        .agg(y=("TotalDiffFromFirst", "mean"), lifter_count=("Name", "nunique"))
+        .agg(
+            y=("TotalDiffFromFirst", "mean"),
+            std=("TotalDiffFromFirst", "std"),
+            lifter_count=("Name", "nunique"),
+        )
         .reset_index()
         .sort_values(x_col)
         .rename(columns={x_col: "x"})
     )
+    # Single-lifter buckets have NaN std; fill with 0.
+    grouped["std"] = grouped["std"].fillna(0)
 
     # Trendline: linear fit on points with enough lifters to be meaningful.
     trend = None
     fit = grouped[grouped["lifter_count"] >= min_lifters_for_trend]
     if len(fit) >= 2:
-        coeffs = np.polyfit(fit["x"].to_numpy(), fit["y"].to_numpy(), deg=1)
+        x_arr = fit["x"].to_numpy(dtype=float)
+        y_arr = fit["y"].to_numpy(dtype=float)
+        coeffs = np.polyfit(x_arr, y_arr, deg=1)
+        # R-squared: 1 - SS_res / SS_tot
+        y_pred = np.polyval(coeffs, x_arr)
+        ss_res = float(np.sum((y_arr - y_pred) ** 2))
+        ss_tot = float(np.sum((y_arr - np.mean(y_arr)) ** 2))
+        r_squared = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
         unit_map = {
             "Meet #": "meet",
             "Days": "day",
@@ -238,12 +255,14 @@ def compute_progression(
             "slope": float(coeffs[0]),
             "intercept": float(coeffs[1]),
             "unit": unit_map[x_axis],
+            "r_squared": round(r_squared, 4),
         }
 
     points = [
         {
             "x": int(row.x),
             "y": float(row.y),
+            "std": float(row.std),
             "lifter_count": int(row.lifter_count),
         }
         for row in grouped.itertuples(index=False)
@@ -256,4 +275,5 @@ def compute_progression(
         "trend": trend,
         "n_lifters": int(df["Name"].nunique()),
         "n_meets": int(len(df)),
+        "n_lifters_before_age_filter": n_lifters_before_age_filter,
     }
