@@ -57,6 +57,45 @@ Frontend talks to `VITE_API_BASE` (defaults to `http://127.0.0.1:8000`).
 - `cd frontend && npm run build` — catches TypeScript strict errors that will blow up the Vercel build. Skipping this and pushing is how we broke the first frontend deploy attempt.
 - No need to run the backend's test suite because there isn't one (yet).
 
+## URL state conventions
+
+Every user-facing, shareable view is encoded in `window.location.search` via the
+`useUrlState` hook in `frontend/src/lib/useUrlState.ts`. Keys are omitted from
+the URL when they equal their default, so a pristine page has a clean URL.
+
+Supported URL keys (as of 2026-04):
+
+| Key | Scope | Example values |
+|---|---|---|
+| `tab` | App shell | `progression`, `qt`, `lookup` |
+| `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years` |
+| `mode` | Lifter Lookup | `search`, `compare`, `manual` |
+| `lifter` | Lifter Lookup search mode | `Matthias Bernhard` |
+| `lifters` | Lifter Lookup compare mode | `Matthias Bernhard,Alex Mardell` (up to 4) |
+
+Example deep links:
+- `?tab=progression&weight_class=83&x_axis=Months`
+- `?tab=lookup&lifter=Matthias%20Bernhard`
+- `?tab=lookup&mode=compare&lifters=Matthias%20Bernhard,Alex%20Mardell`
+
+When adding a new component with URL-backed state, register only the keys it
+owns. Multiple `useUrlState` instances coexist safely on the same page — each
+only touches its own keys.
+
+## Event type handling (lifter lookup)
+
+OpenIPF's `Event` column has seven values: `SBD`, `BD`, `SD`, `SB`, `S`, `B`,
+`D`. Only `SBD` (full power) gives a total that's comparable across meets.
+Other events produce a `TotalKg` that's the partial sum (just bench, or
+bench+deadlift, etc.), and plotting them on the same y-axis is misleading.
+
+The lifter-lookup single-lifter chart and the compare chart both filter to
+`Event === 'SBD'`. Non-SBD meets still appear in the meet table below the
+chart, visually muted, with the event type in a color-coded chip and a
+hover tooltip spelling out the full name (see `EVENT_DESCRIPTION`). The
+Δ-first column in the table is computed against the first SBD meet
+specifically, not the first meet of any kind.
+
 ## Known gotchas
 
 - **Recharts v3.8 strict types.** `Tooltip` formatter/labelFormatter callbacks receive `ValueType | undefined` and `ReactNode` for label. Do not annotate params as `number` / `string`. See `cpu-analytics/frontend/src/tabs/*.tsx` for the pattern.
@@ -66,6 +105,9 @@ Frontend talks to `VITE_API_BASE` (defaults to `http://127.0.0.1:8000`).
 - **Age column is ~70% NULL.** Any age_category filter silently drops many rows. The Progression tab shows a hint about this.
 - **Division is free-text.** `Division='Open'` works for CPU specifically, verified empirically (see `backend/app/qt.py` comments). Not federation-portable.
 - **Weight class canonicalization** collapses historical 1-kg-off variants into modern IPF classes. See `backend/app/weight_class.py`. Fine in aggregate, wrong at the individual level for some edge cases.
+- **TanStack Query caching**: every query that feels "static" (filters, qt-blocks, qt-standards) uses `staleTime: 10 * 60 * 1000` with `retry: 3`, not `staleTime: Infinity`. Infinity caches bad cold-start responses forever — the empty-equipment regression taught us this. The `fetchFilters` fetcher additionally validates that required arrays are non-empty and throws on partial data, so retry kicks in for partial responses too.
+- **FastAPI startup warms DuckDB.** `backend/app/main.py` registers a `lifespan` handler that runs `SELECT COUNT(*)` against both views at app start. This forces parquet reads into the boot window rather than the first user request. If you add a new parquet or new view, extend the warmup to touch it.
+- **Chart legends at top, not bottom.** Recharts defaults the legend to `verticalAlign='bottom'`, which overlaps the x-axis label. Every chart in this app uses `<Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />`. Keep this convention on new charts.
 
 ## Scope
 
@@ -92,5 +134,21 @@ Backend defaults enforce Country=Canada, ParentFederation=IPF (see `backend/app/
 ## When extending this
 
 - New API endpoint: add to `backend/app/main.py`, wire a module in `backend/app/`, add a typed fetcher in `frontend/src/lib/api.ts`.
-- New tab: add a component in `frontend/src/tabs/`, register in `frontend/src/App.tsx`'s `TABS` array and switch.
+- New tab: add a component in `frontend/src/tabs/`, register in `frontend/src/App.tsx`'s `TABS` array and switch. If the tab has shareable state, use `useUrlState`.
 - New filter: add the enum in `backend/app/filters.py` if it's enumerable, and a `<Select>` in `Progression.tsx` (or wherever it applies).
+- New chart: use a dark-theme palette anchored on `#569cd6` (blue), `#ce9178` (orange), `#4ec9b0` (teal), `#c586c0` (purple). `Legend` verticalAlign top. `CartesianGrid` stroke `#3f3f46`.
+
+## Responsive conventions
+
+The app stacks vertically below the `md` Tailwind breakpoint (768 px):
+- App header: title + nav stack on small screens. Nav is `overflow-x-auto` so
+  extra tabs scroll horizontally rather than wrap.
+- Progression tab: filter aside drops below the chart on narrow screens via
+  `flex flex-col md:flex-row`.
+- Lifter Lookup: search/detail already uses `grid grid-cols-1 lg:grid-cols-3`.
+- QT Squeeze: each block is `grid grid-cols-1 lg:grid-cols-5` (2-col table +
+  3-col chart); wide tables wrap in `overflow-x-auto`.
+
+Charts use `ResponsiveContainer` with fixed pixel heights (`h-[400px]` or
+`h-[480px]`). Width auto-scales. Keep chart heights the same on mobile so the
+aspect ratio stays readable on phones.
