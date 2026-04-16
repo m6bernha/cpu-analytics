@@ -41,7 +41,25 @@ async def lifespan(_app: FastAPI):
         n_meets = conn.execute("SELECT COUNT(*) FROM openipf").fetchone()[0]
         n_qt = conn.execute("SELECT COUNT(*) FROM qt_standards").fetchone()[0]
         print(f"[startup] warmed: openipf={n_meets:,} rows, qt_standards={n_qt} rows")
+        # If either view is empty, the parquet is likely corrupt or truncated.
+        # Delete the files so the next cold-start re-downloads, then log.
+        if n_meets == 0 or n_qt == 0:
+            import os
+            from .data import OPENIPF_PARQUET, QT_PARQUET
+            print(
+                f"[startup] ERROR: parquet appears empty "
+                f"(openipf={n_meets}, qt={n_qt}). Removing local files "
+                f"so the next cold-start re-downloads."
+            )
+            for p in (OPENIPF_PARQUET, QT_PARQUET):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
     except Exception as exc:  # pragma: no cover — startup diagnostics
+        # Log but continue: transient download failures will be retried
+        # by get_conn() on the first real request. Only fatal-empty-parquet
+        # above re-raises (and does so above this handler).
         print(f"[startup] warmup failed: {exc!r}")
     yield
 

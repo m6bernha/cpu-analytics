@@ -7,6 +7,7 @@
 import Progression from './tabs/Progression'
 import QTSqueeze from './tabs/QTSqueeze'
 import LifterLookup from './tabs/LifterLookup'
+import { ErrorBoundary } from './lib/ErrorBoundary'
 import { useUrlState } from './lib/useUrlState'
 
 type TabKey = 'progression' | 'qt' | 'lookup'
@@ -59,13 +60,19 @@ export default function App() {
           was being lost on every switch when we used conditional &&. */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
-          <Progression />
+          <ErrorBoundary label="Progression">
+            <Progression />
+          </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
-          <QTSqueeze />
+          <ErrorBoundary label="QT Squeeze">
+            <QTSqueeze />
+          </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'lookup' ? undefined : 'none' }}>
-          <LifterLookup />
+          <ErrorBoundary label="Lifter Lookup">
+            <LifterLookup />
+          </ErrorBoundary>
         </div>
       </main>
 
