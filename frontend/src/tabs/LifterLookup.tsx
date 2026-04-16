@@ -1017,6 +1017,7 @@ function CompareView({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Add lifter (${compareNames.length}/${MAX_COMPARE})`}
+              aria-label="Add lifter to comparison by name"
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
               // autoFocus removed: on phones it pops the keyboard and pushes content down={compareNames.length === 0}
             />
@@ -1291,6 +1292,7 @@ export default function LifterLookup() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Type a name"
+              aria-label="Search lifters by name"
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
               // autoFocus removed: on phones it pops the keyboard and pushes content down
             />

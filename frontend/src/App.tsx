@@ -35,11 +35,17 @@ export default function App() {
             <h1 className="text-lg sm:text-xl font-semibold">CPU Powerlifting Analytics</h1>
             <p className="text-zinc-500 text-xs">Canadian lifters, IPF-sanctioned meets</p>
           </div>
-          <nav className="flex gap-2 -mx-1 px-1 overflow-x-auto">
+          <nav
+            className="flex gap-2 -mx-1 px-1 overflow-x-auto"
+            role="tablist"
+            aria-label="Main tabs"
+          >
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
+                role="tab"
+                aria-selected={tab === t.key}
                 className={
                   'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
                   (tab === t.key
