@@ -142,6 +142,7 @@ def compute_progression(
         SELECT
             Name,
             Age,
+            TotalKg,
             MeetNumber,
             DATEDIFF('day', FirstDate, Date) AS DaysFromFirst,
             (TotalKg - FirstTotal) AS TotalDiffFromFirst
