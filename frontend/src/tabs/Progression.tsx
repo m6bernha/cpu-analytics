@@ -306,7 +306,7 @@ export default function Progression() {
 
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
+                <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 36, left: 4 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="x"
@@ -320,12 +320,14 @@ export default function Progression() {
                   />
                   <YAxis
                     stroke="#a1a1aa"
+                    width={56}
                     label={{
                       value: 'Change from first meet (kg)',
                       angle: -90,
                       position: 'insideLeft',
-                      offset: 10,
+                      offset: 0,
                       fill: '#a1a1aa',
+                      style: { textAnchor: 'middle' },
                     }}
                   />
                   <Tooltip

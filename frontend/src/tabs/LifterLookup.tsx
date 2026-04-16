@@ -257,13 +257,15 @@ function LifterDetail({
             />
             <YAxis
               stroke="#a1a1aa"
+              width={56}
               domain={[yMin, yMax]}
               label={{
                 value: 'Total (kg)',
                 angle: -90,
                 position: 'insideLeft',
-                offset: 10,
+                offset: 0,
                 fill: '#a1a1aa',
+                style: { textAnchor: 'middle' },
               }}
             />
             <Tooltip
@@ -747,13 +749,15 @@ function CompareView({
                 />
                 <YAxis
                   stroke="#a1a1aa"
+                  width={56}
                   domain={[yMin, yMax]}
                   label={{
                     value: 'Total (kg)',
                     angle: -90,
                     position: 'insideLeft',
-                    offset: 10,
+                    offset: 0,
                     fill: '#a1a1aa',
+                    style: { textAnchor: 'middle' },
                   }}
                 />
                 <Tooltip
@@ -883,7 +887,7 @@ export default function LifterLookup() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
         <div>
           <h2 className="text-zinc-100 text-lg font-semibold">Lifter lookup</h2>
           <p className="text-zinc-500 text-sm">
@@ -891,13 +895,13 @@ export default function LifterLookup() {
             to project a trajectory.
           </p>
         </div>
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-1 -mx-1 px-1 overflow-x-auto">
           {(['search', 'compare', 'manual'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
               className={
-                'px-3 py-1.5 rounded text-sm ' +
+                'px-3 py-1.5 rounded text-sm whitespace-nowrap ' +
                 (mode === m
                   ? 'bg-zinc-800 text-zinc-100'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
