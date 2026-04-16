@@ -78,6 +78,14 @@ function fmtSbd(s: number | null, b: number | null, d: number | null): string {
   return `${fmtKg(s)} / ${fmtKg(b)} / ${fmtKg(d)}`
 }
 
+function fmtDateShort(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const parts = iso.slice(0, 10).split('-').map(Number)
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return iso
+  const [y, m] = parts
+  return `${MONTHS[m - 1]} '${String(y).slice(-2)}`
+}
+
 // ---------- QT lookup helper ----------
 
 function findQtForLifter(
@@ -253,6 +261,8 @@ function LifterDetail({
             <XAxis
               dataKey="date"
               stroke="#a1a1aa"
+              tickFormatter={(v) => fmtDateShort(String(v))}
+              minTickGap={40}
               label={{ value: 'Date', position: 'insideBottom', offset: -16, fill: '#a1a1aa' }}
             />
             <YAxis
@@ -324,6 +334,7 @@ function LifterDetail({
               <th className="text-left py-2 pr-3 font-normal hidden md:table-cell">Division</th>
               <th className="text-right py-2 pl-2 font-normal hidden sm:table-cell">S / B / D</th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
+              <th className="text-right py-2 pl-2 font-normal hidden md:table-cell">Dots</th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>
           </thead>
@@ -373,6 +384,9 @@ function LifterDetail({
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
                     <td className={totalCellClass}>{fmtKg(m.TotalKg)}</td>
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden md:table-cell">
+                      {fmtKg(m.Dots, 2)}
+                    </td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500">
                       {delta == null
                         ? '—'
@@ -654,16 +668,23 @@ function CompareView({
     })),
   })
 
+  // Stable deps for useMemo: historyQueries is a new array ref every render,
+  // so we extract the stable parts (data objects + loading flags).
+  const queryData = historyQueries.map((q) => q.data)
+  const queryLoading = historyQueries.map((q) => q.isLoading)
+
   // Each lifter's trajectory is re-anchored to months-from-their-own-first-SBD-meet
   // so the comparison is about progression rate, not calendar alignment.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const series = useMemo(() => {
     return compareNames.map((name, i) => {
-      const q = historyQueries[i]
+      const data = queryData[i]
+      const loading = queryLoading[i]
       const color = COMPARE_COLORS[i % COMPARE_COLORS.length]
-      if (!q.data || !q.data.found) {
-        return { name, color, points: [], loading: q.isLoading, error: q.error }
+      if (!data || !data.found) {
+        return { name, color, points: [], loading, error: null }
       }
-      const sbd = q.data.meets.filter((m) => m.Event === 'SBD')
+      const sbd = data.meets.filter((m) => m.Event === 'SBD')
       if (sbd.length === 0) {
         return { name, color, points: [], loading: false, noSbd: true }
       }
@@ -680,7 +701,8 @@ function CompareView({
         })),
       }
     })
-  }, [compareNames, historyQueries])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compareNames.join(','), ...queryData, ...queryLoading])
 
   const allTotals = series.flatMap((s) => s.points.map((p) => p.total))
   const allMonths = series.flatMap((s) => s.points.map((p) => p.months))
@@ -1058,6 +1080,14 @@ export default function LifterLookup() {
                 Select a lifter from the search results to see their trajectory and
                 qualifying total comparison.
               </div>
+            )}
+            {selectedName && (
+              <button
+                onClick={() => setSelectedName(null)}
+                className="lg:hidden text-zinc-400 hover:text-zinc-200 text-xs mb-3 flex items-center gap-1"
+              >
+                <span aria-hidden="true">&larr;</span> Back to results
+              </button>
             )}
             {selectedName && historyQuery.isLoading && (
               <div className="text-zinc-500 text-sm">Loading history…</div>

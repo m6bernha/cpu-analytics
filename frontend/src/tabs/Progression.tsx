@@ -233,7 +233,7 @@ export default function Progression() {
             <Select
               label="Division"
               value={filters.division}
-              options={['All', 'Open', 'Juniors', 'Sub-Juniors', 'Masters 1', 'Masters 2', 'Masters 3', 'Masters 4']}
+              options={f.division}
               onChange={(v) => update({ division: v })}
               hint="Division is federation-free-text. 'Open' is what CPU uses."
             />
@@ -352,7 +352,8 @@ export default function Progression() {
                     name="Mean change"
                     stroke="#569cd6"
                     strokeWidth={2}
-                    dot={false}
+                    dot={{ r: 2, fill: '#569cd6' }}
+                    activeDot={{ r: 5 }}
                     isAnimationActive={false}
                   />
                   <Line

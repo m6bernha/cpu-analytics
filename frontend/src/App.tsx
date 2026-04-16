@@ -53,10 +53,20 @@ export default function App() {
         </div>
       </header>
 
+      {/* Tabs are kept mounted and hidden via CSS so local state (search
+          query, filter panel toggle, scroll position) survives tab switches.
+          TanStack Query already caches API data, but ephemeral UI state
+          was being lost on every switch when we used conditional &&. */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {tab === 'progression' && <Progression />}
-        {tab === 'qt' && <QTSqueeze />}
-        {tab === 'lookup' && <LifterLookup />}
+        <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
+          <Progression />
+        </div>
+        <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
+          <QTSqueeze />
+        </div>
+        <div style={{ display: tab === 'lookup' ? undefined : 'none' }}>
+          <LifterLookup />
+        </div>
       </main>
 
       <footer className="border-t border-zinc-900 mt-12 px-4 sm:px-6 py-4">

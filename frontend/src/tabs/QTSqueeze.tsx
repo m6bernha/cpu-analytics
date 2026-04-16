@@ -119,16 +119,16 @@ function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
             <thead className="text-zinc-400 text-xs uppercase tracking-wide">
               <tr className="border-b border-zinc-800">
                 <th className="text-left py-2 pr-4 font-normal">Weight class</th>
-                <th className="text-right py-2 px-2 font-normal">Pre-2025</th>
+                <th className="text-right py-2 px-2 font-normal hidden sm:table-cell">Pre-2025</th>
                 <th className="text-right py-2 px-2 font-normal">2025</th>
-                <th className="text-right py-2 pl-2 font-normal">2027 Today</th>
+                <th className="text-right py-2 pl-2 font-normal">2027</th>
               </tr>
             </thead>
             <tbody className="text-zinc-200">
               {rows.map((r) => (
                 <tr key={r.WeightClass} className="border-b border-zinc-900">
                   <td className="py-2 pr-4 text-zinc-300">{r.WeightClass}</td>
-                  <td className="py-2 px-2 text-right tabular-nums">{fmtPct(r.pct_pre2025)}</td>
+                  <td className="py-2 px-2 text-right tabular-nums hidden sm:table-cell">{fmtPct(r.pct_pre2025)}</td>
                   <td className="py-2 px-2 text-right tabular-nums">{fmtPct(r.pct_2025)}</td>
                   <td className="py-2 pl-2 text-right tabular-nums">{fmtPct(r.pct_2027_today)}</td>
                 </tr>

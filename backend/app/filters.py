@@ -23,6 +23,14 @@ def get_filters() -> dict[str, Any]:
         ).fetchall()
         return [r[0] for r in rows]
 
+    # Division values from the dataset, with "All" prepended.
+    division_rows = conn.execute(
+        "SELECT DISTINCT Division FROM openipf "
+        "WHERE Division IS NOT NULL AND Division != '' "
+        "ORDER BY Division"
+    ).fetchall()
+    divisions = ["All"] + [r[0] for r in division_rows]
+
     return {
         "sex": distinct("Sex"),
         "equipment": distinct("Equipment"),
@@ -30,6 +38,7 @@ def get_filters() -> dict[str, Any]:
         "event": distinct("Event"),
         "federation": distinct("Federation"),
         "country": distinct("Country"),
+        "division": divisions,
         "weight_class": {
             "M": MEN_CLASSES,
             "F": WOMEN_CLASSES,

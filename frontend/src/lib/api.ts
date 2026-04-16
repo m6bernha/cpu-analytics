@@ -15,6 +15,7 @@ export type FiltersResponse = {
   event: string[]
   federation: string[]
   country: string[]
+  division: string[]
   weight_class: { M: string[]; F: string[] }
   age_category: string[]
   x_axis: string[]
