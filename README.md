@@ -97,6 +97,39 @@ To trigger a refresh manually: GitHub repo → Actions → Refresh OpenIPF data 
 
 The site is intentionally limited to Canadian lifters competing in IPF-sanctioned meets (CPU domestic + IPF international). The dataset contains the full OpenIPF dump but the API enforces this scope via default query parameters in `backend/app/scope.py`. Widening scope is a one-line change.
 
+## Deployment
+
+### Backend: Render
+
+The backend is deployed to Render.com via the `Dockerfile` and `render.yaml`
+blueprint. The service reads the processed parquet from a rolling
+`data-latest` GitHub Release on cold start (env vars
+`OPENIPF_PARQUET_URL`, `QT_PARQUET_URL`).
+
+**Health Check Path:** In the Render dashboard go to Settings → Health
+Checks and set the path to `/api/health`. This endpoint accepts both
+GET and HEAD so Render's own health poll and UptimeRobot's free plan
+(HEAD-only) both work.
+
+**Liveness vs readiness:**
+- `/api/health` is a fast liveness probe. Returns 200 if the process
+  is up, does not hit DuckDB.
+- `/api/ready` is a readiness probe. Runs `SELECT 1` against DuckDB to
+  confirm the parquet views loaded. Returns 503 if not ready.
+
+### Frontend: Vercel
+
+Auto-deploys on push to `main` from the `frontend/` subdirectory. Set
+the env var `VITE_API_BASE` to the Render backend URL.
+
+### Uptime monitoring
+
+UptimeRobot free plan at 5-minute intervals pings `/api/health` with
+HEAD. This also keeps the Render free-tier instance warm past the
+15-minute idle spindown. A GitHub Actions cron in
+`.github/workflows/keepalive.yml` is a belt-and-braces backup in case
+UptimeRobot itself is down.
+
 ## License
 
 MIT for the application code. The OpenPowerlifting dataset is CC0 1.0 Universal — see [openpowerlifting.org](https://openpowerlifting.org/) for source data and attribution.

@@ -113,9 +113,37 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health() -> dict[str, str]:
+    """Liveness probe. Answers GET or HEAD.
+
+    UptimeRobot's free plan only supports HEAD, so accepting both prevents
+    the 405 Method Not Allowed that was causing false outage alerts.
+    FastAPI returns an empty body on HEAD automatically.
+    """
     return {"status": "ok"}
+
+
+@app.api_route("/api/ready", methods=["GET", "HEAD"])
+def ready():
+    """Readiness probe. Runs a tiny query to confirm DuckDB is live.
+
+    Returns 200 with {'ready': true} on success, 503 otherwise. This is
+    a stricter check than /api/health -- if the parquet views are
+    unreadable (corrupt download, missing file, etc), this fails while
+    /api/health still passes.
+    """
+    from fastapi import Response
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT 1").fetchone()
+        return {"ready": True}
+    except Exception as exc:
+        return Response(
+            content='{"ready": false, "error": "' + type(exc).__name__ + '"}',
+            status_code=503,
+            media_type="application/json",
+        )
 
 
 @app.get("/api/filters")
