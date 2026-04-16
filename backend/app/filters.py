@@ -10,7 +10,7 @@ from .data import get_conn
 AGE_CATEGORIES = ["All", "Sub-Jr", "Jr", "Open", "M1", "M2", "M3", "M4"]
 X_AXIS_OPTIONS = ["Meet #", "Days", "Weeks", "Months", "Years"]
 
-MEN_CLASSES = ["53", "59", "66", "74", "83", "93", "105", "120", "120+"]
+MEN_CLASSES = ["59", "66", "74", "83", "93", "105", "120", "120+"]
 WOMEN_CLASSES = ["47", "52", "57", "63", "69", "76", "84", "84+"]
 
 

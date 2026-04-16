@@ -43,6 +43,8 @@ export type ProgressionResponse = {
   n_lifters: number
   n_meets: number
   n_lifters_before_age_filter: number
+  n_all_lifters: number
+  avg_first_total: number | null
 }
 
 export type LifterSearchResult = {

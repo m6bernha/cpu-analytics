@@ -56,7 +56,7 @@ def search_lifters(
                 CanonicalWeightClass,
                 Date,
                 TotalKg,
-                ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName DESC) AS rn,
+                ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date DESC, TotalKg DESC, MeetName DESC) AS rn,
                 COUNT(*) OVER (PARTITION BY Name) AS meet_count,
                 MAX(TotalKg) OVER (PARTITION BY Name) AS best_total
             FROM openipf
@@ -138,16 +138,18 @@ def get_lifter_history(name: str) -> dict[str, Any]:
 
     first = meets[0]
 
-    # Rate of improvement: kg/month across SBD meets only.
+    # Rate of improvement: linear regression slope across ALL SBD meets.
+    # This is more honest than first-to-last for non-monotonic careers
+    # (e.g., a lifter who peaked then declined).
+    import numpy as _np
     sbd = [m for m in meets if m.get("Event") == "SBD" and m.get("TotalKg") is not None]
     rate_kg_per_month = None
     if len(sbd) >= 2:
-        first_sbd = sbd[0]
-        last_sbd = sbd[-1]
-        days_span = last_sbd["DaysFromFirst"] - first_sbd["DaysFromFirst"]
-        total_gain = last_sbd["TotalKg"] - first_sbd["TotalKg"]
-        if days_span > 0:
-            rate_kg_per_month = round(total_gain / (days_span / 30.44), 2)
+        days = _np.array([m["DaysFromFirst"] for m in sbd], dtype=float)
+        totals = _np.array([m["TotalKg"] for m in sbd], dtype=float)
+        if days[-1] > days[0]:  # at least some time span
+            slope_per_day = float(_np.polyfit(days, totals, 1)[0])
+            rate_kg_per_month = round(slope_per_day * 30.44, 2)
 
     return {
         "name": name,

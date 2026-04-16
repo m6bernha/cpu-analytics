@@ -1035,7 +1035,8 @@ export default function LifterLookup() {
           <h2 className="text-zinc-100 text-lg font-semibold">Lifter lookup</h2>
           <p className="text-zinc-500 text-sm">
             Search any Canadian lifter in the CPU/IPF dataset, or enter your meets manually
-            to project a trajectory.
+            to project a trajectory. Lifters who share the same name in the OpenPowerlifting
+            database may show merged histories.
           </p>
         </div>
         <div className="flex gap-1 -mx-1 px-1 overflow-x-auto">

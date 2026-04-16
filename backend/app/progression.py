@@ -153,6 +153,29 @@ def compute_progression(
     conn = get_conn()
     df = conn.execute(sql, params).df()
 
+    # Survivorship stats: count ALL lifters in scope (including 1-meet)
+    # and compute the average first-meet total, so the frontend can show
+    # retention rate and day-0 population context.
+    all_lifters_sql = f"""
+        WITH filtered AS (
+            SELECT Name, Date, TotalKg, MeetName
+            FROM openipf
+            {where_sql}
+        ),
+        first_meets AS (
+            SELECT DISTINCT ON (Name) Name, TotalKg AS FirstTotal
+            FROM filtered
+            ORDER BY Name, Date, TotalKg DESC, MeetName
+        )
+        SELECT
+            COUNT(*) AS total_lifters,
+            AVG(FirstTotal) AS avg_first_total
+        FROM first_meets
+    """
+    surv_row = conn.execute(all_lifters_sql, params).fetchone()
+    n_all_lifters = int(surv_row[0]) if surv_row else 0
+    avg_first_total = round(float(surv_row[1]), 1) if surv_row and surv_row[1] is not None else None
+
     # Optional gap filter: exclude lifters who have any inter-meet gap
     # longer than max_gap_months. These "comeback" lifters contaminate
     # progression curves because their long-break gains are averaged
@@ -249,17 +272,22 @@ def compute_progression(
     # Single-lifter buckets have NaN std; fill with 0.
     grouped["std"] = grouped["std"].fillna(0)
 
-    # Trendline: linear fit on points with enough lifters to be meaningful.
+    # Trendline: WEIGHTED linear fit on points with enough lifters.
+    # Each x-bucket is weighted by its lifter count so dense early years
+    # dominate the slope and sparse tail years don't pull it around.
     trend = None
     fit = grouped[grouped["lifter_count"] >= min_lifters_for_trend]
     if len(fit) >= 2:
         x_arr = fit["x"].to_numpy(dtype=float)
         y_arr = fit["y"].to_numpy(dtype=float)
-        coeffs = np.polyfit(x_arr, y_arr, deg=1)
-        # R-squared: 1 - SS_res / SS_tot
+        w_arr = fit["lifter_count"].to_numpy(dtype=float)
+        # Weighted OLS via numpy: polyfit accepts a `w` parameter (sqrt of weights)
+        coeffs = np.polyfit(x_arr, y_arr, deg=1, w=np.sqrt(w_arr))
+        # Weighted R-squared
         y_pred = np.polyval(coeffs, x_arr)
-        ss_res = float(np.sum((y_arr - y_pred) ** 2))
-        ss_tot = float(np.sum((y_arr - np.mean(y_arr)) ** 2))
+        y_mean = np.average(y_arr, weights=w_arr)
+        ss_res = float(np.sum(w_arr * (y_arr - y_pred) ** 2))
+        ss_tot = float(np.sum(w_arr * (y_arr - y_mean) ** 2))
         r_squared = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
         unit_map = {
             "Meet #": "meet",
@@ -293,4 +321,6 @@ def compute_progression(
         "n_lifters": int(df["Name"].nunique()),
         "n_meets": int(len(df)),
         "n_lifters_before_age_filter": n_lifters_before_age_filter,
+        "n_all_lifters": n_all_lifters,
+        "avg_first_total": avg_first_total,
     }

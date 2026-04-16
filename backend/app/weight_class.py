@@ -42,14 +42,12 @@ def canonical_weight_class(sex: str, wc) -> str | float:
         return np.nan
 
     if sex == "M":
-        if base < 52.5:
+        # 53 kg class excluded: too rare in CPU to produce meaningful stats,
+        # and no QT standard exists for it.
+        if base < 58:
             return np.nan
-        if 52.5 <= base <= 53.5:
-            return "53"
         if plus or base > 120:
             return "120+"
-        if base < 59:
-            base = 59
         for b in MEN_BOUNDS:
             if base <= b:
                 return str(int(b))

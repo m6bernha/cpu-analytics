@@ -300,13 +300,23 @@ export default function Progression() {
 
         {progQuery.data && progQuery.data.points.length > 0 && (
           <>
-            <div className="flex gap-6 text-sm text-zinc-400 mb-2">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-zinc-400 mb-2">
               <div>
-                <span className="text-zinc-200 tabular-nums">{progQuery.data.n_lifters.toLocaleString()}</span> lifters
+                <span className="text-zinc-200 tabular-nums">{progQuery.data.n_lifters.toLocaleString()}</span> of{' '}
+                <span className="text-zinc-200 tabular-nums">{progQuery.data.n_all_lifters.toLocaleString()}</span> lifters
+                <span className="text-zinc-500 ml-1">
+                  ({Math.round(100 * progQuery.data.n_lifters / progQuery.data.n_all_lifters)}% returned for 2+ meets)
+                </span>
               </div>
               <div>
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_meets.toLocaleString()}</span> meets
               </div>
+              {progQuery.data.avg_first_total != null && (
+                <div>
+                  Avg first total: <span className="text-zinc-200 tabular-nums">{progQuery.data.avg_first_total.toFixed(1)} kg</span>
+                  <span className="text-zinc-500 ml-1">(all lifters incl. one-and-done)</span>
+                </div>
+              )}
               {progQuery.data.trend && (
                 <div>
                   Trend:{' '}
