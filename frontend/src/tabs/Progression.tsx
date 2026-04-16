@@ -42,6 +42,7 @@ type FilterState = {
   division: string
   age_category: string
   x_axis: string
+  max_gap_months: string
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -53,6 +54,7 @@ const DEFAULT_FILTERS: FilterState = {
   division: 'Open',
   age_category: 'All',
   x_axis: 'Years',
+  max_gap_months: '',
 }
 
 // Minimum lifters a point needs to be worth plotting. Below this the chart
@@ -86,7 +88,7 @@ function Select({
       >
         {options.map((o) => (
           <option key={o} value={o}>
-            {o}
+            {o === '' ? 'Off' : o}
           </option>
         ))}
       </select>
@@ -124,6 +126,7 @@ export default function Progression() {
         division: filters.division,
         age_category: filters.age_category,
         x_axis: filters.x_axis,
+        max_gap_months: filters.max_gap_months || undefined,
       }),
     enabled: filtersQuery.isSuccess,
   })
@@ -170,6 +173,7 @@ export default function Progression() {
       filters.weight_class,
       filters.equipment,
       filters.event,
+      filters.max_gap_months ? `<${filters.max_gap_months}mo gap` : '',
     ].filter(Boolean)
     return bits.join(' · ')
   }, [filters])
@@ -246,6 +250,13 @@ export default function Progression() {
               options={f.age_category}
               onChange={(v) => update({ age_category: v })}
               hint="Uses the Age column, which is ~70% NULL. Many lifters drop out if set."
+            />
+            <Select
+              label="Exclude gaps longer than"
+              value={filters.max_gap_months}
+              options={['', '6', '12', '18', '24', '36']}
+              onChange={(v) => update({ max_gap_months: v })}
+              hint="Excludes lifters with any inter-meet gap longer than N months (comeback filter)."
             />
             <Select
               label="X axis"

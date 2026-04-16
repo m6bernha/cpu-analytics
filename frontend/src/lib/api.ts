@@ -99,6 +99,7 @@ export type ProgressionQuery = {
   division?: string
   age_category?: string
   x_axis?: string
+  max_gap_months?: string
 }
 
 export function fetchProgression(q: ProgressionQuery): Promise<ProgressionResponse> {
@@ -175,6 +176,7 @@ export type LifterMeet = {
   MeetCountry: string | null
   TotalDiffFromFirst: number
   DaysFromFirst: number
+  is_pr: boolean
 }
 
 export type LifterHistory = {
@@ -187,6 +189,7 @@ export type LifterHistory = {
   latest_weight_class?: string | null
   meet_count?: number
   best_total_kg?: number
+  rate_kg_per_month?: number | null
   meets: LifterMeet[]
 }
 

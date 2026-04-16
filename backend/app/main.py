@@ -136,6 +136,7 @@ def api_progression(
     division: str | None = Query(None, description="e.g. 'Open' to restrict to Open lifters."),
     age_category: str | None = Query(None, description="Sub-Jr/Jr/Open/M1/M2/M3/M4 or 'All'. Sparse Age column means many rows are silently dropped."),
     x_axis: str = Query("Days"),
+    max_gap_months: int | None = Query(None, description="Exclude lifters with any inter-meet gap longer than this many months. Filters out comeback lifters."),
 ) -> dict[str, Any]:
     return _clean(
         progression_mod.compute_progression(
@@ -150,6 +151,7 @@ def api_progression(
             division=division,
             age_category=age_category,
             x_axis=x_axis,
+            max_gap_months=max_gap_months,
         )
     )
 

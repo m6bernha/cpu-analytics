@@ -119,11 +119,36 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         return {"name": name, "meets": [], "found": False}
 
     meets = df.to_dict(orient="records")
+
+    # PR detection: a meet is a PR if its TotalKg is strictly greater than
+    # all previous meets of the same Event type. This avoids comparing a
+    # bench-only total against an SBD total.
+    best_by_event: dict[str, float] = {}
     for m in meets:
         if m.get("Date") is not None:
             m["Date"] = str(m["Date"])[:10]
+        ev = m.get("Event", "")
+        total = m.get("TotalKg")
+        if total is not None:
+            prev_best = best_by_event.get(ev)
+            m["is_pr"] = prev_best is None or total > prev_best
+            best_by_event[ev] = max(total, prev_best or 0)
+        else:
+            m["is_pr"] = False
 
     first = meets[0]
+
+    # Rate of improvement: kg/month across SBD meets only.
+    sbd = [m for m in meets if m.get("Event") == "SBD" and m.get("TotalKg") is not None]
+    rate_kg_per_month = None
+    if len(sbd) >= 2:
+        first_sbd = sbd[0]
+        last_sbd = sbd[-1]
+        days_span = last_sbd["DaysFromFirst"] - first_sbd["DaysFromFirst"]
+        total_gain = last_sbd["TotalKg"] - first_sbd["TotalKg"]
+        if days_span > 0:
+            rate_kg_per_month = round(total_gain / (days_span / 30.44), 2)
+
     return {
         "name": name,
         "found": True,
@@ -133,6 +158,7 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         "latest_equipment": meets[-1]["Equipment"],
         "latest_weight_class": meets[-1]["CanonicalWeightClass"],
         "meet_count": len(meets),
-        "best_total_kg": float(max(m["TotalKg"] for m in meets)),
+        "best_total_kg": float(max(m["TotalKg"] for m in meets if m.get("TotalKg") is not None)),
+        "rate_kg_per_month": rate_kg_per_month,
         "meets": meets,
     }

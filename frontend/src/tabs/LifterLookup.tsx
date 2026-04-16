@@ -208,9 +208,41 @@ function LifterDetail({
           <div className="text-zinc-200 tabular-nums text-lg">
             {history.best_total_kg?.toFixed(1)} kg
           </div>
-          <div className="text-zinc-500 text-xs">{history.meet_count} meets</div>
+          <div className="text-zinc-500 text-xs">
+            {history.meet_count} meets
+            {history.rate_kg_per_month != null && (
+              <span className="ml-2">
+                {history.rate_kg_per_month >= 0 ? '+' : ''}
+                {history.rate_kg_per_month.toFixed(1)} kg/mo
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* QT proximity: how far from each qualifying standard */}
+      {regionalsQt != null && history.best_total_kg != null && (
+        <div className="flex flex-wrap gap-3 mb-3 text-xs">
+          <span className="text-zinc-400">
+            Regionals {ERA_LABEL[era]}:{' '}
+            <span className={history.best_total_kg >= regionalsQt ? 'text-emerald-400' : 'text-orange-400'}>
+              {history.best_total_kg >= regionalsQt
+                ? `+${(history.best_total_kg - regionalsQt).toFixed(1)} kg above`
+                : `${(regionalsQt - history.best_total_kg).toFixed(1)} kg below`}
+            </span>
+          </span>
+          {nationalsQt != null && (
+            <span className="text-zinc-400">
+              Nationals {ERA_LABEL[era]}:{' '}
+              <span className={history.best_total_kg >= nationalsQt ? 'text-emerald-400' : 'text-orange-400'}>
+                {history.best_total_kg >= nationalsQt
+                  ? `+${(history.best_total_kg - nationalsQt).toFixed(1)} kg above`
+                  : `${(nationalsQt - history.best_total_kg).toFixed(1)} kg below`}
+              </span>
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-3 mb-3 text-sm">
         <span className="text-zinc-400">QT era:</span>
@@ -335,6 +367,7 @@ function LifterDetail({
               <th className="text-right py-2 pl-2 font-normal hidden sm:table-cell">S / B / D</th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
               <th className="text-right py-2 pl-2 font-normal hidden md:table-cell">Dots</th>
+              <th className="text-right py-2 pl-2 font-normal hidden lg:table-cell" title="Squat/Bench/Deadlift as % of total">S/B/D %</th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>
           </thead>
@@ -383,9 +416,19 @@ function LifterDetail({
                     <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
-                    <td className={totalCellClass}>{fmtKg(m.TotalKg)}</td>
+                    <td className={totalCellClass}>
+                      {fmtKg(m.TotalKg)}
+                      {m.is_pr && isSbd && (
+                        <span className="ml-1 text-emerald-400 text-xs" title="Personal record">PR</span>
+                      )}
+                    </td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden md:table-cell">
                       {fmtKg(m.Dots, 2)}
+                    </td>
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden lg:table-cell whitespace-nowrap">
+                      {m.TotalKg && m.Best3SquatKg && m.Best3BenchKg && m.Best3DeadliftKg
+                        ? `${Math.round(100 * m.Best3SquatKg / m.TotalKg)}/${Math.round(100 * m.Best3BenchKg / m.TotalKg)}/${Math.round(100 * m.Best3DeadliftKg / m.TotalKg)}`
+                        : '—'}
                     </td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500">
                       {delta == null

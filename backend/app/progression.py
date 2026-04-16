@@ -95,6 +95,7 @@ def compute_progression(
     age_category: str | None = None,
     x_axis: str = "Days",
     min_lifters_for_trend: int = 5,
+    max_gap_months: int | None = None,
 ) -> dict[str, Any]:
     """Return mean TotalDiffFromFirst over time for the cohort defined by filters.
 
@@ -151,6 +152,22 @@ def compute_progression(
     """
     conn = get_conn()
     df = conn.execute(sql, params).df()
+
+    # Optional gap filter: exclude lifters who have any inter-meet gap
+    # longer than max_gap_months. These "comeback" lifters contaminate
+    # progression curves because their long-break gains are averaged
+    # into the same x-buckets as continuous competitors.
+    if max_gap_months is not None and not df.empty:
+        max_gap_days = max_gap_months * 30.44
+        df = df.sort_values(["Name", "DaysFromFirst"])
+        df["_prev_days"] = df.groupby("Name")["DaysFromFirst"].shift(1)
+        df["_gap"] = df["DaysFromFirst"] - df["_prev_days"]
+        # A lifter has a long gap if any of their inter-meet gaps exceed the threshold
+        max_gaps = df.groupby("Name")["_gap"].max()
+        long_gap_names = set(max_gaps[max_gaps > max_gap_days].index)
+        if long_gap_names:
+            df = df[~df["Name"].isin(long_gap_names)]
+        df = df.drop(columns=["_prev_days", "_gap"])
 
     if df.empty:
         return {
