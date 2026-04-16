@@ -33,6 +33,19 @@ export type ProgressionTrend = {
   intercept: number
   unit: string
   r_squared: number
+  residual_std: number
+}
+
+export type CohortProjectionPoint = {
+  x: number
+  y: number
+  upper: number
+  lower: number
+}
+
+export type CohortProjection = {
+  points: CohortProjectionPoint[]
+  unit: string
 }
 
 export type ProgressionResponse = {
@@ -40,6 +53,7 @@ export type ProgressionResponse = {
   x_axis: string
   points: ProgressionPoint[]
   trend: ProgressionTrend | null
+  projection: CohortProjection | null
   n_lifters: number
   n_meets: number
   n_lifters_before_age_filter: number
@@ -189,6 +203,21 @@ export type WeightClassChange = {
   to_class: string
 }
 
+export type ProjectionPoint = {
+  days_from_first: number
+  projected_total: number
+  upper: number
+  lower: number
+}
+
+export type LifterProjection = {
+  slope_kg_per_day: number
+  slope_kg_per_month: number
+  residual_std: number
+  project_months: number
+  points: ProjectionPoint[]
+}
+
 export type LifterHistory = {
   name: string
   found: boolean
@@ -201,6 +230,12 @@ export type LifterHistory = {
   best_total_kg?: number
   rate_kg_per_month?: number | null
   weight_class_changes?: WeightClassChange[]
+  projection?: LifterProjection | null
+  percentile_rank?: {
+    percentile: number
+    cohort_size: number
+    cohort_desc: string
+  } | null
   meets: LifterMeet[]
 }
 

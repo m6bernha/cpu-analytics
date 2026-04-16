@@ -309,11 +309,38 @@ def compute_progression(
             "Months": "month",
             "Years": "year",
         }
+        # Residual std for projection confidence band
+        residuals = y_arr - y_pred
+        residual_std = float(np.std(residuals))
+
         trend = {
             "slope": float(coeffs[0]),
             "intercept": float(coeffs[1]),
             "unit": unit_map[x_axis],
             "r_squared": round(r_squared, 4),
+            "residual_std": round(residual_std, 2),
+        }
+
+    # Cohort projection: extend the trendline forward with confidence band.
+    projection = None
+    if trend is not None:
+        last_x = int(grouped["x"].max())
+        project_steps = 4
+        projection_points = []
+        for i in range(1, project_steps + 1):
+            future_x = last_x + i
+            pred_y = trend["slope"] * future_x + trend["intercept"]
+            # Confidence widens with distance from data center
+            band = trend["residual_std"] * (1 + i * 0.2)
+            projection_points.append({
+                "x": future_x,
+                "y": round(pred_y, 2),
+                "upper": round(pred_y + band, 2),
+                "lower": round(pred_y - band, 2),
+            })
+        projection = {
+            "points": projection_points,
+            "unit": trend["unit"],
         }
 
     points = [
@@ -336,4 +363,5 @@ def compute_progression(
         "n_lifters_before_age_filter": n_lifters_before_age_filter,
         "n_all_lifters": n_all_lifters,
         "avg_first_total": avg_first_total,
+        "projection": projection,
     }

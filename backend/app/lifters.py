@@ -182,4 +182,103 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         "rate_kg_per_month": rate_kg_per_month,
         "weight_class_changes": weight_class_changes,
         "meets": meets,
+        "projection": _compute_projection(sbd),
+        "percentile_rank": _compute_percentile(
+            name, first["Sex"], meets[-1]["CanonicalWeightClass"],
+            meets[-1]["Equipment"],
+        ),
+    }
+
+
+def _compute_percentile(
+    name: str,
+    sex: str,
+    weight_class: str | None,
+    equipment: str | None,
+) -> dict[str, Any] | None:
+    """Compute where this lifter's best total ranks in their cohort.
+
+    Cohort = same sex + weight class + equipment, Canada + IPF scope.
+    Returns percentile (0-100, higher = stronger) and cohort size.
+    """
+    if not weight_class or not equipment:
+        return None
+
+    sql = """
+        WITH bests AS (
+            SELECT Name, MAX(TotalKg) AS BestTotal
+            FROM openipf
+            WHERE Sex = ? AND CanonicalWeightClass = ? AND Equipment = ?
+                  AND Country = 'Canada' AND ParentFederation = 'IPF'
+                  AND Event = 'SBD'
+            GROUP BY Name
+        )
+        SELECT
+            COUNT(*) AS cohort_size,
+            SUM(CASE WHEN BestTotal <= (
+                SELECT MAX(TotalKg) FROM openipf
+                WHERE Name = ? AND Event = 'SBD'
+            ) THEN 1 ELSE 0 END) AS rank_below_or_equal
+        FROM bests
+    """
+    row = get_conn().execute(sql, [sex, weight_class, equipment, name]).fetchone()
+    if not row or row[0] == 0:
+        return None
+
+    cohort_size = int(row[0])
+    rank_below = int(row[1])
+    percentile = round(100.0 * rank_below / cohort_size, 1)
+
+    return {
+        "percentile": percentile,
+        "cohort_size": cohort_size,
+        "cohort_desc": f"{sex} {weight_class} kg {equipment} SBD",
+    }
+
+
+def _compute_projection(
+    sbd_meets: list[dict[str, Any]],
+    project_months: int = 12,
+    n_points: int = 6,
+) -> dict[str, Any] | None:
+    """Fit a linear trend to SBD meets and project forward.
+
+    Returns projected points as dashed-line data for the chart, plus a
+    confidence band based on residual standard deviation.
+    """
+    import numpy as _np
+
+    if len(sbd_meets) < 3:
+        return None
+
+    days = _np.array([m["DaysFromFirst"] for m in sbd_meets], dtype=float)
+    totals = _np.array([m["TotalKg"] for m in sbd_meets], dtype=float)
+
+    coeffs = _np.polyfit(days, totals, 1)
+    slope, intercept = float(coeffs[0]), float(coeffs[1])
+
+    # Residual std for confidence band
+    predicted = _np.polyval(coeffs, days)
+    residual_std = float(_np.std(totals - predicted))
+
+    # Project forward from the last meet
+    last_day = float(days[-1])
+    step_days = (project_months * 30.44) / n_points
+    projected_points = []
+    for i in range(1, n_points + 1):
+        future_day = last_day + step_days * i
+        pred_total = slope * future_day + intercept
+        projected_points.append({
+            "days_from_first": round(future_day),
+            "projected_total": round(pred_total, 1),
+            "upper": round(pred_total + residual_std, 1),
+            "lower": round(pred_total - residual_std, 1),
+        })
+
+    return {
+        "slope_kg_per_day": round(slope, 6),
+        "slope_kg_per_month": round(slope * 30.44, 2),
+        "residual_std": round(residual_std, 1),
+        "project_months": project_months,
+        "points": projected_points,
     }

@@ -17,7 +17,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -166,23 +168,66 @@ function LifterDetail({
     [history.meets],
   )
 
-  const chartData = useMemo(
-    () =>
-      sbdMeets.map((m: LifterMeet) => ({
-        date: m.Date,
-        days: m.DaysFromFirst,
-        total: m.TotalKg,
-        meet: m.MeetName ?? '',
-        division: m.Division ?? '',
-        weight_class: m.CanonicalWeightClass ?? '',
-      })),
-    [sbdMeets],
-  )
+  const chartData = useMemo(() => {
+    const actual = sbdMeets.map((m: LifterMeet) => ({
+      date: m.Date,
+      days: m.DaysFromFirst,
+      total: m.TotalKg,
+      projected: null as number | null,
+      upper: null as number | null,
+      lower: null as number | null,
+      meet: m.MeetName ?? '',
+      division: m.Division ?? '',
+      weight_class: m.CanonicalWeightClass ?? '',
+    }))
+
+    // Append projection points if available
+    const proj = history.projection
+    if (proj && proj.points.length > 0 && sbdMeets.length > 0) {
+      // Compute dates from the first meet date
+      const firstDate = new Date(sbdMeets[0].Date)
+      for (const pp of proj.points) {
+        const d = new Date(firstDate)
+        d.setDate(d.getDate() + pp.days_from_first)
+        const iso = d.toISOString().slice(0, 10)
+        actual.push({
+          date: iso,
+          days: pp.days_from_first,
+          total: null as unknown as number,
+          projected: pp.projected_total,
+          upper: pp.upper,
+          lower: pp.lower,
+          meet: '',
+          division: '',
+          weight_class: '',
+        })
+      }
+      // Bridge: add the last actual point as the first projection point
+      // so the dashed line connects to the solid line
+      const lastActual = sbdMeets[sbdMeets.length - 1]
+      const bridgeIdx = actual.length - proj.points.length
+      actual.splice(bridgeIdx, 0, {
+        date: lastActual.Date,
+        days: lastActual.DaysFromFirst,
+        total: lastActual.TotalKg,
+        projected: lastActual.TotalKg,
+        upper: lastActual.TotalKg,
+        lower: lastActual.TotalKg,
+        meet: '',
+        division: '',
+        weight_class: '',
+      })
+    }
+
+    return actual
+  }, [sbdMeets, history.projection])
 
   const nonSbdCount = history.meets.length - sbdMeets.length
 
   // Y axis padding so reference lines don't sit on the edge.
-  const allTotals = chartData.map((d) => d.total)
+  const allTotals = chartData
+    .flatMap((d) => [d.total, d.projected, d.upper, d.lower])
+    .filter((v): v is number => v != null)
   if (regionalsQt) allTotals.push(regionalsQt)
   if (nationalsQt) allTotals.push(nationalsQt)
   const hasChartData = allTotals.length > 0
@@ -217,6 +262,15 @@ function LifterDetail({
               </span>
             )}
           </div>
+          {history.percentile_rank && (
+            <div className="text-zinc-400 text-xs mt-0.5">
+              <span className="text-zinc-200 font-medium">
+                {history.percentile_rank.percentile.toFixed(0)}th
+              </span>
+              {' '}percentile of {history.percentile_rank.cohort_size.toLocaleString()}{' '}
+              {history.percentile_rank.cohort_desc} lifters
+            </div>
+          )}
         </div>
       </div>
 
@@ -303,7 +357,7 @@ function LifterDetail({
       ) : (
       <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
             <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
             <XAxis
               dataKey="date"
@@ -334,7 +388,7 @@ function LifterDetail({
               formatter={(value) =>
                 typeof value === 'number' ? value.toFixed(1) + ' kg' : String(value ?? '—')
               }
-              labelFormatter={(label) => String(label ?? '')}
+              labelFormatter={(label) => fmtDate(String(label ?? ''))}
             />
             <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
             {regionalsQt && (
@@ -353,6 +407,23 @@ function LifterDetail({
                 label={{ value: `Nationals ${ERA_LABEL[era]}`, position: 'right', fill: '#ce9178', fontSize: 11 }}
               />
             )}
+            {/* Projection confidence band (renders behind lines) */}
+            {history.projection && (
+              <Area
+                type="monotone"
+                dataKey={(d: Record<string, unknown>) => {
+                  const u = d.upper as number | null
+                  const l = d.lower as number | null
+                  if (u != null && l != null) return [l, u]
+                  return null
+                }}
+                name="Projection band"
+                fill="#4ec9b0"
+                fillOpacity={0.1}
+                stroke="none"
+                isAnimationActive={false}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="total"
@@ -360,9 +431,23 @@ function LifterDetail({
               stroke="#569cd6"
               strokeWidth={2}
               dot={{ r: 4, fill: '#569cd6' }}
+              connectNulls={false}
               isAnimationActive={false}
             />
-          </LineChart>
+            {history.projection && (
+              <Line
+                type="monotone"
+                dataKey="projected"
+                name="Projected"
+                stroke="#4ec9b0"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={{ r: 3, fill: '#4ec9b0' }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       )}
