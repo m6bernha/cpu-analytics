@@ -450,7 +450,8 @@ function ManualEntryForm({
         </select>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Desktop: one row per meet in a wide table. */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
             <tr className="border-b border-zinc-800">
@@ -514,6 +515,80 @@ function ManualEntryForm({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: one card per meet. The four columns don't fit side-by-side
+          at phone widths, so we stack them in a grid that still keeps Date
+          and Total on the same row (the two fields users always fill). */}
+      <div className="sm:hidden space-y-3">
+        {rows.map((r, i) => (
+          <div
+            key={i}
+            className="border border-zinc-800 rounded p-3 bg-zinc-900/50 relative"
+          >
+            <button
+              onClick={() => removeRow(i)}
+              disabled={rows.length === 1}
+              className="absolute top-2 right-2 text-zinc-500 hover:text-red-400 disabled:opacity-30 text-lg leading-none px-2 py-1"
+              aria-label="Remove meet"
+            >
+              ×
+            </button>
+            <div className="text-zinc-500 text-xs mb-2">Meet #{i + 1}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Date
+                </span>
+                <input
+                  type="date"
+                  value={r.date}
+                  onChange={(e) => updateRow(i, { date: e.target.value })}
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Total (kg)
+                </span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={r.total}
+                  onChange={(e) => updateRow(i, { total: e.target.value })}
+                  placeholder="0.0"
+                  inputMode="decimal"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Class
+                </span>
+                <input
+                  type="text"
+                  value={r.weight_class}
+                  onChange={(e) => updateRow(i, { weight_class: e.target.value })}
+                  placeholder="83"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Meet name
+                </span>
+                <input
+                  type="text"
+                  value={r.meet_name}
+                  onChange={(e) => updateRow(i, { meet_name: e.target.value })}
+                  placeholder="(optional)"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm"
+                />
+              </label>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="flex gap-2 mt-3">
