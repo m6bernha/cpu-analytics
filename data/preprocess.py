@@ -80,9 +80,23 @@ def preprocess_openipf(src: Path, dst: Path) -> int:
 
     df = pd.read_csv(src, low_memory=False, usecols=lambda c: c in KEEP_COLUMNS)
 
-    missing = [c for c in KEEP_COLUMNS if c not in df.columns]
-    if missing:
-        print(f"[openipf] WARNING: source missing columns {missing}")
+    # Fail hard on missing REQUIRED columns. A silent schema regression in
+    # OpenPowerlifting's export must not publish a broken parquet.
+    REQUIRED = {
+        "Name", "Sex", "Event", "Equipment", "WeightClassKg", "TotalKg",
+        "Date", "Country", "Federation", "ParentFederation", "MeetName",
+    }
+    missing_required = sorted(REQUIRED - set(df.columns))
+    if missing_required:
+        raise KeyError(
+            f"OpenIPF CSV is missing required columns: {missing_required}. "
+            f"Aborting preprocess to prevent publishing a broken parquet."
+        )
+
+    # Warn but continue for optional columns.
+    missing_optional = [c for c in KEEP_COLUMNS if c not in df.columns and c not in REQUIRED]
+    if missing_optional:
+        print(f"[openipf] WARNING: source missing optional columns {missing_optional}")
 
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
     df["TotalKg"] = pd.to_numeric(df["TotalKg"], errors="coerce")
