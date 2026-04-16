@@ -32,7 +32,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from backend.app.weight_class import canonical_weight_class  # noqa: E402
+from backend.app.weight_class import canonical_weight_class_bulk  # noqa: E402
 
 
 DATA_DIR = Path(__file__).resolve().parent
@@ -97,8 +97,10 @@ def preprocess_openipf(src: Path, dst: Path) -> int:
     print(f"[openipf] dropped {before - len(df)} rows missing required fields")
 
     df["Sex"] = df["Sex"].astype(str).str.upper().str.strip()
-    df["CanonicalWeightClass"] = df.apply(
-        lambda r: canonical_weight_class(r["Sex"], r["WeightClassKg"]), axis=1
+    # Vectorized canonicalization: ~30x faster than the row-wise apply on the
+    # full OpenIPF export. The weekly GHA workflow benefits most.
+    df["CanonicalWeightClass"] = canonical_weight_class_bulk(
+        df["Sex"], df["WeightClassKg"]
     )
     before = len(df)
     df = df.dropna(subset=["CanonicalWeightClass"])
