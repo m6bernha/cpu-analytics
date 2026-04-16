@@ -14,7 +14,7 @@
 // 2025 and 2027 standards.
 
 import { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import {
   CartesianGrid,
@@ -541,20 +541,307 @@ function ManualEntryForm({
   )
 }
 
+// ---------- Compare mode: color palette for multi-lifter chart ----------
+
+const COMPARE_COLORS = ['#569cd6', '#ce9178', '#4ec9b0', '#c586c0']
+const MAX_COMPARE = 4
+
+function CompareView({
+  compareNames,
+  addCompare,
+  removeCompare,
+  query,
+  setQuery,
+  debouncedQuery,
+  searchResults,
+  searchIsFetching,
+  searchError,
+}: {
+  compareNames: string[]
+  addCompare: (name: string) => void
+  removeCompare: (name: string) => void
+  query: string
+  setQuery: (q: string) => void
+  debouncedQuery: string
+  searchResults: LifterSearchResult[] | undefined
+  searchIsFetching: boolean
+  searchError: unknown
+}) {
+  const historyQueries = useQueries({
+    queries: compareNames.map((name) => ({
+      queryKey: ['lifter-history', name],
+      queryFn: () => fetchLifterHistory(name),
+      enabled: !!name,
+    })),
+  })
+
+  // Each lifter's trajectory is re-anchored to months-from-their-own-first-SBD-meet
+  // so the comparison is about progression rate, not calendar alignment.
+  const series = useMemo(() => {
+    return compareNames.map((name, i) => {
+      const q = historyQueries[i]
+      const color = COMPARE_COLORS[i % COMPARE_COLORS.length]
+      if (!q.data || !q.data.found) {
+        return { name, color, points: [], loading: q.isLoading, error: q.error }
+      }
+      const sbd = q.data.meets.filter((m) => m.Event === 'SBD')
+      if (sbd.length === 0) {
+        return { name, color, points: [], loading: false, noSbd: true }
+      }
+      const firstDays = sbd[0].DaysFromFirst
+      return {
+        name,
+        color,
+        loading: false,
+        points: sbd.map((m) => ({
+          months: Math.round((m.DaysFromFirst - firstDays) / 30.44),
+          total: m.TotalKg,
+          date: m.Date,
+          meet: m.MeetName ?? '',
+        })),
+      }
+    })
+  }, [compareNames, historyQueries])
+
+  const allTotals = series.flatMap((s) => s.points.map((p) => p.total))
+  const allMonths = series.flatMap((s) => s.points.map((p) => p.months))
+  const hasData = allTotals.length > 0
+  const yMin = hasData
+    ? Math.floor((Math.min(...allTotals) - 25) / 25) * 25
+    : 0
+  const yMax = hasData
+    ? Math.ceil((Math.max(...allTotals) + 25) / 25) * 25
+    : 100
+  const xMax = hasData ? Math.max(...allMonths) + 1 : 12
+  const anyLoading = historyQueries.some((q) => q.isLoading)
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left pane: chips + search */}
+      <div className="lg:col-span-1">
+        {compareNames.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {series.map((s) => (
+              <span
+                key={s.name}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border"
+                style={{ borderColor: s.color }}
+              >
+                <span style={{ color: s.color }}>●</span>
+                <span className="text-zinc-200">{s.name}</span>
+                <button
+                  onClick={() => removeCompare(s.name)}
+                  className="ml-1 text-zinc-500 hover:text-red-400"
+                  aria-label={`Remove ${s.name}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {compareNames.length < MAX_COMPARE ? (
+          <>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Add lifter (${compareNames.length}/${MAX_COMPARE})`}
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+              autoFocus={compareNames.length === 0}
+            />
+            <div className="mt-4">
+              {query.trim().length > 0 && query.trim().length < 2 && (
+                <p className="text-zinc-500 text-sm">Type at least 2 characters.</p>
+              )}
+              {searchIsFetching && debouncedQuery.trim().length >= 2 && (
+                <p className="text-zinc-500 text-sm">Searching…</p>
+              )}
+              {searchError != null && (
+                <p className="text-red-400 text-sm">
+                  Error: {(searchError as Error).message}
+                </p>
+              )}
+              {searchResults && searchResults.length === 0 && !searchIsFetching && (
+                <p className="text-zinc-500 text-sm">No lifters match that name.</p>
+              )}
+              {searchResults && searchResults.length > 0 && (
+                <ul className="divide-y divide-zinc-800">
+                  {searchResults.map((lifter) => {
+                    const already = compareNames.includes(lifter.Name)
+                    return (
+                      <li key={lifter.Name}>
+                        <button
+                          onClick={() => {
+                            if (!already) {
+                              addCompare(lifter.Name)
+                              setQuery('')
+                            }
+                          }}
+                          disabled={already}
+                          className={
+                            'w-full text-left py-2 px-2 -mx-2 rounded transition-colors ' +
+                            (already
+                              ? 'opacity-40 cursor-not-allowed'
+                              : 'hover:bg-zinc-900')
+                          }
+                        >
+                          <div className="text-zinc-100 text-sm">
+                            {lifter.Name}
+                            {already && (
+                              <span className="text-zinc-500 text-xs ml-2">(added)</span>
+                            )}
+                          </div>
+                          <div className="text-zinc-500 text-xs mt-0.5">
+                            {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
+                            {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
+                          </div>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-zinc-500 text-xs">
+            Max {MAX_COMPARE} lifters per comparison. Remove one to add another.
+          </p>
+        )}
+      </div>
+
+      {/* Right pane: chart */}
+      <div className="lg:col-span-2">
+        {compareNames.length === 0 ? (
+          <div className="text-zinc-500 text-sm">
+            Add lifters from the search at left to compare their SBD trajectories.
+            Each lifter's curve starts at month 0 (their own first full-power meet)
+            so you're comparing progression rates, not calendar dates.
+          </div>
+        ) : !hasData && anyLoading ? (
+          <div className="text-zinc-500 text-sm">Loading trajectories…</div>
+        ) : !hasData ? (
+          <div className="text-zinc-500 text-sm">
+            None of the selected lifters have SBD meets in the dataset.
+          </div>
+        ) : (
+          <div className="h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
+                <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="months"
+                  stroke="#a1a1aa"
+                  domain={[0, xMax]}
+                  label={{
+                    value: 'Months from first SBD meet',
+                    position: 'insideBottom',
+                    offset: -16,
+                    fill: '#a1a1aa',
+                  }}
+                />
+                <YAxis
+                  stroke="#a1a1aa"
+                  domain={[yMin, yMax]}
+                  label={{
+                    value: 'Total (kg)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 10,
+                    fill: '#a1a1aa',
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#18181b',
+                    border: '1px solid #3f3f46',
+                    color: '#e4e4e7',
+                  }}
+                  formatter={(value) =>
+                    typeof value === 'number' ? value.toFixed(1) + ' kg' : String(value ?? '—')
+                  }
+                  labelFormatter={(label) => `${label} months`}
+                />
+                <Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />
+                {series.map((s) =>
+                  s.points.length > 0 ? (
+                    <Line
+                      key={s.name}
+                      data={s.points}
+                      dataKey="total"
+                      name={s.name}
+                      stroke={s.color}
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: s.color }}
+                      isAnimationActive={false}
+                    />
+                  ) : null,
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ---------- Tab component ----------
 
-type Mode = 'search' | 'manual'
+type Mode = 'search' | 'compare' | 'manual'
+
+const MODE_LABELS: Record<Mode, string> = {
+  search: 'Search',
+  compare: 'Compare',
+  manual: 'Manual entry',
+}
+
+function parseMode(raw: string): Mode {
+  if (raw === 'manual' || raw === 'compare') return raw
+  return 'search'
+}
+
+function parseLifters(raw: string): string[] {
+  if (!raw) return []
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, MAX_COMPARE)
+}
 
 export default function LifterLookup() {
-  // mode + selected lifter live in the URL so links like
-  // ?tab=lookup&lifter=Matthias%20Bernhard deep-link directly to a lifter
-  // and links like ?tab=lookup&mode=manual open the manual entry form.
-  const [urlState, setUrlState] = useUrlState({ mode: 'search', lifter: '' })
-  const mode: Mode = urlState.mode === 'manual' ? 'manual' : 'search'
+  // URL state covers all shareable lookup views:
+  //   ?tab=lookup                                  -> search, nothing selected
+  //   ?tab=lookup&lifter=Matthias%20Bernhard       -> deep-link to a lifter
+  //   ?tab=lookup&mode=compare&lifters=A,B,C       -> multi-lifter comparison
+  //   ?tab=lookup&mode=manual                      -> manual trajectory form
+  const [urlState, setUrlState] = useUrlState({
+    mode: 'search',
+    lifter: '',
+    lifters: '',
+  })
+  const mode: Mode = parseMode(urlState.mode)
   const selectedName: string | null = urlState.lifter ? urlState.lifter : null
+  const compareNames: string[] = useMemo(
+    () => parseLifters(urlState.lifters),
+    [urlState.lifters],
+  )
   const setMode = (m: Mode) => setUrlState({ mode: m })
   const setSelectedName = (name: string | null) =>
     setUrlState({ lifter: name ?? '' })
+  const setCompareNames = (names: string[]) =>
+    setUrlState({ lifters: names.slice(0, MAX_COMPARE).join(',') })
+  const addCompare = (name: string) => {
+    if (compareNames.includes(name)) return
+    if (compareNames.length >= MAX_COMPARE) return
+    setCompareNames([...compareNames, name])
+  }
+  const removeCompare = (name: string) =>
+    setCompareNames(compareNames.filter((n) => n !== name))
 
   // Search query stays as ephemeral local state — URL-backing every keystroke
   // would flood history.
@@ -602,8 +889,8 @@ export default function LifterLookup() {
             to project a trajectory.
           </p>
         </div>
-        <div className="flex gap-1">
-          {(['search', 'manual'] as const).map((m) => (
+        <div className="flex gap-1 flex-wrap">
+          {(['search', 'compare', 'manual'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -614,13 +901,13 @@ export default function LifterLookup() {
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
               }
             >
-              {m === 'search' ? 'Search' : 'Manual entry'}
+              {MODE_LABELS[m]}
             </button>
           ))}
         </div>
       </div>
 
-      {mode === 'search' ? (
+      {mode === 'search' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left pane: search */}
           <div className="lg:col-span-1">
@@ -704,7 +991,23 @@ export default function LifterLookup() {
             )}
           </div>
         </div>
-      ) : (
+      )}
+
+      {mode === 'compare' && (
+        <CompareView
+          compareNames={compareNames}
+          addCompare={addCompare}
+          removeCompare={removeCompare}
+          query={query}
+          setQuery={setQuery}
+          debouncedQuery={debouncedQuery}
+          searchResults={searchQuery.data}
+          searchIsFetching={searchQuery.isFetching}
+          searchError={searchQuery.error}
+        />
+      )}
+
+      {mode === 'manual' && (
         <ManualEntryForm
           onSubmit={(req) => manualMutation.mutate(req)}
           pending={manualMutation.isPending}
