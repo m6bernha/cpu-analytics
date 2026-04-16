@@ -108,6 +108,14 @@ specifically, not the first meet of any kind.
 - **TanStack Query caching**: every query that feels "static" (filters, qt-blocks, qt-standards) uses `staleTime: 10 * 60 * 1000` with `retry: 3`, not `staleTime: Infinity`. Infinity caches bad cold-start responses forever — the empty-equipment regression taught us this. The `fetchFilters` fetcher additionally validates that required arrays are non-empty and throws on partial data, so retry kicks in for partial responses too.
 - **FastAPI startup warms DuckDB.** `backend/app/main.py` registers a `lifespan` handler that runs `SELECT COUNT(*)` against both views at app start. This forces parquet reads into the boot window rather than the first user request. If you add a new parquet or new view, extend the warmup to touch it.
 - **Chart legends at top, not bottom.** Recharts defaults the legend to `verticalAlign='bottom'`, which overlaps the x-axis label. Every chart in this app uses `<Legend verticalAlign="top" height={28} wrapperStyle={{ paddingBottom: 4 }} />`. Keep this convention on new charts.
+- **PR detection is per-Event.** `lifters.py` marks `is_pr=True` if the meet's TotalKg exceeds all prior meets of the same Event type (SBD vs B vs BD etc). This prevents bench-only PRs from being compared against full-power totals.
+- **Comeback filter (max_gap_months).** Progression endpoint accepts an optional `max_gap_months` int param. When set, lifters with any inter-meet gap exceeding that threshold are excluded from the cohort before aggregation. The frontend exposes this as a dropdown (Off/6/12/18/24/36).
+- **Std dev band on Progression chart.** Uses Recharts `Area` with `dataKey="stdBand"` (a [y-std, y+std] tuple per point). The backend computes `std` per x-bucket alongside `mean`. The chart uses `ComposedChart` (not `LineChart`) to support both Area and Line.
+
+## Pre-push checklist
+
+- `cd frontend && npm run build` -- catches TypeScript strict errors.
+- `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` -- 25 tests covering progression (age category baseline, division filter, edge cases) and lifter search/history (search, PR detection, event types).
 
 ## Scope
 
@@ -134,10 +142,19 @@ Backend defaults enforce Country=Canada, ParentFederation=IPF (see `backend/app/
 ## Roadmap
 
 The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toasting-lightning.md`.
-Phases 0-1 (bug fixes + data integrity) landed 2026-04-15. Remaining phases cover
-trendline quality (std dev bands, R-squared), comeback lifter handling, per-lifter
-metrics (QT proximity, PR detection, lift ratios), weight class migration tracking,
-and individual trajectory prediction. See the plan file for details and file paths.
+
+**Phases 0-6 shipped (2026-04-15/16):**
+- Phase 0: Five frontend bug fixes (Division reload, copy feedback, autoFocus, null guard, query persist)
+- Phase 1: Critical age_category baseline fix + 25 pytest tests
+- Phase 2: Mobile polish (QT column hiding, back button, date axis, touch dots, tab persistence)
+- Phase 3: Division from API, CompareView perf fix, Dots column
+- Phase 4: R-squared, std dev band, age data loss indicator, survivorship note
+- Phase 5: Comeback lifter gap detection (max_gap_months filter)
+- Phase 6: Per-lifter metrics (QT proximity, rate of improvement, PR detection, lift ratios)
+
+**Phases 7-8 remaining:**
+- Phase 7: Weight class migration tracking
+- Phase 8: Prediction/extrapolation (individual trajectory projection, cohort confidence intervals, percentile rank)
 
 ## When extending this
 
