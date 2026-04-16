@@ -213,15 +213,16 @@ def compute_progression(
             "projection": None,
         }
 
+    # Track pre-age-filter count BEFORE same_class_only + age filter so the
+    # "dropped due to missing Age" message isn't contaminated by the
+    # same-class filter's drops.
+    n_lifters_before_age_filter = int(df["Name"].nunique())
+
     # Optional same-class filter: only keep lifters who stayed in the same
     # weight class for their entire career in scope. ClassCount is computed
     # in the SQL as COUNT(DISTINCT CanonicalWeightClass) per lifter.
     if same_class_only and not df.empty and "ClassCount" in df.columns:
         df = df[df["ClassCount"] == 1]
-
-    # Track pre-age-filter count so the frontend can show how much data
-    # the sparse Age column costs the user.
-    n_lifters_before_age_filter = int(df["Name"].nunique())
 
     # Apply optional age category filter in pandas — Age is sparse and the
     # category boundaries don't align with any column literal in the dataset.

@@ -286,7 +286,14 @@ def compute_blocks(
         }
     )
 
-    blocks: dict = {}
+    # Always return all four block keys so the frontend can iterate
+    # BLOCK_ORDER without crashing on undefined.map.
+    blocks: dict = {
+        "M_Nationals": [],
+        "M_Regionals": [],
+        "F_Nationals": [],
+        "F_Regionals": [],
+    }
     for (sex, level), group in slim.groupby(["Sex", "Level"], observed=True):
         key = f"{sex}_{level}"
         blocks[key] = group[

@@ -220,7 +220,7 @@ export type LifterMeet = {
   Age: number | null
   CanonicalWeightClass: string | null
   Date: string  // ISO yyyy-mm-dd
-  TotalKg: number
+  TotalKg: number | null
   Best3SquatKg: number | null
   Best3BenchKg: number | null
   Best3DeadliftKg: number | null

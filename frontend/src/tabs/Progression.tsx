@@ -442,7 +442,9 @@ export default function Progression() {
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_lifters.toLocaleString()}</span> of{' '}
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_all_lifters.toLocaleString()}</span> lifters
                 <span className="text-zinc-500 ml-1">
-                  ({Math.round(100 * progQuery.data.n_lifters / progQuery.data.n_all_lifters)}% returned for 2+ meets)
+                  ({progQuery.data.n_all_lifters > 0
+                    ? `${Math.round(100 * progQuery.data.n_lifters / progQuery.data.n_all_lifters)}% returned for 2+ meets`
+                    : 'no lifters in scope'})
                 </span>
               </div>
               <div>
@@ -580,7 +582,7 @@ export default function Progression() {
                 </p>
                 <p>
                   <span className="text-zinc-400 font-medium">Trendline:</span> Ordinary
-                  least-squares linear fit on x-values with 5+ distinct lifters, unweighted.
+                  least-squares linear fit on x-values with 5+ distinct lifters, weighted by lifter count so dense early years dominate the slope.
                   R-squared measures how well the line fits the averaged points, not
                   individual lifter trajectories.
                 </p>

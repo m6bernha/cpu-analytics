@@ -182,15 +182,17 @@ function LifterDetail({
       weight_class: m.CanonicalWeightClass ?? '',
     }))
 
-    // Append projection points if available
+    // Append projection points if available. Compute dates using UTC math
+    // to avoid DST drift (matching fmtDate's parse-from-ISO convention).
     const proj = history.projection
     if (proj && proj.points.length > 0 && sbdMeets.length > 0) {
-      // Compute dates from the first meet date
-      const firstDate = new Date(sbdMeets[0].Date)
+      const firstDateStr = sbdMeets[0].Date
+      const [fy, fm, fd] = firstDateStr.slice(0, 10).split('-').map(Number)
+      const firstUtcMs = Date.UTC(fy, fm - 1, fd)
       for (const pp of proj.points) {
-        const d = new Date(firstDate)
-        d.setDate(d.getDate() + pp.days_from_first)
-        const iso = d.toISOString().slice(0, 10)
+        const futureUtcMs = firstUtcMs + pp.days_from_first * 86_400_000
+        const d = new Date(futureUtcMs)
+        const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
         actual.push({
           date: iso,
           days: pp.days_from_first,
@@ -601,7 +603,7 @@ function LifterDetail({
                   ? 'py-2 pl-2 text-right tabular-nums text-zinc-500'
                   : 'py-2 pl-2 text-right tabular-nums'
                 const delta =
-                  isSbd && firstSbdTotal != null
+                  isSbd && firstSbdTotal != null && m.TotalKg != null
                     ? m.TotalKg - firstSbdTotal
                     : null
                 return (
@@ -966,7 +968,9 @@ function CompareView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compareNames.join(','), ...queryData, ...queryLoading])
 
-  const allTotals = series.flatMap((s) => s.points.map((p) => p.total))
+  const allTotals = series
+    .flatMap((s) => s.points.map((p) => p.total))
+    .filter((t): t is number => t != null)
   const allMonths = series.flatMap((s) => s.points.map((p) => p.months))
   const hasData = allTotals.length > 0
   const yMin = hasData

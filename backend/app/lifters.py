@@ -178,7 +178,7 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         "latest_equipment": meets[-1]["Equipment"],
         "latest_weight_class": meets[-1]["CanonicalWeightClass"],
         "meet_count": len(meets),
-        "best_total_kg": float(max(m["TotalKg"] for m in meets if m.get("TotalKg") is not None)),
+        "best_total_kg": _safe_best(meets),
         "rate_kg_per_month": rate_kg_per_month,
         "weight_class_changes": weight_class_changes,
         "meets": meets,
@@ -188,6 +188,12 @@ def get_lifter_history(name: str) -> dict[str, Any]:
             meets[-1]["Equipment"],
         ),
     }
+
+
+def _safe_best(meets: list[dict[str, Any]]) -> float | None:
+    """Best TotalKg across meets, ignoring nulls. None if no valid totals."""
+    vals = [m["TotalKg"] for m in meets if m.get("TotalKg") is not None]
+    return float(max(vals)) if vals else None
 
 
 def _compute_percentile(
@@ -204,6 +210,9 @@ def _compute_percentile(
     if not weight_class or not equipment:
         return None
 
+    # Lifter's best must be scoped to the same cohort (sex, class, equipment,
+    # Canada+IPF, SBD) as the comparison group — otherwise a dual-fed lifter
+    # could be ranked against an out-of-scope best.
     sql = """
         WITH bests AS (
             SELECT Name, MAX(TotalKg) AS BestTotal
@@ -212,16 +221,20 @@ def _compute_percentile(
                   AND Country = 'Canada' AND ParentFederation = 'IPF'
                   AND Event = 'SBD'
             GROUP BY Name
+        ),
+        self_best AS (
+            SELECT MAX(TotalKg) AS b
+            FROM openipf
+            WHERE Name = ? AND Sex = ? AND CanonicalWeightClass = ?
+                  AND Equipment = ? AND Country = 'Canada'
+                  AND ParentFederation = 'IPF' AND Event = 'SBD'
         )
         SELECT
             COUNT(*) AS cohort_size,
-            SUM(CASE WHEN BestTotal <= (
-                SELECT MAX(TotalKg) FROM openipf
-                WHERE Name = ? AND Event = 'SBD'
-            ) THEN 1 ELSE 0 END) AS rank_below_or_equal
+            SUM(CASE WHEN BestTotal <= (SELECT b FROM self_best) THEN 1 ELSE 0 END) AS rank_below_or_equal
         FROM bests
     """
-    row = get_conn().execute(sql, [sex, weight_class, equipment, name]).fetchone()
+    row = get_conn().execute(sql, [sex, weight_class, equipment, name, sex, weight_class, equipment]).fetchone()
     if not row or row[0] == 0:
         return None
 

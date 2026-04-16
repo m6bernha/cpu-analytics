@@ -25,10 +25,31 @@ function writeUrl(params: URLSearchParams) {
   window.dispatchEvent(new Event(URL_EVENT))
 }
 
+// Invariant: each useUrlState instance owns a DISJOINT set of URL keys.
+// Multiple components sharing the same URL key will stomp on each other
+// because each only writes its own keys but reads all of them via the
+// URL_EVENT sync. This registry catches collisions in dev.
+const _registeredKeys = new Set<string>()
+
 export function useUrlState<T extends Record<string, string>>(
   defaults: T,
 ): [T, (patch: Partial<T>) => void] {
   const keys = Object.keys(defaults) as (keyof T)[]
+
+  // One-time collision check (dev only).
+  if (typeof window !== 'undefined' && import.meta.env?.DEV) {
+    for (const k of keys) {
+      const kStr = k as string
+      if (_registeredKeys.has(kStr)) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[useUrlState] key "${kStr}" is registered by more than one component. ` +
+          `Instances will stomp each other's URL state.`,
+        )
+      }
+      _registeredKeys.add(kStr)
+    }
+  }
 
   const read = useCallback((): T => {
     const params = readParams()
