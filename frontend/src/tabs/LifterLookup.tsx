@@ -246,7 +246,7 @@ function LifterDetail({
           their bench-only or other meets.
         </div>
       ) : (
-      <div className="h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
+      <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
             <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
@@ -308,17 +308,19 @@ function LifterDetail({
       </div>
       )}
 
-      {/* Meet table */}
+      {/* Meet table. On phones we hide Class, Division, and S/B/D — Date +
+          Meet + Event + Total + Δ is enough at small widths. The full table
+          returns at sm:. */}
       <div className="mt-6 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
             <tr className="border-b border-zinc-800">
-              <th className="text-left py-2 pr-4 font-normal">Date</th>
-              <th className="text-left py-2 pr-4 font-normal">Meet</th>
-              <th className="text-left py-2 pr-3 font-normal">Event</th>
-              <th className="text-left py-2 pr-4 font-normal">Class</th>
-              <th className="text-left py-2 pr-4 font-normal">Division</th>
-              <th className="text-right py-2 pl-2 font-normal">S / B / D</th>
+              <th className="text-left py-2 pr-3 font-normal">Date</th>
+              <th className="text-left py-2 pr-3 font-normal">Meet</th>
+              <th className="text-left py-2 pr-2 font-normal">Event</th>
+              <th className="text-left py-2 pr-3 font-normal hidden sm:table-cell">Class</th>
+              <th className="text-left py-2 pr-3 font-normal hidden md:table-cell">Division</th>
+              <th className="text-right py-2 pl-2 font-normal hidden sm:table-cell">S / B / D</th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>
@@ -344,10 +346,10 @@ function LifterDetail({
                     : null
                 return (
                   <tr key={i} className={rowClass}>
-                    <td className="py-2 pr-4 whitespace-nowrap">{fmtDate(m.Date)}</td>
-                    <td className="py-2 pr-4">{m.MeetName ?? '—'}</td>
+                    <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(m.Date)}</td>
+                    <td className="py-2 pr-3">{m.MeetName ?? '—'}</td>
                     <td
-                      className="py-2 pr-3 whitespace-nowrap"
+                      className="py-2 pr-2 whitespace-nowrap"
                       title={eventTitle(m.Event)}
                     >
                       <span
@@ -361,11 +363,11 @@ function LifterDetail({
                         {eventLabel(m.Event)}
                       </span>
                     </td>
-                    <td className="py-2 pr-4 whitespace-nowrap">
+                    <td className="py-2 pr-3 whitespace-nowrap hidden sm:table-cell">
                       {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
                     </td>
-                    <td className="py-2 pr-4">{m.Division ?? '—'}</td>
-                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap">
+                    <td className="py-2 pr-3 hidden md:table-cell">{m.Division ?? '—'}</td>
+                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
                     <td className={totalCellClass}>{m.TotalKg.toFixed(1)}</td>
@@ -727,7 +729,7 @@ function CompareView({
             None of the selected lifters have SBD meets in the dataset.
           </div>
         ) : (
-          <div className="h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+          <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
                 <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />

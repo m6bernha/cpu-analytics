@@ -10,7 +10,7 @@
 // The trendline is computed client-side from slope/intercept returned by the
 // backend, so it spans the full x range and doesn't wiggle through noise.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import {
@@ -157,11 +157,36 @@ export default function Progression() {
 
   const f = filtersQuery.data
 
+  // Mobile: collapse the filter panel behind a toggle, since 8 dropdowns on a
+  // phone dominate the first screen. Desktop (`md:`): always show expanded.
+  const [filtersOpenMobile, setFiltersOpenMobile] = useState(false)
+
+  const filterSummary = useMemo(() => {
+    const bits = [
+      filters.sex,
+      filters.weight_class,
+      filters.equipment,
+      filters.event,
+    ].filter(Boolean)
+    return bits.join(' · ')
+  }, [filters])
+
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* ---- Filter panel ---- */}
       <aside className="w-full md:w-64 md:shrink-0">
-        <h2 className="text-zinc-200 text-sm font-semibold mb-3">Filters</h2>
+        <div className="flex items-center justify-between mb-3 md:block">
+          <h2 className="text-zinc-200 text-sm font-semibold">Filters</h2>
+          <button
+            type="button"
+            onClick={() => setFiltersOpenMobile((v) => !v)}
+            className="md:hidden text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded border border-zinc-800 bg-zinc-900"
+            aria-expanded={filtersOpenMobile}
+          >
+            {filtersOpenMobile ? 'Hide' : `Show · ${filterSummary}`}
+          </button>
+        </div>
+        <div className={(filtersOpenMobile ? 'block' : 'hidden') + ' md:block'}>
         {filtersQuery.isLoading && (
           <div className="text-zinc-500 text-sm">
             Loading filters…
@@ -227,6 +252,7 @@ export default function Progression() {
             />
           </>
         )}
+        </div>
       </aside>
 
       {/* ---- Chart area ---- */}
@@ -278,7 +304,7 @@ export default function Progression() {
               )}
             </div>
 
-            <div className="h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+            <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
