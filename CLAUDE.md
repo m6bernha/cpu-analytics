@@ -122,7 +122,13 @@ specifically, not the first meet of any kind.
 - **TotalKg can be null** in LifterMeet. DQ / bombed / bench-only meets may have null totals. Frontend guards with `!= null` before arithmetic; backend `_safe_best` returns None on empty.
 - **Per-lift cohort progression** requires all three lift columns non-null, so this view is SBD-only in practice. A bench-only meet row cannot contribute because the SQL's `WHERE Best3SquatKg IS NOT NULL AND Best3BenchKg IS NOT NULL AND Best3DeadliftKg IS NOT NULL` excludes it. For individual lifter per-lift view, partial events DO contribute to whichever lift(s) they provide, because the frontend renders each lift as an independent Line with `connectNulls`.
 - **Projection date math uses UTC.** `new Date(iso)` + `setDate()` drifts across DST. All date arithmetic uses `Date.UTC` to match the `fmtDate` ISO-parse convention elsewhere.
-- **useUrlState collision guard** warns in dev if two components register the same URL key. Components must own DISJOINT key sets.
+- **useUrlState collision guard** warns in dev if two components register the same URL key. Components must own DISJOINT key sets. Uses ref-counted Map (not Set) so StrictMode double-mount in dev doesn't false-positive.
+- **ErrorBoundary wraps each tab.** A render-phase crash in one tab shows a recoverable error panel with a "Try again" button, while the other tabs remain usable.
+- **Manual trajectory is hardened.** entries list capped at 200, kg fields capped at 2000, dates restricted to 1960 through next year, sex must match ^[MF]$, all string fields have max_length. Protects the public POST endpoint from DoS.
+- **Search wildcards are escaped.** `q.replace('%', '\\%')` + `ESCAPE '\\'` on the LIKE clause. Query term capped at 50 chars. A search of `%%%%%` cannot force a full-table scan.
+- **Data loader uses unique temp files.** `tempfile.NamedTemporaryFile` prevents concurrent cold-start downloads from stomping each other's partial writes.
+- **Corrupt-parquet self-heal.** Lifespan warmup deletes local parquet files if any view comes back 0-rows, so the next cold-start re-downloads rather than serving broken data indefinitely.
+- **accessibility:** nav has `role="tablist"` with `aria-selected`; search inputs have `aria-label`.
 
 ## Pre-push checklist
 
@@ -170,9 +176,14 @@ The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toast
 - Phase 8: Prediction (individual projection, cohort projection with widening CI, percentile rank)
 - Phase 9: Per-lift (S/B/D) curves for cohort + individual lifter
 
-**Audit round (2026-04-16):** 10 bugs found and fixed including scope bug in
-percentile subquery, NaN% rendering, missing QT block keys, null TotalKg
-crashes, DuckDB thread safety, and stale trendline copy. 36 tests pass.
+**Audit rounds (2026-04-16):**
+- Round 1: 10 bugs fixed (percentile scope, NaN%, QT block keys, null TotalKg,
+  DuckDB thread safety via cursor(), stale copy)
+- Round 2: 8 hardening fixes (manual DoS guards, LIKE escaping, data_loader
+  temp file race, Math.min spread antipattern, useUrlState ref-counting,
+  corrupt-parquet recovery, ErrorBoundary, aria-labels)
+- **63 tests passing** across progression, lifters, projection, qt, manual,
+  and security modules.
 
 ## When extending this
 
