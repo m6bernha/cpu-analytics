@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
 from .data import get_cursor
@@ -14,6 +15,7 @@ MEN_CLASSES = ["59", "66", "74", "83", "93", "105", "120", "120+"]
 WOMEN_CLASSES = ["47", "52", "57", "63", "69", "76", "84", "84+"]
 
 
+@lru_cache(maxsize=1)
 def get_filters() -> dict[str, Any]:
     conn = get_cursor()
 

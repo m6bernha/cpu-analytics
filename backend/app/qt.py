@@ -11,6 +11,7 @@ Canada/CPU/Raw/Tested/SBD scope.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -92,6 +93,63 @@ def pct_meeting_qt(best_df: pd.DataFrame, qt_value: float) -> float:
 # LOADERS
 # =========================
 
+def _load_best_totals_per_era(
+    conn,
+    country: str = DEFAULT_COUNTRY,
+    federation: str = "CPU",
+    equipment: str = "Raw",
+    tested: str = "Yes",
+    event: str = "SBD",
+    age_filter: str = "open",
+) -> pd.DataFrame:
+    """Per-lifter best TotalKg within each era + 24mo window, in SQL.
+
+    Returns a tiny aggregated DataFrame (one row per lifter per window)
+    instead of pulling the full scope into pandas. Much cheaper on the
+    512 MB Render instance.
+
+    Era windows:
+      pre2025: Date < 2025-01-01
+      era2025: 2025-01-01 <= Date < 2027-01-01
+      era2027: Date >= 2027-01-01
+      nat24_2024: 2022-03-01 <= Date < 2024-03-01 (24mo to 2024 nats)
+      nat24_2025: 2023-03-01 <= Date < 2025-03-01
+      nat24_2027: 2025-03-01 <= Date < 2027-03-01
+    """
+    clauses = [
+        "Country = ?",
+        "Federation = ?",
+        "Equipment = ?",
+        "Tested = ?",
+        "Event = ?",
+    ]
+    params: list = [country, federation, equipment, tested, event]
+    if age_filter == "open":
+        clauses.append("Division = ?")
+        params.append("Open")
+    elif age_filter != "all":
+        raise ValueError(f"Unknown age_filter: {age_filter}")
+    where_sql = " AND ".join(clauses)
+
+    sql = f"""
+        SELECT
+            Sex,
+            CanonicalWeightClass AS WeightClass,
+            Name,
+            MAX(CASE WHEN Date < DATE '2025-01-01' THEN TotalKg END) AS best_pre2025,
+            MAX(CASE WHEN Date >= DATE '2025-01-01' AND Date < DATE '2027-01-01' THEN TotalKg END) AS best_2025,
+            MAX(CASE WHEN Date >= DATE '2027-01-01' THEN TotalKg END) AS best_2027,
+            MAX(CASE WHEN Date >= DATE '2022-03-01' AND Date < DATE '2024-03-01' THEN TotalKg END) AS best_nat24_2024,
+            MAX(CASE WHEN Date >= DATE '2023-03-01' AND Date < DATE '2025-03-01' THEN TotalKg END) AS best_nat24_2025,
+            MAX(CASE WHEN Date >= DATE '2025-03-01' AND Date < DATE '2027-03-01' THEN TotalKg END) AS best_nat24_2027
+        FROM openipf
+        WHERE {where_sql}
+        GROUP BY Sex, CanonicalWeightClass, Name
+    """
+    return conn.execute(sql, params).df()
+
+
+# Kept for backwards compat with any external callers + the old test path.
 def _load_scope(
     conn,
     country: str = DEFAULT_COUNTRY,
@@ -160,56 +218,65 @@ def compute_coverage(
     event: str = "SBD",
     age_filter: str = "open",
 ) -> pd.DataFrame:
-    # One cursor for the whole computation so any intermediate helper
-    # shares the same result-set lifetime.
+    # One cursor for the whole computation; aggregation is done in SQL
+    # so we only pull the per-lifter max-per-era table (~few thousand
+    # rows) into pandas, not the full scope.
     conn = get_cursor()
-    openipf = _load_scope(conn, country, federation, equipment, tested, event, age_filter)
+    bests = _load_best_totals_per_era(
+        conn, country, federation, equipment, tested, event, age_filter,
+    )
     qt = _load_qt_standards(conn)
 
     results = []
-    standards = [
-        ("pre2025", "QT_pre2025"),
-        ("2025", "QT_2025"),
-        ("2027", "QT_2027"),
-    ]
+    # Map standard_key -> (all-era column, 24mo column)
+    era_cols = {
+        "pre2025": ("best_pre2025", "best_nat24_2024"),
+        "2025": ("best_2025", "best_nat24_2025"),
+        "2027": ("best_2027", "best_nat24_2027"),
+    }
+    qt_cols = {"pre2025": "QT_pre2025", "2025": "QT_2025", "2027": "QT_2027"}
 
     for _, row in qt.iterrows():
         sex = row["Sex"]
         level = row["Level"]
         wc = row["WeightClass"]
 
-        df_sw = openipf[
-            (openipf["Sex"] == sex) & (openipf["CanonicalWeightClass"].astype(str) == wc)
-        ].copy()
+        # Filter to matching sex + class. bests already has one row per lifter.
+        df_sw = bests[
+            (bests["Sex"] == sex) & (bests["WeightClass"].astype(str) == wc)
+        ]
 
         out_row: dict = {"Sex": sex, "Level": level, "WeightClass": wc}
 
-        for standard_key, qt_col in standards:
-            qt_value = row[qt_col]
+        for standard_key, (all_col, nat24_col) in era_cols.items():
+            qt_value = row[qt_cols[standard_key]]
             if pd.isna(qt_value):
                 out_row[f"Pct_AllEra_{standard_key}"] = np.nan
                 out_row[f"Pct_24moToNationals_{standard_key}"] = np.nan
                 continue
 
-            era_w = era_window_for_standard(standard_key)
-            df_era = apply_time_window(df_sw, era_w)
-            best_era = lifter_best_totals(df_era)
-            out_row[f"Pct_AllEra_{standard_key}"] = pct_meeting_qt(best_era, float(qt_value))
+            # All-era: lifters who had any meet in the era with best >= QT
+            era_bests = df_sw[all_col].dropna()
+            out_row[f"Pct_AllEra_{standard_key}"] = (
+                100.0 * (era_bests >= float(qt_value)).sum() / len(era_bests)
+                if len(era_bests) > 0 else np.nan
+            )
 
-            w24 = window_24mo_to_nationals(standard_key)
-            df_24 = apply_time_window(df_sw, w24)
-            best_24 = lifter_best_totals(df_24)
-            out_row[f"Pct_24moToNationals_{standard_key}"] = pct_meeting_qt(best_24, float(qt_value))
+            # 24mo window
+            nat24_bests = df_sw[nat24_col].dropna()
+            out_row[f"Pct_24moToNationals_{standard_key}"] = (
+                100.0 * (nat24_bests >= float(qt_value)).sum() / len(nat24_bests)
+                if len(nat24_bests) > 0 else np.nan
+            )
 
         qt_2027 = row["QT_2027"]
         if pd.isna(qt_2027):
             out_row["Pct_HypotheticalSqueeze_2027_using_2025era"] = np.nan
         else:
-            era_2025 = era_window_for_standard("2025")
-            df_2025era = apply_time_window(df_sw, era_2025)
-            best_2025era = lifter_best_totals(df_2025era)
-            out_row["Pct_HypotheticalSqueeze_2027_using_2025era"] = pct_meeting_qt(
-                best_2025era, float(qt_2027)
+            era_2025_bests = df_sw["best_2025"].dropna()
+            out_row["Pct_HypotheticalSqueeze_2027_using_2025era"] = (
+                100.0 * (era_2025_bests >= float(qt_2027)).sum() / len(era_2025_bests)
+                if len(era_2025_bests) > 0 else np.nan
             )
 
         results.append(out_row)
@@ -247,6 +314,7 @@ def get_qt_standards() -> pd.DataFrame:
 # BLOCK VIEW (Open-only, 3 cols)
 # =========================
 
+@lru_cache(maxsize=8)
 def compute_blocks(
     country: str = DEFAULT_COUNTRY,
     federation: str = "CPU",

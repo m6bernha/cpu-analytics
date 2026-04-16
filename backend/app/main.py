@@ -41,6 +41,14 @@ async def lifespan(_app: FastAPI):
         n_meets = conn.execute("SELECT COUNT(*) FROM openipf").fetchone()[0]
         n_qt = conn.execute("SELECT COUNT(*) FROM qt_standards").fetchone()[0]
         print(f"[startup] warmed: openipf={n_meets:,} rows, qt_standards={n_qt} rows")
+        # Memory footprint after warmup. Visible in Render logs so future
+        # regressions (accidental full-table .df() load, etc) are obvious.
+        try:
+            import psutil
+            rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+            print(f"[startup] process RSS: {rss_mb:.1f} MB")
+        except ImportError:
+            pass
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
         if n_meets == 0 or n_qt == 0:

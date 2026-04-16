@@ -110,6 +110,17 @@ def preprocess_openipf(src: Path, dst: Path) -> int:
     df = df.dropna(subset=["Date", "TotalKg", "Sex", "Name", "WeightClassKg"])
     print(f"[openipf] dropped {before - len(df)} rows missing required fields")
 
+    # Scope filter: the app only ever serves Canadian IPF lifters (see
+    # backend/app/scope.py). Filtering at preprocess time reduces the
+    # parquet from ~28 MB / 1.3M rows to a small fraction, which cuts
+    # backend memory pressure and per-query cost massively.
+    # ParentFederation covers all IPF-sanctioned meets (CPU domestic +
+    # IPF international). Country=Canada covers Canadian lifters at any
+    # IPF meet, including internationals.
+    before = len(df)
+    df = df[(df["Country"] == "Canada") & (df["ParentFederation"] == "IPF")].copy()
+    print(f"[openipf] filtered to Canada+IPF: kept {len(df)} of {before} rows ({100*len(df)/before:.1f}%)")
+
     df["Sex"] = df["Sex"].astype(str).str.upper().str.strip()
     # Vectorized canonicalization: ~30x faster than the row-wise apply on the
     # full OpenIPF export. The weekly GHA workflow benefits most.

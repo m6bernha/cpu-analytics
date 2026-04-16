@@ -50,6 +50,12 @@ def _download(url: str, dest: Path) -> None:
     print(f"[data_loader] wrote {dest} ({size_mb:.1f} MB)")
 
 
+def _gc_after() -> None:
+    """Release transient buffers accumulated during downloads."""
+    import gc
+    gc.collect()
+
+
 def ensure_parquets(openipf_path: Path, qt_path: Path) -> None:
     """Ensure both parquet files exist locally, downloading if necessary.
 
@@ -82,3 +88,7 @@ def ensure_parquets(openipf_path: Path, qt_path: Path) -> None:
                 f"QT_PARQUET_URL env var is not set."
             )
         _download(qt_url, qt_path)
+
+    # Release any transient buffers from the downloads before the caller
+    # builds the DuckDB connection. Matters on the 512 MB Render tier.
+    _gc_after()
