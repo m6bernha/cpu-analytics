@@ -111,6 +111,11 @@ specifically, not the first meet of any kind.
 - **PR detection is per-Event.** `lifters.py` marks `is_pr=True` if the meet's TotalKg exceeds all prior meets of the same Event type (SBD vs B vs BD etc). This prevents bench-only PRs from being compared against full-power totals.
 - **Comeback filter (max_gap_months).** Progression endpoint accepts an optional `max_gap_months` int param. When set, lifters with any inter-meet gap exceeding that threshold are excluded from the cohort before aggregation. The frontend exposes this as a dropdown (Off/6/12/18/24/36).
 - **Std dev band on Progression chart.** Uses Recharts `Area` with `dataKey="stdBand"` (a [y-std, y+std] tuple per point). The backend computes `std` per x-bucket alongside `mean`. The chart uses `ComposedChart` (not `LineChart`) to support both Area and Line.
+- **Weighted OLS trendline.** polyfit with `w=sqrt(lifter_count)`. Dense early-year buckets dominate the slope. Weighted R-squared reflects this. The old unweighted fit gave equal influence to 15-lifter tail buckets and 2,700-lifter year-0 buckets.
+- **Rate of improvement = regression slope.** `lifters.py` runs `np.polyfit(days, totals, 1)` across all SBD meets, not just first-to-last. More honest for non-monotonic careers.
+- **53 kg men dropped.** `weight_class.py` returns NaN for men below 58 kg. No QT standard exists. Extremely rare in CPU.
+- **Survivorship stats.** Progression endpoint returns `n_all_lifters` (including 1-meet) and `avg_first_total` so the frontend shows retention rate and day-0 population context.
+- **Search metadata shows LATEST meet.** The `search_lifters` SQL sorts Date DESC so rn=1 is the most recent meet. LatestEquipment, LatestWeightClass, LatestMeetDate are now actually latest.
 
 ## Pre-push checklist
 
@@ -143,18 +148,20 @@ Backend defaults enforce Country=Canada, ParentFederation=IPF (see `backend/app/
 
 The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toasting-lightning.md`.
 
-**Phases 0-6 shipped (2026-04-15/16):**
-- Phase 0: Five frontend bug fixes (Division reload, copy feedback, autoFocus, null guard, query persist)
+**Phases 0-6 + roundtable review shipped (2026-04-15/16):**
+- Phase 0: Five frontend bug fixes
 - Phase 1: Critical age_category baseline fix + 25 pytest tests
 - Phase 2: Mobile polish (QT column hiding, back button, date axis, touch dots, tab persistence)
 - Phase 3: Division from API, CompareView perf fix, Dots column
 - Phase 4: R-squared, std dev band, age data loss indicator, survivorship note
 - Phase 5: Comeback lifter gap detection (max_gap_months filter)
 - Phase 6: Per-lifter metrics (QT proximity, rate of improvement, PR detection, lift ratios)
+- Roundtable: weighted OLS, search metadata fix, survivorship stats, regression-based rate, 53kg drop, name disclaimer
 
-**Phases 7-8 remaining:**
-- Phase 7: Weight class migration tracking
+**Phases 7-9 remaining:**
+- Phase 7: Weight class migration tracking (detect class changes, filter to same-class-only careers)
 - Phase 8: Prediction/extrapolation (individual trajectory projection, cohort confidence intervals, percentile rank)
+- Phase 9: Per-lift progression (separate S/B/D curves for cohort + individual, bench-only meets feed the bench curve)
 
 ## When extending this
 
