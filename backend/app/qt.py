@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .data import get_conn
+from .data import get_cursor
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
@@ -93,6 +93,7 @@ def pct_meeting_qt(best_df: pd.DataFrame, qt_value: float) -> float:
 # =========================
 
 def _load_scope(
+    conn,
     country: str = DEFAULT_COUNTRY,
     federation: str = "CPU",
     equipment: str = "Raw",
@@ -116,9 +117,10 @@ def _load_scope(
     Division='Open' is consistently populated (21,516 rows all-time, 2,286 in
     the 2025 era, no NULLs). If we later extend to non-CPU federations, this
     filter will need to be federation-aware.
-    """
-    conn = get_conn()
 
+    Accepts a DuckDB cursor as first argument so the caller (request handler)
+    controls the cursor lifetime. Do not create a new cursor inside this helper.
+    """
     clauses = [
         "Country = ?",
         "Federation = ?",
@@ -141,8 +143,8 @@ def _load_scope(
     return conn.execute(sql, params).df()
 
 
-def _load_qt_standards() -> pd.DataFrame:
-    conn = get_conn()
+def _load_qt_standards(conn) -> pd.DataFrame:
+    """Load QT standards. Cursor passed in by caller to share lifetime."""
     return conn.execute("SELECT * FROM qt_standards").df()
 
 
@@ -158,8 +160,11 @@ def compute_coverage(
     event: str = "SBD",
     age_filter: str = "open",
 ) -> pd.DataFrame:
-    openipf = _load_scope(country, federation, equipment, tested, event, age_filter)
-    qt = _load_qt_standards()
+    # One cursor for the whole computation so any intermediate helper
+    # shares the same result-set lifetime.
+    conn = get_cursor()
+    openipf = _load_scope(conn, country, federation, equipment, tested, event, age_filter)
+    qt = _load_qt_standards(conn)
 
     results = []
     standards = [
@@ -235,7 +240,7 @@ def compute_coverage(
 
 
 def get_qt_standards() -> pd.DataFrame:
-    return _load_qt_standards()
+    return _load_qt_standards(get_cursor())
 
 
 # =========================

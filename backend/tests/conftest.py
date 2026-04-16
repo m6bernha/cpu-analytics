@@ -172,8 +172,9 @@ def test_conn(test_parquets):
         f"CREATE VIEW qt_standards AS SELECT * FROM parquet_scan('{qt_path.as_posix()}')"
     )
 
-    # Monkey-patch the singleton
+    # Monkey-patch the singleton base connection so get_cursor() returns
+    # cursors against the synthetic parquets instead of downloading real data.
     import backend.app.data as data_mod
-    data_mod._conn = conn
+    data_mod._base_conn = conn
 
     return conn

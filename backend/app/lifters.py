@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .data import get_conn
+from .data import get_cursor
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
@@ -82,7 +82,7 @@ def search_lifters(
         LIMIT ?
     """
     params.append(limit)
-    rows = get_conn().execute(sql, params).df().to_dict(orient="records")
+    rows = get_cursor().execute(sql, params).df().to_dict(orient="records")
 
     for r in rows:
         if r.get("LatestMeetDate") is not None:
@@ -118,7 +118,7 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         FROM lifter
         ORDER BY Date
     """
-    df = get_conn().execute(sql, [name]).df()
+    df = get_cursor().execute(sql, [name]).df()
     if df.empty:
         return {"name": name, "meets": [], "found": False}
 
@@ -238,7 +238,7 @@ def _compute_percentile(
             SUM(CASE WHEN BestTotal <= (SELECT b FROM self_best) THEN 1 ELSE 0 END) AS rank_below_or_equal
         FROM bests
     """
-    row = get_conn().execute(sql, [sex, weight_class, equipment, name, sex, weight_class, equipment]).fetchone()
+    row = get_cursor().execute(sql, [sex, weight_class, equipment, name, sex, weight_class, equipment]).fetchone()
     if not row or row[0] == 0:
         return None
 

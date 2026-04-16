@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .data import get_conn
+from .data import get_cursor
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
@@ -177,7 +177,7 @@ def compute_progression(
         FROM ranked
         WHERE MeetCount >= 2
     """
-    conn = get_conn()
+    conn = get_cursor()
     df = conn.execute(sql, params).df()
 
     # Survivorship stats: count ALL lifters in scope (including 1-meet)
@@ -458,7 +458,7 @@ def compute_lift_progression(
           AND Best3BenchKg IS NOT NULL
           AND Best3DeadliftKg IS NOT NULL
     """
-    conn = get_conn()
+    conn = get_cursor()
     df = conn.execute(sql, params).df()
 
     if df.empty:

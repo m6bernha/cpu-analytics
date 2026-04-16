@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .data import get_conn
+from .data import get_cursor
 
 
 AGE_CATEGORIES = ["All", "Sub-Jr", "Jr", "Open", "M1", "M2", "M3", "M4"]
@@ -15,7 +15,7 @@ WOMEN_CLASSES = ["47", "52", "57", "63", "69", "76", "84", "84+"]
 
 
 def get_filters() -> dict[str, Any]:
-    conn = get_conn()
+    conn = get_cursor()
 
     def distinct(col: str) -> list[str]:
         rows = conn.execute(

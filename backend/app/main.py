@@ -19,7 +19,7 @@ from . import filters as filters_mod
 from . import lifters as lifters_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
-from .data import get_conn
+from .data import get_cursor
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -35,7 +35,7 @@ async def lifespan(_app: FastAPI):
     Pre-warming runs that work serially before the app accepts traffic.
     """
     try:
-        conn = get_conn()
+        conn = get_cursor()
         # Touch each view so DuckDB actually opens the parquet, not just
         # records the parquet_scan SQL.
         n_meets = conn.execute("SELECT COUNT(*) FROM openipf").fetchone()[0]
