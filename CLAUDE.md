@@ -131,6 +131,14 @@ Backend defaults enforce Country=Canada, ParentFederation=IPF (see `backend/app/
 - Push to `main` → Render redeploys the backend automatically.
 - Data refresh is a separate weekly GitHub Actions cron.
 
+## Roadmap
+
+The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toasting-lightning.md`.
+Phases 0-1 (bug fixes + data integrity) landed 2026-04-15. Remaining phases cover
+trendline quality (std dev bands, R-squared), comeback lifter handling, per-lifter
+metrics (QT proximity, PR detection, lift ratios), weight class migration tracking,
+and individual trajectory prediction. See the plan file for details and file paths.
+
 ## When extending this
 
 - New API endpoint: add to `backend/app/main.py`, wire a module in `backend/app/`, add a typed fetcher in `frontend/src/lib/api.ts`.
