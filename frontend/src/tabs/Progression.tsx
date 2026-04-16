@@ -43,6 +43,7 @@ type FilterState = {
   age_category: string
   x_axis: string
   max_gap_months: string
+  same_class_only: string
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -55,6 +56,7 @@ const DEFAULT_FILTERS: FilterState = {
   age_category: 'All',
   x_axis: 'Years',
   max_gap_months: '',
+  same_class_only: '',
 }
 
 // Minimum lifters a point needs to be worth plotting. Below this the chart
@@ -127,6 +129,7 @@ export default function Progression() {
         age_category: filters.age_category,
         x_axis: filters.x_axis,
         max_gap_months: filters.max_gap_months || undefined,
+        same_class_only: filters.same_class_only === 'true' ? 'true' : undefined,
       }),
     enabled: filtersQuery.isSuccess,
   })
@@ -258,6 +261,17 @@ export default function Progression() {
               onChange={(v) => update({ max_gap_months: v })}
               hint="Excludes lifters with any inter-meet gap longer than N months (comeback filter)."
             />
+            <label className="flex items-center gap-2 mb-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.same_class_only === 'true'}
+                onChange={(e) =>
+                  update({ same_class_only: e.target.checked ? 'true' : '' })
+                }
+                className="accent-zinc-400"
+              />
+              <span className="text-zinc-300 text-xs uppercase tracking-wide">Same class only</span>
+            </label>
             <Select
               label="X axis"
               value={filters.x_axis}

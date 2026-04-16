@@ -96,6 +96,7 @@ def compute_progression(
     x_axis: str = "Days",
     min_lifters_for_trend: int = 5,
     max_gap_months: int | None = None,
+    same_class_only: bool = False,
 ) -> dict[str, Any]:
     """Return mean TotalDiffFromFirst over time for the cohort defined by filters.
 
@@ -122,9 +123,11 @@ def compute_progression(
 
     # Pull a slim slice. Doing the windowing + grouping in DuckDB SQL keeps
     # this fast even for big scopes (e.g. all-Canada with no class filter).
+    # CanonicalWeightClass is included so we can detect class changes for
+    # the same_class_only filter.
     sql = f"""
         WITH filtered AS (
-            SELECT Name, Date, TotalKg, Age, MeetName
+            SELECT Name, Date, TotalKg, Age, MeetName, CanonicalWeightClass
             FROM openipf
             {where_sql}
         ),
@@ -134,17 +137,21 @@ def compute_progression(
                 Date,
                 TotalKg,
                 Age,
+                CanonicalWeightClass,
                 ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName) AS MeetNumber,
                 FIRST_VALUE(TotalKg) OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName) AS FirstTotal,
                 MIN(Date) OVER (PARTITION BY Name) AS FirstDate,
-                COUNT(*) OVER (PARTITION BY Name) AS MeetCount
+                COUNT(*) OVER (PARTITION BY Name) AS MeetCount,
+                COUNT(DISTINCT CanonicalWeightClass) OVER (PARTITION BY Name) AS ClassCount
             FROM filtered
         )
         SELECT
             Name,
             Age,
             TotalKg,
+            CanonicalWeightClass,
             MeetNumber,
+            ClassCount,
             DATEDIFF('day', FirstDate, Date) AS DaysFromFirst,
             (TotalKg - FirstTotal) AS TotalDiffFromFirst
         FROM ranked
@@ -201,6 +208,12 @@ def compute_progression(
             "n_lifters": 0,
             "n_meets": 0,
         }
+
+    # Optional same-class filter: only keep lifters who stayed in the same
+    # weight class for their entire career in scope. ClassCount is computed
+    # in the SQL as COUNT(DISTINCT CanonicalWeightClass) per lifter.
+    if same_class_only and not df.empty and "ClassCount" in df.columns:
+        df = df[df["ClassCount"] == 1]
 
     # Track pre-age-filter count so the frontend can show how much data
     # the sparse Age column costs the user.

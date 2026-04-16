@@ -138,6 +138,24 @@ def get_lifter_history(name: str) -> dict[str, Any]:
 
     first = meets[0]
 
+    # Weight class change detection: flag each meet where the class differs
+    # from the previous meet and build a summary of transitions.
+    prev_class = None
+    weight_class_changes: list[dict[str, Any]] = []
+    for m in meets:
+        wc = m.get("CanonicalWeightClass")
+        if prev_class is not None and wc is not None and wc != prev_class:
+            m["class_changed"] = True
+            weight_class_changes.append({
+                "date": m["Date"],
+                "from_class": prev_class,
+                "to_class": wc,
+            })
+        else:
+            m["class_changed"] = False
+        if wc is not None:
+            prev_class = wc
+
     # Rate of improvement: linear regression slope across ALL SBD meets.
     # This is more honest than first-to-last for non-monotonic careers
     # (e.g., a lifter who peaked then declined).
@@ -162,5 +180,6 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         "meet_count": len(meets),
         "best_total_kg": float(max(m["TotalKg"] for m in meets if m.get("TotalKg") is not None)),
         "rate_kg_per_month": rate_kg_per_month,
+        "weight_class_changes": weight_class_changes,
         "meets": meets,
     }

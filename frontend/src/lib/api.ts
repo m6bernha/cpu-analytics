@@ -102,6 +102,7 @@ export type ProgressionQuery = {
   age_category?: string
   x_axis?: string
   max_gap_months?: string
+  same_class_only?: string
 }
 
 export function fetchProgression(q: ProgressionQuery): Promise<ProgressionResponse> {
@@ -179,6 +180,13 @@ export type LifterMeet = {
   TotalDiffFromFirst: number
   DaysFromFirst: number
   is_pr: boolean
+  class_changed: boolean
+}
+
+export type WeightClassChange = {
+  date: string
+  from_class: string
+  to_class: string
 }
 
 export type LifterHistory = {
@@ -192,6 +200,7 @@ export type LifterHistory = {
   meet_count?: number
   best_total_kg?: number
   rate_kg_per_month?: number | null
+  weight_class_changes?: WeightClassChange[]
   meets: LifterMeet[]
 }
 

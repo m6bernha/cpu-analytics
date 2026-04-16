@@ -220,6 +220,21 @@ function LifterDetail({
         </div>
       </div>
 
+      {/* Weight class migration summary */}
+      {history.weight_class_changes && history.weight_class_changes.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {history.weight_class_changes.map((c, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-zinc-900 border border-zinc-800 text-zinc-400"
+            >
+              {c.from_class} &rarr; {c.to_class}
+              <span className="text-zinc-600">{fmtDate(c.date)}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* QT proximity: how far from each qualifying standard */}
       {regionalsQt != null && history.best_total_kg != null && (
         <div className="flex flex-wrap gap-3 mb-3 text-xs">
@@ -411,6 +426,11 @@ function LifterDetail({
                     </td>
                     <td className="py-2 pr-3 whitespace-nowrap hidden sm:table-cell">
                       {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
+                      {m.class_changed && (
+                        <span className="ml-1 text-amber-400 text-xs" title="Weight class changed from previous meet">
+                          &#9650;
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 pr-3 hidden md:table-cell">{m.Division ?? '—'}</td>
                     <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
