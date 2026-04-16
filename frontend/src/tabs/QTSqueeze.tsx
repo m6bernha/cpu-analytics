@@ -21,6 +21,7 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchQtBlocks, type QtBlockRow, type QtBlocksResponse } from '../lib/api'
+import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 
 type BlockKey = keyof QtBlocksResponse
 
@@ -239,18 +240,13 @@ export default function QTSqueeze() {
         </button>
       </div>
 
-      {blocksQuery.isLoading && (
-        <div className="text-zinc-500 text-sm">
-          Loading…
-          <div className="text-zinc-600 text-xs mt-1">
-            First visit after a while can take up to ~50 s while the server wakes up.
-          </div>
-        </div>
-      )}
-      {blocksQuery.error && (
-        <div className="text-red-400 text-sm">
-          Load failed: {(blocksQuery.error as Error).message}
-        </div>
+      {blocksQuery.isLoading && <LoadingSkeleton lines={4} chart />}
+      {blocksQuery.isError && (
+        <QueryErrorCard
+          error={blocksQuery.error}
+          onRetry={() => blocksQuery.refetch()}
+          label="QT coverage"
+        />
       )}
 
       {blocksQuery.data &&

@@ -32,6 +32,7 @@ import {
   type LiftProgressionResponse,
   type ProgressionResponse,
 } from '../lib/api'
+import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 
 // ---------- Filter state ----------
 
@@ -427,17 +428,14 @@ export default function Progression() {
           </>
         )}
         {filters.per_lift !== 'true' && progQuery.isLoading && (
-          <div className="text-zinc-500 text-sm">
-            Loading progression…
-            <div className="text-zinc-600 text-xs mt-1">
-              First visit after a while can take up to ~50 s while the server wakes up.
-            </div>
-          </div>
+          <LoadingSkeleton lines={3} chart />
         )}
-        {filters.per_lift !== 'true' && progQuery.error && (
-          <div className="text-red-400 text-sm">
-            Progression load failed: {(progQuery.error as Error).message}
-          </div>
+        {filters.per_lift !== 'true' && progQuery.isError && (
+          <QueryErrorCard
+            error={progQuery.error}
+            onRetry={() => progQuery.refetch()}
+            label="Progression"
+          />
         )}
 
         {filters.per_lift !== 'true' && progQuery.data && progQuery.data.points.length === 0 && (
