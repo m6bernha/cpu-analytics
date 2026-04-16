@@ -29,27 +29,39 @@ function writeUrl(params: URLSearchParams) {
 // Multiple components sharing the same URL key will stomp on each other
 // because each only writes its own keys but reads all of them via the
 // URL_EVENT sync. This registry catches collisions in dev.
-const _registeredKeys = new Set<string>()
+// Uses a ref-counted Map so StrictMode double-mount doesn't false-positive.
+const _registeredKeys = new Map<string, number>()
 
 export function useUrlState<T extends Record<string, string>>(
   defaults: T,
 ): [T, (patch: Partial<T>) => void] {
   const keys = Object.keys(defaults) as (keyof T)[]
 
-  // One-time collision check (dev only).
-  if (typeof window !== 'undefined' && import.meta.env?.DEV) {
+  // Collision check with ref-counting + unmount cleanup.
+  useEffect(() => {
+    if (!import.meta.env?.DEV) return
     for (const k of keys) {
       const kStr = k as string
-      if (_registeredKeys.has(kStr)) {
+      const prev = _registeredKeys.get(kStr) ?? 0
+      if (prev >= 1) {
         // eslint-disable-next-line no-console
         console.warn(
           `[useUrlState] key "${kStr}" is registered by more than one component. ` +
           `Instances will stomp each other's URL state.`,
         )
       }
-      _registeredKeys.add(kStr)
+      _registeredKeys.set(kStr, prev + 1)
     }
-  }
+    return () => {
+      for (const k of keys) {
+        const kStr = k as string
+        const curr = _registeredKeys.get(kStr) ?? 0
+        if (curr <= 1) _registeredKeys.delete(kStr)
+        else _registeredKeys.set(kStr, curr - 1)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const read = useCallback((): T => {
     const params = readParams()

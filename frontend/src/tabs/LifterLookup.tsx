@@ -968,18 +968,20 @@ function CompareView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compareNames.join(','), ...queryData, ...queryLoading])
 
+  // Use reduce instead of Math.min(...arr) to avoid the ~100K JS argument
+  // limit when a lifter has thousands of meets. Not reachable at current
+  // scale but the spread pattern is an antipattern worth avoiding.
   const allTotals = series
     .flatMap((s) => s.points.map((p) => p.total))
     .filter((t): t is number => t != null)
   const allMonths = series.flatMap((s) => s.points.map((p) => p.months))
   const hasData = allTotals.length > 0
-  const yMin = hasData
-    ? Math.floor((Math.min(...allTotals) - 25) / 25) * 25
-    : 0
-  const yMax = hasData
-    ? Math.ceil((Math.max(...allTotals) + 25) / 25) * 25
-    : 100
-  const xMax = hasData ? Math.max(...allMonths) + 1 : 12
+  const minTotal = hasData ? allTotals.reduce((a, b) => (a < b ? a : b), Infinity) : 0
+  const maxTotal = hasData ? allTotals.reduce((a, b) => (a > b ? a : b), -Infinity) : 100
+  const maxMonth = allMonths.reduce((a, b) => (a > b ? a : b), 0)
+  const yMin = hasData ? Math.floor((minTotal - 25) / 25) * 25 : 0
+  const yMax = hasData ? Math.ceil((maxTotal + 25) / 25) * 25 : 100
+  const xMax = hasData ? maxMonth + 1 : 12
   const anyLoading = historyQueries.some((q) => q.isLoading)
 
   return (

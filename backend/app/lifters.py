@@ -30,8 +30,12 @@ def search_lifters(
     if not q or len(q.strip()) < 2:
         return []
 
-    clauses: list[str] = ["LOWER(Name) LIKE ?"]
-    params: list[Any] = [f"%{q.lower().strip()}%"]
+    # Escape LIKE wildcards in user input so a query like "%%%%%" does not
+    # trigger a full-table regex scan, and cap the search term length.
+    escaped = q.lower().strip()[:50]
+    escaped = escaped.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    clauses: list[str] = ["LOWER(Name) LIKE ? ESCAPE '\\'"]
+    params: list[Any] = [f"%{escaped}%"]
 
     def eq(col: str, val: str | None) -> None:
         if val:

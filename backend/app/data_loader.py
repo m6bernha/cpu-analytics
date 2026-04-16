@@ -19,17 +19,33 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 import urllib.request
 from pathlib import Path
 
 
 def _download(url: str, dest: Path) -> None:
+    """Download URL to dest atomically via a unique temp file.
+
+    Using a process-unique temp name prevents concurrent cold-start
+    downloads from stomping each other's partial writes.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dest.with_suffix(dest.suffix + ".tmp")
     print(f"[data_loader] downloading {url} -> {dest}")
-    with urllib.request.urlopen(url, timeout=120) as resp, open(tmp, "wb") as out:
-        shutil.copyfileobj(resp, out)
-    tmp.replace(dest)
+    # NamedTemporaryFile with delete=False gives us a unique path on the
+    # same filesystem; rename is atomic on Linux/macOS and best-effort on Windows.
+    with tempfile.NamedTemporaryFile(
+        dir=dest.parent, prefix=dest.name + ".", suffix=".tmp", delete=False
+    ) as tmp_file:
+        tmp_path = Path(tmp_file.name)
+        with urllib.request.urlopen(url, timeout=120) as resp:
+            shutil.copyfileobj(resp, tmp_file)
+    try:
+        tmp_path.replace(dest)
+    except OSError:
+        # Cleanup on failure
+        tmp_path.unlink(missing_ok=True)
+        raise
     size_mb = dest.stat().st_size / (1024 * 1024)
     print(f"[data_loader] wrote {dest} ({size_mb:.1f} MB)")
 

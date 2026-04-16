@@ -11,26 +11,39 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+# Upper bound on kg values. A current world record total is ~1100 kg.
+# Rejecting values above 2000 kg catches typos and DoS-shaped inputs
+# without excluding any plausible real total.
+MAX_KG = 2000.0
 
 
 class ManualMeetEntry(BaseModel):
     date: date
-    total_kg: float = Field(gt=0)
-    bodyweight_kg: float | None = None
-    weight_class: str | None = None  # canonical form, e.g. "83" or "120+"
-    squat_kg: float | None = None
-    bench_kg: float | None = None
-    deadlift_kg: float | None = None
-    meet_name: str | None = None
+    total_kg: float = Field(gt=0, le=MAX_KG)
+    bodyweight_kg: float | None = Field(default=None, ge=30, le=300)
+    weight_class: str | None = Field(default=None, max_length=10)
+    squat_kg: float | None = Field(default=None, gt=0, le=MAX_KG)
+    bench_kg: float | None = Field(default=None, gt=0, le=MAX_KG)
+    deadlift_kg: float | None = Field(default=None, gt=0, le=MAX_KG)
+    meet_name: str | None = Field(default=None, max_length=200)
+
+    @field_validator("date")
+    @classmethod
+    def date_within_reasonable_range(cls, v: date) -> date:
+        if v.year < 1960 or v.year > date.today().year + 1:
+            raise ValueError(f"Date {v} is outside the supported range (1960-next year)")
+        return v
 
 
 class ManualTrajectoryRequest(BaseModel):
-    name: str = "(manual entry)"
-    sex: str  # "M" or "F"
-    equipment: str = "Raw"
-    event: str = "SBD"
-    entries: list[ManualMeetEntry]
+    name: str = Field(default="(manual entry)", max_length=100)
+    sex: str = Field(pattern=r"^[MF]$")
+    equipment: str = Field(default="Raw", max_length=20)
+    event: str = Field(default="SBD", max_length=5)
+    entries: list[ManualMeetEntry] = Field(max_length=200)
 
 
 def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
