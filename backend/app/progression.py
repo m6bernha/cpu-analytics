@@ -163,9 +163,40 @@ def compute_progression(
 
     # Apply optional age category filter in pandas — Age is sparse and the
     # category boundaries don't align with any column literal in the dataset.
+    #
+    # IMPORTANT: after filtering, we recompute TotalDiffFromFirst and
+    # DaysFromFirst relative to the first meet *within the surviving rows*.
+    # Without this, an Open lifter who started as Junior sees their delta
+    # measured from the invisible Junior-era baseline, which produces
+    # inflated progression curves for the Open cohort.
     if age_category and age_category != "All":
         df["AgeCategory"] = df["Age"].apply(age_to_category)
         df = df[df["AgeCategory"] == age_category]
+        if df.empty:
+            return {
+                "x_label": X_AXIS_COLS[x_axis][1],
+                "x_axis": x_axis,
+                "points": [],
+                "trend": None,
+                "n_lifters": 0,
+                "n_meets": 0,
+            }
+
+        # Recompute baseline from first meet that survived the age filter.
+        first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
+        first_totals = (
+            df.loc[first_idx, ["Name", "TotalKg", "DaysFromFirst"]]
+            .rename(columns={"TotalKg": "_FirstTotal", "DaysFromFirst": "_FirstDays"})
+        )
+        df = df.merge(first_totals, on="Name")
+        df["TotalDiffFromFirst"] = df["TotalKg"] - df["_FirstTotal"]
+        df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
+        # Re-number meets within this age category
+        df["MeetNumber"] = df.groupby("Name").cumcount() + 1
+        # Drop lifters with only one meet in this category
+        meet_counts = df.groupby("Name")["MeetNumber"].transform("max")
+        df = df[meet_counts >= 2]
+        df = df.drop(columns=["_FirstTotal", "_FirstDays"])
         if df.empty:
             return {
                 "x_label": X_AXIS_COLS[x_axis][1],

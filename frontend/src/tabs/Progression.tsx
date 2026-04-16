@@ -233,8 +233,8 @@ export default function Progression() {
             <Select
               label="Division"
               value={filters.division}
-              options={['Any', 'Open', 'Juniors', 'Sub-Juniors', 'Masters 1', 'Masters 2', 'Masters 3', 'Masters 4']}
-              onChange={(v) => update({ division: v === 'Any' ? '' : v })}
+              options={['All', 'Open', 'Juniors', 'Sub-Juniors', 'Masters 1', 'Masters 2', 'Masters 3', 'Masters 4']}
+              onChange={(v) => update({ division: v })}
               hint="Division is federation-free-text. 'Open' is what CPU uses."
             />
             <Select

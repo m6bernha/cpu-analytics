@@ -372,7 +372,7 @@ function LifterDetail({
                     <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
-                    <td className={totalCellClass}>{m.TotalKg.toFixed(1)}</td>
+                    <td className={totalCellClass}>{fmtKg(m.TotalKg)}</td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500">
                       {delta == null
                         ? '—'
@@ -728,7 +728,7 @@ function CompareView({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Add lifter (${compareNames.length}/${MAX_COMPARE})`}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-              autoFocus={compareNames.length === 0}
+              // autoFocus removed: on phones it pops the keyboard and pushes content down={compareNames.length === 0}
             />
             <div className="mt-4">
               {query.trim().length > 0 && query.trim().length < 2 && (
@@ -911,7 +911,10 @@ export default function LifterLookup() {
     () => parseLifters(urlState.lifters),
     [urlState.lifters],
   )
-  const setMode = (m: Mode) => setUrlState({ mode: m })
+  const setMode = (m: Mode) => {
+    setUrlState({ mode: m })
+    setQuery('')  // clear stale search text when switching modes
+  }
   const setSelectedName = (name: string | null) =>
     setUrlState({ lifter: name ?? '' })
   const setCompareNames = (names: string[]) =>
@@ -998,7 +1001,7 @@ export default function LifterLookup() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Type a name"
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-              autoFocus
+              // autoFocus removed: on phones it pops the keyboard and pushes content down
             />
 
             <div className="mt-4">

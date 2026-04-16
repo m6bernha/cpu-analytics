@@ -8,7 +8,7 @@
 // filter. The old qt_coverage_results.csv mixed all age classes and is
 // superseded — the explanatory copy at the top says so.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Bar,
@@ -185,11 +185,15 @@ export default function QTSqueeze() {
     downloadText('qt_coverage_open.csv', buildFlatCsv(blocksQuery.data), 'text/csv')
   }
 
+  const [copyLabel, setCopyLabel] = useState('Copy for Sheets')
+
   const handleCopyColumns = async () => {
     if (!blocksQuery.data) return
     const text = buildColumnText(blocksQuery.data)
     try {
       await navigator.clipboard.writeText(text)
+      setCopyLabel('Copied!')
+      setTimeout(() => setCopyLabel('Copy for Sheets'), 2000)
     } catch {
       // Fallback for older browsers — dump to a download.
       downloadText('qt_coverage_open_columns.txt', text)
@@ -231,7 +235,7 @@ export default function QTSqueeze() {
           disabled={!blocksQuery.data}
           className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-100 text-sm rounded border border-zinc-700"
         >
-          Copy for Sheets
+          {copyLabel}
         </button>
       </div>
 
