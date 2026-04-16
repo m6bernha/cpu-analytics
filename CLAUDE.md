@@ -116,6 +116,13 @@ specifically, not the first meet of any kind.
 - **53 kg men dropped.** `weight_class.py` returns NaN for men below 58 kg. No QT standard exists. Extremely rare in CPU.
 - **Survivorship stats.** Progression endpoint returns `n_all_lifters` (including 1-meet) and `avg_first_total` so the frontend shows retention rate and day-0 population context.
 - **Search metadata shows LATEST meet.** The `search_lifters` SQL sorts Date DESC so rn=1 is the most recent meet. LatestEquipment, LatestWeightClass, LatestMeetDate are now actually latest.
+- **Percentile scope MUST match cohort.** `_compute_percentile` now uses a `self_best` CTE scoped to the same sex/class/equipment/country/IPF/SBD filters as the `bests` CTE. The earlier bug selected the lifter's global SBD max, which would rank out-of-scope totals against an in-scope cohort.
+- **DuckDB `get_conn()` returns a per-call `cursor()`**, not the parent connection. DuckDB's parent connection is not safe for concurrent `execute()` calls from multiple threads. Cursors share the underlying database but are per-thread safe.
+- **QT blocks always returns 4 keys** (`M_Nationals`, `M_Regionals`, `F_Nationals`, `F_Regionals`), even when `groupby` yields none for a combo. Backend initializes the dict with empty lists before iterating.
+- **TotalKg can be null** in LifterMeet. DQ / bombed / bench-only meets may have null totals. Frontend guards with `!= null` before arithmetic; backend `_safe_best` returns None on empty.
+- **Per-lift cohort progression** requires all three lift columns non-null, so this view is SBD-only in practice. A bench-only meet row cannot contribute because the SQL's `WHERE Best3SquatKg IS NOT NULL AND Best3BenchKg IS NOT NULL AND Best3DeadliftKg IS NOT NULL` excludes it. For individual lifter per-lift view, partial events DO contribute to whichever lift(s) they provide, because the frontend renders each lift as an independent Line with `connectNulls`.
+- **Projection date math uses UTC.** `new Date(iso)` + `setDate()` drifts across DST. All date arithmetic uses `Date.UTC` to match the `fmtDate` ISO-parse convention elsewhere.
+- **useUrlState collision guard** warns in dev if two components register the same URL key. Components must own DISJOINT key sets.
 
 ## Pre-push checklist
 
@@ -158,10 +165,14 @@ The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toast
 - Phase 6: Per-lifter metrics (QT proximity, rate of improvement, PR detection, lift ratios)
 - Roundtable: weighted OLS, search metadata fix, survivorship stats, regression-based rate, 53kg drop, name disclaimer
 
-**Phases 7-9 remaining:**
-- Phase 7: Weight class migration tracking (detect class changes, filter to same-class-only careers)
-- Phase 8: Prediction/extrapolation (individual trajectory projection, cohort confidence intervals, percentile rank)
-- Phase 9: Per-lift progression (separate S/B/D curves for cohort + individual, bench-only meets feed the bench curve)
+**Phases 7-9 shipped (2026-04-16):**
+- Phase 7: Weight class migration (class change chips, same_class_only toggle)
+- Phase 8: Prediction (individual projection, cohort projection with widening CI, percentile rank)
+- Phase 9: Per-lift (S/B/D) curves for cohort + individual lifter
+
+**Audit round (2026-04-16):** 10 bugs found and fixed including scope bug in
+percentile subquery, NaN% rendering, missing QT block keys, null TotalKg
+crashes, DuckDB thread safety, and stale trendline copy. 36 tests pass.
 
 ## When extending this
 
