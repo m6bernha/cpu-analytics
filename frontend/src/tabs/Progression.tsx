@@ -139,12 +139,15 @@ export default function Progression() {
   })
 
   // Per-lift progression (S/B/D curves) when the toggle is on.
+  // Same filters flow through so changing any filter updates per-lift view.
   const liftProgQuery = useQuery<LiftProgressionResponse>({
     queryKey: ['lift-progression', filters],
     queryFn: () =>
       fetchLiftProgression({
         sex: filters.sex,
         equipment: filters.equipment,
+        tested: filters.tested,
+        event: filters.event,
         weight_class: filters.weight_class,
         division: filters.division,
         x_axis: filters.x_axis,
@@ -339,6 +342,14 @@ export default function Progression() {
               </span>{' '}
               lifters with complete S/B/D data at every meet
             </div>
+            {(filters.age_category !== 'All' ||
+              filters.max_gap_months !== '' ||
+              filters.same_class_only === 'true') && (
+              <div className="text-amber-500 text-xs mb-2">
+                Note: the per-lift view currently ignores Age category, Gap
+                filter, and Same-class-only. Total view respects all filters.
+              </div>
+            )}
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart

@@ -148,6 +148,8 @@ export type LiftProgressionResponse = {
 export type LiftProgressionQuery = {
   sex?: string
   equipment?: string
+  tested?: string
+  event?: string
   weight_class?: string
   division?: string
   x_axis?: string

@@ -58,6 +58,10 @@ def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
             "latest_weight_class": None,
             "meet_count": 0,
             "best_total_kg": 0.0,
+            "rate_kg_per_month": None,
+            "weight_class_changes": [],
+            "projection": None,
+            "percentile_rank": None,
             "meets": [],
         }
 
@@ -66,7 +70,21 @@ def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
     first_date = sorted_entries[0].date
 
     meets: list[dict[str, Any]] = []
+    prev_class: str | None = None
+    weight_class_changes: list[dict[str, Any]] = []
+    is_sbd = req.event == "SBD"
+    prev_best_total: float | None = None
     for e in sorted_entries:
+        class_changed = prev_class is not None and e.weight_class is not None and e.weight_class != prev_class
+        if class_changed:
+            weight_class_changes.append({
+                "date": e.date.isoformat(),
+                "from_class": prev_class,
+                "to_class": e.weight_class,
+            })
+        is_pr = is_sbd and (prev_best_total is None or e.total_kg > prev_best_total)
+        if prev_best_total is None or e.total_kg > prev_best_total:
+            prev_best_total = e.total_kg
         meets.append(
             {
                 "Name": req.name,
@@ -89,8 +107,22 @@ def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
                 "MeetCountry": None,
                 "TotalDiffFromFirst": e.total_kg - first_total,
                 "DaysFromFirst": (e.date - first_date).days,
+                "is_pr": is_pr,
+                "class_changed": class_changed,
             }
         )
+        if e.weight_class is not None:
+            prev_class = e.weight_class
+
+    # Rate of improvement: regression slope if we have enough SBD points
+    rate_kg_per_month: float | None = None
+    if is_sbd and len(meets) >= 2:
+        import numpy as _np
+        days = _np.array([m["DaysFromFirst"] for m in meets], dtype=float)
+        totals = _np.array([m["TotalKg"] for m in meets], dtype=float)
+        if days[-1] > days[0]:
+            slope_per_day = float(_np.polyfit(days, totals, 1)[0])
+            rate_kg_per_month = round(slope_per_day * 30.44, 2)
 
     return {
         "name": req.name,
@@ -102,5 +134,9 @@ def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
         "latest_weight_class": meets[-1]["CanonicalWeightClass"],
         "meet_count": len(meets),
         "best_total_kg": max(m["TotalKg"] for m in meets),
+        "rate_kg_per_month": rate_kg_per_month,
+        "weight_class_changes": weight_class_changes,
+        "projection": None,  # Manual entries don't get projection (no cohort context)
+        "percentile_rank": None,  # Can't compute without a dataset cohort
         "meets": meets,
     }

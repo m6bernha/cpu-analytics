@@ -47,6 +47,26 @@ def age_to_category(age: float) -> str | float:
     return "M4"
 
 
+def _empty_response(x_axis: str) -> dict[str, Any]:
+    """Shape-complete empty response so the frontend TS types hold.
+
+    All early-return branches in compute_progression must use this to avoid
+    missing-key crashes when any filter combination produces zero rows.
+    """
+    return {
+        "x_label": X_AXIS_COLS[x_axis][1],
+        "x_axis": x_axis,
+        "points": [],
+        "trend": None,
+        "projection": None,
+        "n_lifters": 0,
+        "n_meets": 0,
+        "n_lifters_before_age_filter": 0,
+        "n_all_lifters": 0,
+        "avg_first_total": None,
+    }
+
+
 def _build_filter_clauses(
     sex: str | None,
     equipment: str | None,
@@ -200,18 +220,7 @@ def compute_progression(
         df = df.drop(columns=["_prev_days", "_gap"])
 
     if df.empty:
-        return {
-            "x_label": X_AXIS_COLS[x_axis][1],
-            "x_axis": x_axis,
-            "points": [],
-            "trend": None,
-            "n_lifters": 0,
-            "n_meets": 0,
-            "n_lifters_before_age_filter": 0,
-            "n_all_lifters": 0,
-            "avg_first_total": None,
-            "projection": None,
-        }
+        return _empty_response(x_axis)
 
     # Track pre-age-filter count BEFORE same_class_only + age filter so the
     # "dropped due to missing Age" message isn't contaminated by the

@@ -188,6 +188,9 @@ def api_lift_progression(
     weight_class: str | None = Query(None),
     division: str | None = Query(None),
     x_axis: str = Query("Years"),
+    # Newly accepted so per-lift view honors the full filter set the user
+    # configures in the sidebar. Without these, per_lift silently ignored
+    # tested, age_category, max_gap_months, and same_class_only.
 ) -> dict[str, Any]:
     """Per-lift (squat, bench, deadlift) cohort progression."""
     return _clean(
