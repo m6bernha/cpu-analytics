@@ -328,18 +328,32 @@ def api_qt_blocks(
     equipment: str = Query("Raw"),
     tested: str = Query("Yes"),
     event: str = Query("SBD"),
+    division: str = Query("Open", description="Age division for QT view."),
 ) -> dict[str, Any]:
-    """Four-block Open-only view for the QT tab.
+    """Four-block view for the QT tab, scoped by age division.
 
     Returns keys F_Regionals, F_Nationals, M_Regionals, M_Nationals, each a
-    list of {weight_class, pct_pre2025, pct_2025, pct_2027_today}.
+    list of {weight_class, pct_pre2025, pct_2025, pct_2027_today}. Plus a
+    `meta` key with the selected division and a `using_open_fallback` flag
+    the frontend reads to decide whether to show the "Open values shown,
+    age-specific coming" banner.
     """
+    from .data_static.qt_by_division import has_age_specific_qt
+
+    blocks = qt_mod.compute_blocks(
+        country=country,
+        federation=federation,
+        equipment=equipment,
+        tested=tested,
+        event=event,
+        division=division,
+    )
     return _clean(
-        qt_mod.compute_blocks(
-            country=country,
-            federation=federation,
-            equipment=equipment,
-            tested=tested,
-            event=event,
-        )
+        {
+            **blocks,
+            "meta": {
+                "division": division,
+                "using_open_fallback": not has_age_specific_qt(division),
+            },
+        }
     )
