@@ -36,10 +36,14 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
       <header className="border-b border-zinc-800 px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
-          <div>
+          <a
+            href="/"
+            aria-label="CPU Powerlifting Analytics home"
+            className="hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 rounded"
+          >
             <h1 className="text-lg sm:text-xl font-semibold">CPU Powerlifting Analytics</h1>
             <p className="text-zinc-500 text-xs">Canadian lifters, IPF-sanctioned meets</p>
-          </div>
+          </a>
           <nav
             className="flex gap-2 -mx-1 px-1 overflow-x-auto"
             role="tablist"
