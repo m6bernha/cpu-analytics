@@ -1,6 +1,7 @@
 # CLAUDE.md — Project guide for cpu-analytics
 
-This file is for Claude Code sessions. Read it at the start of any session in this repo.
+This file is for Claude Code sessions. Read it at the start of any session
+in this repo, then read `NEXT_STEPS.md` for the current backlog.
 
 ## What this is
 
@@ -184,7 +185,28 @@ The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toast
 **Phases 7-9 shipped (2026-04-16):**
 - Phase 7: Weight class migration (class change chips, same_class_only toggle)
 - Phase 8: Prediction (individual projection, cohort projection with widening CI, percentile rank)
-- Phase 9: Per-lift (S/B/D) curves for cohort + individual lifter
+- Phase 9: Per-lift (Squat / Bench / Deadlift) curves for cohort + individual lifter
+
+**Reliability overhaul shipped (2026-04-16, G1-G5):**
+- G1: Per-request DuckDB cursors fix concurrency crashes
+- G2: Parquet filtered to Canada+IPF at preprocess + SQL aggregation + caching
+- G3: /api/health accepts GET+HEAD, /api/ready probe added
+- G4: Error cards with Retry, loading skeletons, QueryClient retry defaults
+- G5: GHA keepalive, request timing middleware, DuckDB exception handler
+
+**Tab taxonomy + attribution (2026-04-16):**
+- Tab order: Progression, Athlete Projection (BETA), Lifter Lookup, QT Squeeze
+- Attribution footer with LinkedIn/Instagram on every page
+- Equipment collapsed to Raw/Equipped; Event to Full Power/Bench Only
+- Division uses CPU canonical labels with backend alias-mapping
+- Age Category (Numeric) dropdown retired (merged into Division)
+- Dots renamed to Goodlift (GLP) through the pipeline
+- Lifter Lookup modes are pill-nav instead of overflow-scroll
+- Reference line labels repositioned to prevent cut-off
+
+**See NEXT_STEPS.md for the living backlog.** Key P0 action: trigger the
+weekly data-refresh GHA manually so the Canada+IPF-filtered parquet
+actually reaches production.
 
 **Audit rounds (2026-04-16):**
 - Round 1: 10 bugs fixed (percentile scope, NaN%, QT block keys, null TotalKg,

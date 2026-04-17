@@ -76,12 +76,14 @@ function Select({
   label,
   value,
   options,
+  optionLabels,
   onChange,
   hint,
 }: {
   label: string
   value: string
   options: string[]
+  optionLabels?: Record<string, string>
   onChange: (v: string) => void
   hint?: string
 }) {
@@ -95,7 +97,7 @@ function Select({
       >
         {options.map((o) => (
           <option key={o} value={o}>
-            {o === '' ? 'Off' : o}
+            {optionLabels?.[o] ?? (o === '' ? 'Off' : o)}
           </option>
         ))}
       </select>
@@ -193,11 +195,14 @@ export default function Progression() {
   const [filtersOpenMobile, setFiltersOpenMobile] = useState(false)
 
   const filterSummary = useMemo(() => {
+    const eventLabel = filters.event === 'SBD' ? 'Full Power' :
+      filters.event === 'B' ? 'Bench' : filters.event
     const bits = [
       filters.sex,
       filters.weight_class,
       filters.equipment,
-      filters.event,
+      eventLabel,
+      filters.division && filters.division !== 'All' ? filters.division : '',
       filters.max_gap_months ? `<${filters.max_gap_months}mo gap` : '',
     ].filter(Boolean)
     return bits.join(' · ')
@@ -250,7 +255,9 @@ export default function Progression() {
               label="Equipment"
               value={filters.equipment}
               options={f.equipment}
+              optionLabels={{ Raw: 'Raw (Classic)', Equipped: 'Equipped' }}
               onChange={(v) => update({ equipment: v })}
+              hint="Raw = knee sleeves only. Equipped rolls up Single-ply, Wraps, and Multi-ply."
             />
             {/* Tested filter intentionally hidden: the OpenIPF export is IPF-only,
                 so every row already has Tested='Yes'. Showing a single-option
@@ -260,7 +267,9 @@ export default function Progression() {
               label="Event"
               value={filters.event}
               options={f.event}
+              optionLabels={{ SBD: 'Full Power (SBD)', B: 'Bench Only' }}
               onChange={(v) => update({ event: v })}
+              hint="Use the Per-lift toggle below to see Squat, Bench, or Deadlift trajectories within Full Power meets."
             />
             <Select
               label="Division"
@@ -269,13 +278,11 @@ export default function Progression() {
               onChange={(v) => update({ division: v })}
               hint="Division is federation-free-text. 'Open' is what CPU uses."
             />
-            <Select
-              label="Age category (numeric)"
-              value={filters.age_category}
-              options={f.age_category}
-              onChange={(v) => update({ age_category: v })}
-              hint="Uses the Age column, which is ~70% NULL. Many lifters drop out if set."
-            />
+            {/* Age category (numeric) dropdown removed: it relied on the Age
+                column which is ~70% NULL and silently dropped most lifters.
+                Division now serves as the single age-filter mechanism using
+                the CPU canonical labels (Youth 1..3, Sub-Junior, Junior,
+                Open, Master 1..4). */}
             <Select
               label="Exclude gaps longer than"
               value={filters.max_gap_months}
@@ -292,7 +299,12 @@ export default function Progression() {
                 }
                 className="accent-zinc-400"
               />
-              <span className="text-zinc-300 text-xs uppercase tracking-wide">Same class only</span>
+              <span
+                className="text-zinc-300 text-xs uppercase tracking-wide"
+                title="When on, only lifters who stayed in the same weight class for their entire career in scope are included. A lifter who moved from 74 to 83 is excluded, because blending class-transitions into the cohort average distorts the curve."
+              >
+                Same class only
+              </span>
             </label>
             <label className="flex items-center gap-2 mb-3 cursor-pointer">
               <input

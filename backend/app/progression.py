@@ -17,6 +17,24 @@ from .data import get_cursor
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
+# Canonical CPU age divisions mapped to the string values that actually
+# appear in OpenIPF's free-text Division column for CPU meets. This keeps
+# the frontend using friendly labels (Master 1, Sub-Junior) while the
+# query handles federation-specific spelling drift.
+CPU_DIVISION_ALIASES: dict[str, list[str]] = {
+    "Youth 1": ["Youth 1", "Y1"],
+    "Youth 2": ["Youth 2", "Y2"],
+    "Youth 3": ["Youth 3", "Y3"],
+    "Sub-Junior": ["Sub-Junior", "Sub-Juniors", "SJ"],
+    "Junior": ["Junior", "Juniors", "Jr"],
+    "Open": ["Open"],
+    "Master 1": ["Master 1", "Masters 1", "M1", "Masters 40-49"],
+    "Master 2": ["Master 2", "Masters 2", "M2", "Masters 50-59"],
+    "Master 3": ["Master 3", "Masters 3", "M3", "Masters 60-69"],
+    "Master 4": ["Master 4", "Masters 4", "M4", "Masters 70+", "Masters 70-79", "Masters 80+"],
+}
+
+
 X_AXIS_COLS = {
     "Meet #": ("MeetNumber", "Meet number (1 = first meet in scope)"),
     "Days": ("DaysFromFirst", "Days since first meet"),
@@ -87,13 +105,33 @@ def _build_filter_clauses(
             params.append(val)
 
     eq("Sex", sex)
-    eq("Equipment", equipment)
+
+    # Equipment: "Equipped" is a UI shortcut that matches any non-Raw
+    # equipment (CPU bifurcates Classic Raw vs Equipped). OpenIPF stores
+    # Single-ply / Wraps / Multi-ply separately; we OR them.
+    if equipment == "Equipped":
+        clauses.append("Equipment IN ('Single-ply', 'Wraps', 'Multi-ply', 'Unlimited')")
+    else:
+        eq("Equipment", equipment)
+
     eq("Tested", tested)
     eq("Event", event)
     eq("Federation", federation)
     eq("Country", country)
     eq("ParentFederation", parent_federation)
-    eq("Division", division)
+
+    # Division: CPU canonical labels map to one or more OpenIPF free-text
+    # values. "Master 1" matches "Master 1", "Masters 1", "M1", "Masters 40-49", etc.
+    if division and division != "All":
+        aliases = CPU_DIVISION_ALIASES.get(division)
+        if aliases:
+            placeholders = ",".join("?" * len(aliases))
+            clauses.append(f"Division IN ({placeholders})")
+            params.extend(aliases)
+        else:
+            # Unknown label -- fall through to exact match
+            clauses.append("Division = ?")
+            params.append(division)
 
     if weight_class and weight_class != "Overall":
         clauses.append("CanonicalWeightClass = ?")
