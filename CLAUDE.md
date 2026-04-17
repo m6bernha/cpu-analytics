@@ -117,7 +117,7 @@ specifically, not the first meet of any kind.
 - **Survivorship stats.** Progression endpoint returns `n_all_lifters` (including 1-meet) and `avg_first_total` so the frontend shows retention rate and day-0 population context.
 - **Search metadata shows LATEST meet.** The `search_lifters` SQL sorts Date DESC so rn=1 is the most recent meet. LatestEquipment, LatestWeightClass, LatestMeetDate are now actually latest.
 - **Percentile scope MUST match cohort.** `_compute_percentile` now uses a `self_best` CTE scoped to the same sex/class/equipment/country/IPF/SBD filters as the `bests` CTE. The earlier bug selected the lifter's global SBD max, which would rank out-of-scope totals against an in-scope cohort.
-- **DuckDB `get_conn()` returns a per-call `cursor()`**, not the parent connection. DuckDB's parent connection is not safe for concurrent `execute()` calls from multiple threads. Cursors share the underlying database but are per-thread safe.
+- **DuckDB cursor per request.** `data.py` exposes `get_cursor()` and `with_cursor()` (context manager). The base connection holds the `:memory:` DB and parquet views; every request handler gets its own cursor. DuckDB's parent connection is not safe for concurrent `execute()` calls. `get_conn()` is a deprecated alias. `qt.py` helpers (`_load_scope`, `_load_qt_standards`, `_load_best_totals_per_era`) take the cursor as first arg so a single cursor covers the whole computation.
 - **QT blocks always returns 4 keys** (`M_Nationals`, `M_Regionals`, `F_Nationals`, `F_Regionals`), even when `groupby` yields none for a combo. Backend initializes the dict with empty lists before iterating.
 - **TotalKg can be null** in LifterMeet. DQ / bombed / bench-only meets may have null totals. Frontend guards with `!= null` before arithmetic; backend `_safe_best` returns None on empty.
 - **Per-lift cohort progression** requires all three lift columns non-null, so this view is SBD-only in practice. A bench-only meet row cannot contribute because the SQL's `WHERE Best3SquatKg IS NOT NULL AND Best3BenchKg IS NOT NULL AND Best3DeadliftKg IS NOT NULL` excludes it. For individual lifter per-lift view, partial events DO contribute to whichever lift(s) they provide, because the frontend renders each lift as an independent Line with `connectNulls`.
@@ -129,6 +129,16 @@ specifically, not the first meet of any kind.
 - **Data loader uses unique temp files.** `tempfile.NamedTemporaryFile` prevents concurrent cold-start downloads from stomping each other's partial writes.
 - **Corrupt-parquet self-heal.** Lifespan warmup deletes local parquet files if any view comes back 0-rows, so the next cold-start re-downloads rather than serving broken data indefinitely.
 - **accessibility:** nav has `role="tablist"` with `aria-selected`; search inputs have `aria-label`.
+- **Parquet is Canada + IPF scoped at preprocess time.** `data/preprocess.py` applies `Country=='Canada' & ParentFederation=='IPF'` before writing the parquet. The app never serves anything outside that scope (see `scope.py`). This shrinks the parquet ~15-20x vs. publishing the full OpenIPF export. The Canada+IPF pool is ~5,400 lifters.
+- **QT coverage aggregates in SQL.** `qt._load_best_totals_per_era` does `GROUP BY Sex, WeightClass, Name` with `MAX(CASE WHEN Date < <cutoff> THEN TotalKg END)` columns per era + 24-month window. compute_coverage reads that small frame and does only the QT-threshold comparison in pandas. Do not regress to pulling the full scope into pandas.
+- **`compute_blocks` and `get_filters` are lru_cached.** Results only change on parquet refresh (which triggers a container restart). maxsize is small (1-8); every new cache entry costs memory.
+- **`/api/health` accepts GET and HEAD.** UptimeRobot free plan is HEAD-only. Use `@app.api_route(methods=["GET", "HEAD"])` for any new probe-style endpoint.
+- **`/api/ready` is a real readiness probe.** Runs `SELECT 1` via `get_cursor()`. Returns 503 if the parquet views are broken. `/api/health` is liveness only and doesn't touch DuckDB.
+- **Request timing middleware** logs `[req] METHOD /path STATUS <ms>` on every request. Crashes log `CRASH in <ms>ms`. Visible in Render logs.
+- **Dedicated DuckDB exception handler** catches `duckdb.Error`, logs the request path + exception + stack trace, returns a clean 503 JSON `{"error": "database_error"}`. Means future DuckDB issues show which endpoint triggered them.
+- **QueryClient defaults** (main.tsx): `retry: 3`, exponential backoff up to 30 s, `staleTime: 5 min`, `refetchOnWindowFocus: false`. Tuned for the Render free-tier cold start. Individual queries override staleTime where appropriate.
+- **Frontend error display pattern.** Every query uses `lib/QueryStatus.tsx`: `QueryErrorCard` (with HTTP status + Retry button + cold-start explanation) on `isError`, `LoadingSkeleton` on `isLoading`. Keeps users informed instead of rendering partially.
+- **CompareView is lazy-loaded.** `const CompareView = lazy(() => import('./CompareView'))` in `LifterLookup.tsx`. Ships as its own ~8 KB chunk. Do NOT add a static import from CompareView back into LifterLookup - it will defeat the split (vite warns `INEFFECTIVE_DYNAMIC_IMPORT`).
 
 ## Pre-push checklist
 
@@ -182,8 +192,27 @@ The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toast
 - Round 2: 8 hardening fixes (manual DoS guards, LIKE escaping, data_loader
   temp file race, Math.min spread antipattern, useUrlState ref-counting,
   corrupt-parquet recovery, ErrorBoundary, aria-labels)
-- **63 tests passing** across progression, lifters, projection, qt, manual,
-  and security modules.
+- Round 3: 5 interaction fixes (per-lift filter plumbing amber warning,
+  manual response shape completeness, empty-response helper, preprocess
+  fail-hard on missing columns, vectorized canonical_weight_class)
+
+**Production reliability overhaul (2026-04-16, G1-G5):**
+- G1: Per-request DuckDB cursors eliminate "No open result set" concurrency
+  crashes. New `get_cursor()` and `with_cursor()`. 4 regression tests with
+  32 parallel threads.
+- G2: Parquet filtered to Canada+IPF at preprocess (15-20x shrink). QT
+  coverage aggregates in SQL. `compute_blocks` and `get_filters` cached.
+  psutil RSS logged at startup.
+- G3: `/api/health` accepts HEAD (fixes UptimeRobot). New `/api/ready`
+  readiness probe.
+- G4: Frontend error cards + retry + skeletons + QueryClient retry/backoff
+  defaults.
+- G5: GitHub keepalive cron, request timing middleware, DuckDB exception
+  handler.
+- Plus CompareView lazy-loaded as its own 8 KB chunk.
+
+**77 tests passing** across progression, lifters, projection, qt, manual,
+security, weight_class, and concurrency modules.
 
 ## When extending this
 
@@ -206,3 +235,44 @@ The app stacks vertically below the `md` Tailwind breakpoint (768 px):
 Charts use `ResponsiveContainer` with fixed pixel heights (`h-[400px]` or
 `h-[480px]`). Width auto-scales. Keep chart heights the same on mobile so the
 aspect ratio stays readable on phones.
+
+## Open action items (deferred work)
+
+See `NEXT_STEPS.md` at the repo root for the prioritized backlog. Highest-impact
+items summarized here:
+
+### Manual action for the user (immediate)
+
+- **Trigger the data-refresh GHA manually** at
+  https://github.com/m6bernha/cpu-analytics/actions to activate the Canada+IPF
+  parquet shrink in production. Until the next Sunday 06:13 UTC cron, Render
+  is still downloading the pre-shrink parquet on cold start.
+
+### High-priority code work
+
+1. **Lazy-load `LifterDetail`** to claim the remaining ~200 KB Recharts saving.
+   The CompareView split only yielded 8 KB because LifterDetail imports Recharts
+   statically from the main bundle. Wrap LifterDetail the same way CompareView
+   is wrapped.
+2. **Per-lift filter plumbing.** Frontend shows an amber warning that per-lift
+   view ignores age_category, same_class_only, and max_gap_months. Data-correctness
+   gap. Extend `compute_lift_progression` to accept and apply those filters
+   (including baseline recomputation for age_category).
+
+### Medium-priority features
+
+3. **Bodyweight + Dots progression curves.** Already in the parquet, shown in
+   the meet table, never plotted. Copy the progression pattern to plot Dots/BW
+   over time.
+4. **Coach view**: "Am I on pace for Nationals 2027?" Given a target date and
+   the already-built individual projection, compute expected total on that date
+   and the gap to the QT.
+5. **Monitor RSS after next cold start.** Look at Render logs for the
+   `[startup] process RSS: <MB>` line to quantify the G2 memory improvement.
+
+### Low-priority / polish
+
+6. **Hypothesis property-based tests** for `canonical_weight_class`.
+7. **Extract LifterDetail to its own file** for easier lazy-loading.
+8. **UptimeRobot dashboard verification** once HEAD is live (pending user
+   manual navigation since the Chrome extension blocks dashboard domains).
