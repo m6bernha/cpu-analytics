@@ -148,7 +148,6 @@ export type LiftProgressionQuery = {
   event?: string
   weight_class?: string
   division?: string
-  age_category?: string
   x_axis?: string
   max_gap_months?: string
   same_class_only?: string

@@ -5,12 +5,13 @@ Uses the synthetic fixture from conftest.py. The fixture has:
   - Bob: 4 SBD meets + 1 bench-only, all Open
   - Carl: 2 meets 4 years apart (comeback), Open
   - Dana: 1 meet only (should be excluded)
+  - Ella: 2 Multi-ply Open SBD meets with class change 72 -> 84
 """
 
 from __future__ import annotations
 
 import pytest
-from backend.app.progression import compute_progression
+from backend.app.progression import compute_lift_progression, compute_progression
 
 
 class TestBasicProgression:
@@ -182,3 +183,134 @@ class TestDivisionFilter:
         )
         # Alice (3), Bob (4), Carl (2) = 3 lifters
         assert result["n_lifters"] == 3
+
+
+class TestLiftProgressionFilters:
+    """Per-filter plumbing tests for compute_lift_progression.
+
+    Each test compares a baseline result (filter off / default) against the
+    same query with the filter on, proving the parameter reaches the SQL
+    WHERE clause or the pandas post-filter instead of being silently
+    dropped. Each test asserts a concrete n_lifters delta against the
+    fixture so a regression breaks immediately.
+
+    Fixture snapshot relevant here (all Canada + IPF, Event=SBD unless
+    noted):
+      - Alice: F, Raw, 63, Juniors then Open, 3 meets at ages 22/23/25.
+      - Bob:   M, Raw, 83, Open, 4 SBD meets ages 28-31, plus 1 bench-only.
+      - Carl:  M, Raw, 93, Open, 2 meets ages 25 and 29 (4-year gap).
+      - Dana:  F, Raw, 57, Juniors, 1 meet (excluded by MeetCount>=2).
+      - Ella:  F, Multi-ply, Open, 2 meets at class 72 then 84 (class change).
+    """
+
+    def test_sex_filter_reaches_sql(self, test_conn):
+        male = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        female = compute_lift_progression(
+            sex="F", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        # Raw males with 2+ full-SBD meets: Bob, Carl
+        assert male["n_lifters"] == 2
+        # Raw females with 2+ full-SBD meets: Alice only (Dana excluded)
+        assert female["n_lifters"] == 1
+
+    def test_equipment_filter_reaches_sql(self, test_conn):
+        raw = compute_lift_progression(
+            equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        equipped = compute_lift_progression(
+            equipment="Equipped", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        # Raw (any sex): Alice, Bob, Carl
+        assert raw["n_lifters"] == 3
+        # Equipped expands to Multi-ply/Single-ply/Wraps/Unlimited: only Ella
+        assert equipped["n_lifters"] == 1
+
+    def test_event_filter_reaches_sql(self, test_conn):
+        sbd = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        bench = compute_lift_progression(
+            sex="M", equipment="Raw", event="B",
+            country="Canada", parent_federation="IPF",
+        )
+        # SBD males: Bob, Carl
+        assert sbd["n_lifters"] == 2
+        # Bench-only: Bob has a single bench meet, MeetCount=1 excludes him
+        assert bench["n_lifters"] == 0
+
+    def test_weight_class_filter_reaches_sql(self, test_conn):
+        wc_83 = compute_lift_progression(
+            equipment="Raw", event="SBD", weight_class="83",
+            country="Canada", parent_federation="IPF",
+        )
+        wc_93 = compute_lift_progression(
+            equipment="Raw", event="SBD", weight_class="93",
+            country="Canada", parent_federation="IPF",
+        )
+        # Only Bob in 83 Raw, only Carl in 93 Raw.
+        assert wc_83["n_lifters"] == 1
+        assert wc_93["n_lifters"] == 1
+
+    def test_division_filter_reaches_sql(self, test_conn):
+        open_div = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD", division="Open",
+            country="Canada", parent_federation="IPF",
+        )
+        junior_div = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD", division="Junior",
+            country="Canada", parent_federation="IPF",
+        )
+        # Open male Raw: Bob, Carl
+        assert open_div["n_lifters"] == 2
+        # No male Junior lifters in fixture
+        assert junior_div["n_lifters"] == 0
+
+    def test_age_category_filter_reaches_sql(self, test_conn):
+        jr = compute_lift_progression(
+            equipment="Raw", event="SBD", age_category="Jr",
+            country="Canada", parent_federation="IPF",
+        )
+        open_cat = compute_lift_progression(
+            equipment="Raw", event="SBD", age_category="Open",
+            country="Canada", parent_federation="IPF",
+        )
+        # Alice has two Junior-age meets (22, 23). Baseline recomputes
+        # against her first surviving Junior meet.
+        assert jr["n_lifters"] == 1
+        # Alice's one Open meet (age 25) is dropped (MeetCount<2 after
+        # filter). Bob (ages 28-31) and Carl (25, 29) remain.
+        assert open_cat["n_lifters"] == 2
+
+    def test_max_gap_months_filter_reaches_sql(self, test_conn):
+        no_gap = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        short_gap = compute_lift_progression(
+            sex="M", equipment="Raw", event="SBD", max_gap_months=24,
+            country="Canada", parent_federation="IPF",
+        )
+        # Carl's 4-year gap exceeds 24 months and drops him.
+        assert no_gap["n_lifters"] == 2
+        assert short_gap["n_lifters"] == 1
+
+    def test_same_class_only_filter_reaches_sql(self, test_conn):
+        all_equipped = compute_lift_progression(
+            sex="F", equipment="Equipped", event="SBD",
+            country="Canada", parent_federation="IPF",
+        )
+        same_class = compute_lift_progression(
+            sex="F", equipment="Equipped", event="SBD", same_class_only=True,
+            country="Canada", parent_federation="IPF",
+        )
+        # Ella has two meets across two weight classes. Without the filter
+        # she contributes; with it she's excluded (ClassCount=2).
+        assert all_equipped["n_lifters"] == 1
+        assert same_class["n_lifters"] == 0

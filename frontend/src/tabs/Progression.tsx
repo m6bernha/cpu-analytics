@@ -43,7 +43,6 @@ type FilterState = {
   tested: string
   event: string
   division: string
-  age_category: string
   x_axis: string
   max_gap_months: string
   same_class_only: string
@@ -57,7 +56,6 @@ const DEFAULT_FILTERS: FilterState = {
   tested: 'Yes',
   event: 'SBD',
   division: 'Open',
-  age_category: 'All',
   x_axis: 'Years',
   max_gap_months: '',
   same_class_only: '',
@@ -133,7 +131,6 @@ export default function Progression() {
         event: filters.event,
         weight_class: filters.weight_class,
         division: filters.division,
-        age_category: filters.age_category,
         x_axis: filters.x_axis,
         max_gap_months: filters.max_gap_months || undefined,
         same_class_only: filters.same_class_only === 'true' ? 'true' : undefined,
@@ -154,6 +151,8 @@ export default function Progression() {
         weight_class: filters.weight_class,
         division: filters.division,
         x_axis: filters.x_axis,
+        max_gap_months: filters.max_gap_months || undefined,
+        same_class_only: filters.same_class_only === 'true' ? 'true' : undefined,
       }),
     enabled: filtersQuery.isSuccess && filters.per_lift === 'true',
   })
@@ -355,14 +354,6 @@ export default function Progression() {
               </span>{' '}
               lifters with complete Squat / Bench / Deadlift data at every meet
             </div>
-            {(filters.age_category !== 'All' ||
-              filters.max_gap_months !== '' ||
-              filters.same_class_only === 'true') && (
-              <div className="text-amber-500 text-xs mb-2">
-                Note: the per-lift view currently ignores Age category, Gap
-                filter, and Same-class-only. Total view respects all filters.
-              </div>
-            )}
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
@@ -490,19 +481,6 @@ export default function Progression() {
                 </div>
               )}
             </div>
-
-            {/* Age data loss indicator */}
-            {filters.age_category !== 'All' &&
-              progQuery.data.n_lifters_before_age_filter > progQuery.data.n_lifters && (
-              <div className="text-zinc-500 text-xs mb-2">
-                Showing {progQuery.data.n_lifters.toLocaleString()} of{' '}
-                {progQuery.data.n_lifters_before_age_filter.toLocaleString()} lifters.{' '}
-                {Math.round(
-                  100 * (1 - progQuery.data.n_lifters / progQuery.data.n_lifters_before_age_filter)
-                )}
-                % dropped because the Age column is missing for their meet rows.
-              </div>
-            )}
 
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               <ResponsiveContainer width="100%" height="100%">

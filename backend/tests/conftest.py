@@ -116,6 +116,28 @@ _ROWS = [
          Date=pd.Timestamp("2024-09-01"), MeetCountry="Canada",
          MeetName="Quebec Classic"),
 
+    # -- Ella: female Multi-ply Open lifter who changes weight class (72 -> 84).
+    # Used to verify same_class_only filtering and Equipment="Equipped" matching
+    # for the per-lift progression endpoint. Sex=F + Equipment=Multi-ply keeps
+    # her out of every existing test (which all filter equipment="Raw" or
+    # sex="M" with equipment="Single-ply").
+    dict(Name="Ella E", Sex="F", Event="SBD", Equipment="Multi-ply", Age=30.0,
+         AgeClass="24-34", BirthYearClass=None, Division="Open",
+         BodyweightKg=71.0, WeightClassKg="72", CanonicalWeightClass="72",
+         Best3SquatKg=160, Best3BenchKg=100, Best3DeadliftKg=180, TotalKg=440,
+         Place="1", Goodlift=300.0, Tested="Yes", Country="Canada", State="ON",
+         Federation="CPU", ParentFederation="IPF",
+         Date=pd.Timestamp("2023-05-01"), MeetCountry="Canada",
+         MeetName="Ontario Equipped"),
+    dict(Name="Ella E", Sex="F", Event="SBD", Equipment="Multi-ply", Age=31.0,
+         AgeClass="24-34", BirthYearClass=None, Division="Open",
+         BodyweightKg=82.0, WeightClassKg="84", CanonicalWeightClass="84",
+         Best3SquatKg=180, Best3BenchKg=115, Best3DeadliftKg=200, TotalKg=495,
+         Place="1", Goodlift=335.0, Tested="Yes", Country="Canada", State="ON",
+         Federation="CPU", ParentFederation="IPF",
+         Date=pd.Timestamp("2024-05-01"), MeetCountry="Canada",
+         MeetName="Ontario Equipped"),
+
     # -- Bob's bench-only meet (non-SBD event).
     dict(Name="Bob B", Sex="M", Event="B", Equipment="Raw", Age=29.5,
          AgeClass="24-34", BirthYearClass=None, Division="Open",

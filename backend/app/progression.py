@@ -430,6 +430,14 @@ LIFT_COLS = {
 }
 
 
+def _empty_lift_response(x_axis: str) -> dict[str, Any]:
+    return {
+        "x_label": X_AXIS_COLS[x_axis][1],
+        "lifts": {"squat": [], "bench": [], "deadlift": []},
+        "n_lifters": 0,
+    }
+
+
 def compute_lift_progression(
     sex: str | None = None,
     equipment: str | None = None,
@@ -440,7 +448,10 @@ def compute_lift_progression(
     parent_federation: str | None = DEFAULT_PARENT_FEDERATION,
     weight_class: str | None = None,
     division: str | None = None,
+    age_category: str | None = None,
     x_axis: str = "Years",
+    max_gap_months: int | None = None,
+    same_class_only: bool = False,
 ) -> dict[str, Any]:
     """Return per-lift mean change from first meet for S/B/D.
 
@@ -468,24 +479,32 @@ def compute_lift_progression(
 
     sql = f"""
         WITH filtered AS (
-            SELECT Name, Date, Best3SquatKg, Best3BenchKg, Best3DeadliftKg, MeetName
+            SELECT Name, Date, Age, CanonicalWeightClass,
+                   Best3SquatKg, Best3BenchKg, Best3DeadliftKg, MeetName
             FROM openipf
             {where_sql}
         ),
         ranked AS (
             SELECT
-                Name, Date,
+                Name, Date, Age, CanonicalWeightClass,
                 Best3SquatKg, Best3BenchKg, Best3DeadliftKg,
                 FIRST_VALUE(Best3SquatKg) OVER w AS FirstSquat,
                 FIRST_VALUE(Best3BenchKg) OVER w AS FirstBench,
                 FIRST_VALUE(Best3DeadliftKg) OVER w AS FirstDeadlift,
                 MIN(Date) OVER (PARTITION BY Name) AS FirstDate,
-                COUNT(*) OVER (PARTITION BY Name) AS MeetCount
+                COUNT(*) OVER (PARTITION BY Name) AS MeetCount,
+                COUNT(DISTINCT CanonicalWeightClass) OVER (PARTITION BY Name) AS ClassCount
             FROM filtered
             WINDOW w AS (PARTITION BY Name ORDER BY Date, Best3SquatKg DESC NULLS LAST, MeetName)
         )
         SELECT
             Name,
+            Age,
+            CanonicalWeightClass,
+            ClassCount,
+            Best3SquatKg,
+            Best3BenchKg,
+            Best3DeadliftKg,
             DATEDIFF('day', FirstDate, Date) AS DaysFromFirst,
             (Best3SquatKg - FirstSquat) AS SquatDiff,
             (Best3BenchKg - FirstBench) AS BenchDiff,
@@ -500,12 +519,68 @@ def compute_lift_progression(
     df = conn.execute(sql, params).df()
 
     if df.empty:
-        x_label = X_AXIS_COLS[x_axis][1]
-        return {
-            "x_label": x_label,
-            "lifts": {"squat": [], "bench": [], "deadlift": []},
-            "n_lifters": 0,
-        }
+        return _empty_lift_response(x_axis)
+
+    # Optional gap filter: mirror compute_progression. Lifters with any
+    # inter-meet gap longer than max_gap_months are dropped before aggregation.
+    if max_gap_months is not None:
+        max_gap_days = max_gap_months * 30.44
+        df = df.sort_values(["Name", "DaysFromFirst"])
+        df["_prev_days"] = df.groupby("Name")["DaysFromFirst"].shift(1)
+        df["_gap"] = df["DaysFromFirst"] - df["_prev_days"]
+        max_gaps = df.groupby("Name")["_gap"].max()
+        long_gap_names = set(max_gaps[max_gaps > max_gap_days].index)
+        if long_gap_names:
+            df = df[~df["Name"].isin(long_gap_names)]
+        df = df.drop(columns=["_prev_days", "_gap"])
+        if df.empty:
+            return _empty_lift_response(x_axis)
+
+    # Optional same-class filter: keep lifters whose CanonicalWeightClass
+    # never changed in scope. ClassCount is the SQL-side DISTINCT count.
+    if same_class_only and "ClassCount" in df.columns:
+        df = df[df["ClassCount"] == 1]
+        if df.empty:
+            return _empty_lift_response(x_axis)
+
+    # Optional age-category filter. Mirrors compute_progression: after
+    # dropping rows outside the category we MUST rebaseline each lifter
+    # to their first surviving meet, otherwise the S/B/D diffs are measured
+    # from an invisible pre-category baseline (e.g. a Master's first Open
+    # meet shows a huge jump because it's diffed from their Junior first meet).
+    if age_category and age_category != "All":
+        df["AgeCategory"] = df["Age"].apply(age_to_category)
+        df = df[df["AgeCategory"] == age_category]
+        if df.empty:
+            return _empty_lift_response(x_axis)
+
+        first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
+        first_vals = (
+            df.loc[first_idx, [
+                "Name",
+                "Best3SquatKg",
+                "Best3BenchKg",
+                "Best3DeadliftKg",
+                "DaysFromFirst",
+            ]]
+            .rename(columns={
+                "Best3SquatKg": "_FirstSquat",
+                "Best3BenchKg": "_FirstBench",
+                "Best3DeadliftKg": "_FirstDeadlift",
+                "DaysFromFirst": "_FirstDays",
+            })
+        )
+        df = df.merge(first_vals, on="Name")
+        df["SquatDiff"] = df["Best3SquatKg"] - df["_FirstSquat"]
+        df["BenchDiff"] = df["Best3BenchKg"] - df["_FirstBench"]
+        df["DeadliftDiff"] = df["Best3DeadliftKg"] - df["_FirstDeadlift"]
+        df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
+        df = df.drop(columns=["_FirstSquat", "_FirstBench", "_FirstDeadlift", "_FirstDays"])
+        # Drop lifters with <2 meets left in this age category.
+        meet_counts = df.groupby("Name")["DaysFromFirst"].transform("count")
+        df = df[meet_counts >= 2]
+        if df.empty:
+            return _empty_lift_response(x_axis)
 
     # Derive time columns
     df["WeeksFromFirst"] = (df["DaysFromFirst"] / 7).round().astype(int)
