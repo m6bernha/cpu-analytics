@@ -902,15 +902,15 @@ function ManualEntryForm({
 // CompareView is lazy-loaded: it pulls in its own Recharts + useQueries
 // and only ships to clients who actually open the Compare tab.
 const CompareView = lazy(() => import('./CompareView'))
-import { MAX_COMPARE } from './CompareView'
 
 // ---------- Tab component ----------
 
+// Duplicated from CompareView to avoid a static import that would pull
+// the lazy chunk back into the main bundle.
+const MAX_COMPARE = 4
+
 type Mode = 'search' | 'compare' | 'manual'
 
-// Kept in sync with MAX_COMPARE in CompareView.tsx. LifterLookup uses it to
-// clamp compareNames parsed from the URL and to gate the addCompare logic.
-const MAX_COMPARE = 4
 
 const MODE_LABELS: Record<Mode, string> = {
   search: 'Search',
