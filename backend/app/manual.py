@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # Upper bound on kg values. A current world record total is ~1100 kg.
@@ -19,10 +19,15 @@ from pydantic import BaseModel, Field, field_validator
 # without excluding any plausible real total.
 MAX_KG = 2000.0
 
+# Tolerance when checking user-supplied total against S+B+D. Kept tight
+# because CPU/IPF totals are exact sums of attempts in 2.5 kg increments;
+# a mismatch larger than this points to a typo worth surfacing.
+TOTAL_LIFTS_TOLERANCE_KG = 0.01
+
 
 class ManualMeetEntry(BaseModel):
     date: date
-    total_kg: float = Field(gt=0, le=MAX_KG)
+    total_kg: float | None = Field(default=None, gt=0, le=MAX_KG)
     bodyweight_kg: float | None = Field(default=None, ge=30, le=300)
     weight_class: str | None = Field(default=None, max_length=10)
     squat_kg: float | None = Field(default=None, gt=0, le=MAX_KG)
@@ -36,6 +41,42 @@ class ManualMeetEntry(BaseModel):
         if v.year < 1960 or v.year > date.today().year + 1:
             raise ValueError(f"Date {v} is outside the supported range (1960-next year)")
         return v
+
+    @model_validator(mode="after")
+    def _reconcile_total_and_lifts(self) -> "ManualMeetEntry":
+        lifts = (self.squat_kg, self.bench_kg, self.deadlift_kg)
+        has_all_lifts = all(v is not None for v in lifts)
+        has_any_lift = any(v is not None for v in lifts)
+
+        if has_any_lift and not has_all_lifts:
+            raise ValueError(
+                "Per-lift entries need squat, bench, and deadlift together. "
+                "Leave all three blank to enter a total only."
+            )
+
+        if self.total_kg is None:
+            if not has_all_lifts:
+                raise ValueError(
+                    "Each meet needs either a total or all three lifts."
+                )
+            computed = self.squat_kg + self.bench_kg + self.deadlift_kg
+            if computed > MAX_KG:
+                raise ValueError(
+                    f"Sum of lifts {computed:.1f} kg exceeds the {MAX_KG:.0f} kg cap."
+                )
+            self.total_kg = round(computed, 2)
+            return self
+
+        if has_all_lifts:
+            computed = self.squat_kg + self.bench_kg + self.deadlift_kg
+            if abs(computed - self.total_kg) > TOTAL_LIFTS_TOLERANCE_KG:
+                raise ValueError(
+                    f"Total {self.total_kg:.1f} kg does not match sum of lifts "
+                    f"{computed:.1f} kg "
+                    f"(squat {self.squat_kg} + bench {self.bench_kg} + "
+                    f"deadlift {self.deadlift_kg})."
+                )
+        return self
 
 
 class ManualTrajectoryRequest(BaseModel):

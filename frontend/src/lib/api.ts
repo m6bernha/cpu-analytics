@@ -13,11 +13,8 @@ export type FiltersResponse = {
   equipment: string[]
   tested: string[]
   event: string[]
-  federation: string[]
-  country: string[]
   division: string[]
   weight_class: { M: string[]; F: string[] }
-  age_category: string[]
   x_axis: string[]
 }
 
@@ -91,7 +88,7 @@ const REQUIRED_FILTER_ARRAYS: (keyof FiltersResponse)[] = [
   'sex',
   'equipment',
   'event',
-  'age_category',
+  'division',
   'x_axis',
 ]
 
@@ -113,7 +110,6 @@ export type ProgressionQuery = {
   event?: string
   weight_class?: string
   division?: string
-  age_category?: string
   x_axis?: string
   max_gap_months?: string
   same_class_only?: string
@@ -152,7 +148,10 @@ export type LiftProgressionQuery = {
   event?: string
   weight_class?: string
   division?: string
+  age_category?: string
   x_axis?: string
+  max_gap_months?: string
+  same_class_only?: string
 }
 
 export function fetchLiftProgression(
@@ -182,15 +181,22 @@ export type QtBlockRow = {
   pct_2027_today: number | null
 }
 
+export type QtBlocksMeta = {
+  division: string
+  using_open_fallback: boolean
+}
+
 export type QtBlocksResponse = {
   F_Regionals: QtBlockRow[]
   F_Nationals: QtBlockRow[]
   M_Regionals: QtBlockRow[]
   M_Nationals: QtBlockRow[]
+  meta?: QtBlocksMeta
 }
 
-export function fetchQtBlocks(): Promise<QtBlocksResponse> {
-  return getJson<QtBlocksResponse>(`${API_BASE}/api/qt/blocks`)
+export function fetchQtBlocks(division: string = 'Open'): Promise<QtBlocksResponse> {
+  const params = new URLSearchParams({ division })
+  return getJson<QtBlocksResponse>(`${API_BASE}/api/qt/blocks?${params}`)
 }
 
 // ---------- QT standards ----------
@@ -287,7 +293,10 @@ export function fetchLifterHistory(name: string): Promise<LifterHistory> {
 
 export type ManualEntry = {
   date: string  // ISO yyyy-mm-dd
-  total_kg: number
+  // Either total_kg OR all three of squat_kg/bench_kg/deadlift_kg required.
+  // Backend reconciles: computes total from lifts when omitted, rejects
+  // mismatches when both are supplied.
+  total_kg?: number | null
   bodyweight_kg?: number | null
   weight_class?: string | null
   squat_kg?: number | null
@@ -304,13 +313,35 @@ export type ManualRequest = {
   entries: ManualEntry[]
 }
 
-export function postManualTrajectory(req: ManualRequest): Promise<LifterHistory> {
-  return fetch(`${API_BASE}/api/manual/trajectory`, {
+export async function postManualTrajectory(req: ManualRequest): Promise<LifterHistory> {
+  const res = await fetch(`${API_BASE}/api/manual/trajectory`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
-  }).then(async (res) => {
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
-    return res.json()
   })
+  if (!res.ok) {
+    // Surface FastAPI / Pydantic validation messages so the user sees
+    // "Total does not match sum of lifts" instead of a bare 422.
+    let detail = ''
+    try {
+      const body = await res.json()
+      if (body?.detail) {
+        if (typeof body.detail === 'string') {
+          detail = body.detail
+        } else if (Array.isArray(body.detail)) {
+          detail = body.detail
+            .map((d: { msg?: string; loc?: (string | number)[] }) =>
+              d?.msg ? `${d.msg}` : JSON.stringify(d),
+            )
+            .join('; ')
+        } else {
+          detail = JSON.stringify(body.detail)
+        }
+      }
+    } catch {
+      // Body was not JSON; fall through to generic HTTP error.
+    }
+    throw new Error(detail || `HTTP ${res.status} ${res.statusText}`)
+  }
+  return res.json()
 }

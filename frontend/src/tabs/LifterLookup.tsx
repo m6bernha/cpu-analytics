@@ -701,11 +701,43 @@ function LifterDetail({
 type ManualFormRow = {
   date: string
   total: string
+  squat: string
+  bench: string
+  deadlift: string
   weight_class: string
   meet_name: string
 }
 
-const EMPTY_ROW: ManualFormRow = { date: '', total: '', weight_class: '', meet_name: '' }
+const EMPTY_ROW: ManualFormRow = {
+  date: '',
+  total: '',
+  squat: '',
+  bench: '',
+  deadlift: '',
+  weight_class: '',
+  meet_name: '',
+}
+
+// A row is ready to submit when it has a date plus either a valid total or
+// all three lift values. Any other combination is flagged client-side so the
+// user sees the issue before hitting the server.
+function rowReady(r: ManualFormRow): boolean {
+  if (!r.date) return false
+  const hasTotal = r.total !== '' && Number(r.total) > 0
+  const hasSquat = r.squat !== '' && Number(r.squat) > 0
+  const hasBench = r.bench !== '' && Number(r.bench) > 0
+  const hasDead = r.deadlift !== '' && Number(r.deadlift) > 0
+  const hasAllLifts = hasSquat && hasBench && hasDead
+  return hasTotal || hasAllLifts
+}
+
+function rowHasPartialLifts(r: ManualFormRow): boolean {
+  const hasSquat = r.squat !== '' && Number(r.squat) > 0
+  const hasBench = r.bench !== '' && Number(r.bench) > 0
+  const hasDead = r.deadlift !== '' && Number(r.deadlift) > 0
+  const count = Number(hasSquat) + Number(hasBench) + Number(hasDead)
+  return count > 0 && count < 3
+}
 
 function ManualEntryForm({
   onSubmit,
@@ -734,15 +766,20 @@ function ManualEntryForm({
   const removeRow = (i: number) =>
     setRows((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))
 
-  const validRows = rows.filter((r) => r.date && r.total && Number(r.total) > 0)
+  const validRows = rows.filter(rowReady)
   const canSubmit = validRows.length >= 1
+  const hasPartialLiftWarning = rows.some(rowHasPartialLifts)
 
   return (
     <div>
       <h3 className="text-zinc-100 text-lg font-semibold mb-1">Manual entry</h3>
-      <p className="text-zinc-500 text-sm mb-4">
+      <p className="text-zinc-500 text-sm mb-2">
         Enter your meets below if you're not in the OpenIPF dataset, or to project a
         hypothetical trajectory.
+      </p>
+      <p className="text-zinc-500 text-xs mb-4">
+        Enter a total on its own, or fill all three lifts (squat, bench, deadlift)
+        to populate the per-lift chart. If you enter both, they must match.
       </p>
 
       <div className="mb-3">
@@ -763,7 +800,10 @@ function ManualEntryForm({
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
             <tr className="border-b border-zinc-800">
               <th className="text-left py-2 pr-2 font-normal">Date</th>
-              <th className="text-left py-2 pr-2 font-normal">Total (kg)</th>
+              <th className="text-left py-2 pr-2 font-normal">Squat</th>
+              <th className="text-left py-2 pr-2 font-normal">Bench</th>
+              <th className="text-left py-2 pr-2 font-normal">Deadlift</th>
+              <th className="text-left py-2 pr-2 font-normal">Total</th>
               <th className="text-left py-2 pr-2 font-normal">Class</th>
               <th className="text-left py-2 pr-2 font-normal">Meet name</th>
               <th></th>
@@ -785,9 +825,47 @@ function ManualEntryForm({
                     type="number"
                     step="0.5"
                     min="0"
+                    value={r.squat}
+                    onChange={(e) => updateRow(i, { squat: e.target.value })}
+                    placeholder="kg"
+                    aria-label="Squat (kg)"
+                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={r.bench}
+                    onChange={(e) => updateRow(i, { bench: e.target.value })}
+                    placeholder="kg"
+                    aria-label="Bench (kg)"
+                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={r.deadlift}
+                    onChange={(e) => updateRow(i, { deadlift: e.target.value })}
+                    placeholder="kg"
+                    aria-label="Deadlift (kg)"
+                    className="w-20 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                  />
+                </td>
+                <td className="py-1 pr-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
                     value={r.total}
                     onChange={(e) => updateRow(i, { total: e.target.value })}
-                    placeholder="0.0"
+                    placeholder="auto"
+                    aria-label="Total (kg)"
+                    title="Leave blank to auto-sum from squat, bench, and deadlift"
                     className="w-24 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
                   />
                 </td>
@@ -864,7 +942,52 @@ function ManualEntryForm({
                   min="0"
                   value={r.total}
                   onChange={(e) => updateRow(i, { total: e.target.value })}
-                  placeholder="0.0"
+                  placeholder="auto from S/B/D"
+                  inputMode="decimal"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Squat (kg)
+                </span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={r.squat}
+                  onChange={(e) => updateRow(i, { squat: e.target.value })}
+                  placeholder="optional"
+                  inputMode="decimal"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Bench (kg)
+                </span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={r.bench}
+                  onChange={(e) => updateRow(i, { bench: e.target.value })}
+                  placeholder="optional"
+                  inputMode="decimal"
+                  className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
+                />
+              </label>
+              <label className="block">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
+                  Deadlift (kg)
+                </span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={r.deadlift}
+                  onChange={(e) => updateRow(i, { deadlift: e.target.value })}
+                  placeholder="optional"
                   inputMode="decimal"
                   className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm tabular-nums"
                 />
@@ -881,7 +1004,7 @@ function ManualEntryForm({
                   className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 text-sm"
                 />
               </label>
-              <label className="block">
+              <label className="block col-span-2">
                 <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
                   Meet name
                 </span>
@@ -907,12 +1030,19 @@ function ManualEntryForm({
         </button>
         <button
           onClick={() => onSubmit({ sex, rows: validRows })}
-          disabled={!canSubmit || pending}
+          disabled={!canSubmit || pending || hasPartialLiftWarning}
           className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-zinc-100 text-sm rounded border border-zinc-600"
         >
           {pending ? 'Computing…' : 'Compute trajectory'}
         </button>
       </div>
+
+      {hasPartialLiftWarning && (
+        <div className="mt-3 text-amber-400 text-sm">
+          Some rows have one or two lifts filled but not all three. Fill in squat,
+          bench, and deadlift together, or clear them to enter a total only.
+        </div>
+      )}
 
       {error && (
         <div className="mt-3 text-red-400 text-sm">Error: {error.message}</div>
@@ -1019,12 +1149,18 @@ export default function LifterLookup() {
 
   const manualMutation = useMutation<LifterHistory, Error, { sex: string; rows: ManualFormRow[] }>({
     mutationFn: async ({ sex, rows }) => {
-      const entries: ManualEntry[] = rows.map((r) => ({
-        date: r.date,
-        total_kg: Number(r.total),
-        weight_class: r.weight_class || null,
-        meet_name: r.meet_name || null,
-      }))
+      const entries: ManualEntry[] = rows.map((r) => {
+        const entry: ManualEntry = {
+          date: r.date,
+          weight_class: r.weight_class || null,
+          meet_name: r.meet_name || null,
+        }
+        if (r.total !== '' && Number(r.total) > 0) entry.total_kg = Number(r.total)
+        if (r.squat !== '' && Number(r.squat) > 0) entry.squat_kg = Number(r.squat)
+        if (r.bench !== '' && Number(r.bench) > 0) entry.bench_kg = Number(r.bench)
+        if (r.deadlift !== '' && Number(r.deadlift) > 0) entry.deadlift_kg = Number(r.deadlift)
+        return entry
+      })
       return postManualTrajectory({ name: '(manual entry)', sex, entries })
     },
   })
