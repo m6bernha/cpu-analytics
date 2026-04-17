@@ -13,7 +13,8 @@
 // depends on the lifter's latest_weight_class. The era toggle switches between
 // 2025 and 2027 standards.
 
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
@@ -41,6 +42,43 @@ import {
   type ManualEntry,
   type QtStandardRow,
 } from '../lib/api'
+
+// ---------- Class-change badge with hover tooltip ----------
+//
+// Rendered next to the weight class when a lifter's class differs from their
+// previous meet. The tooltip uses a portal because the meet table lives inside
+// an `overflow-x-auto` wrapper, which per CSS spec also clips overflow-y and
+// would hide a tooltip positioned above the first row.
+
+function ClassChangeBadge({ label }: { label: string }) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  return (
+    <>
+      <span
+        className="ml-1 inline-block text-amber-400 text-xs cursor-help"
+        aria-label={label}
+        onMouseEnter={(e: ReactMouseEvent<HTMLSpanElement>) => {
+          const r = e.currentTarget.getBoundingClientRect()
+          setPos({ left: r.left + r.width / 2, top: r.top })
+        }}
+        onMouseLeave={() => setPos(null)}
+      >
+        &#9650;
+      </span>
+      {pos &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{ left: pos.left, top: pos.top - 8 }}
+            className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-100 shadow-lg"
+          >
+            {label}
+          </div>,
+          document.body,
+        )}
+    </>
+  )
+}
 
 // ---------- Debounce hook ----------
 
@@ -584,8 +622,10 @@ function LifterDetail({
 
       {/* Meet table. On phones we hide Class, Division, and S/B/D — Date +
           Meet + Event + Total + Δ is enough at small widths. The full table
-          returns at sm:. */}
-      <div className="mt-6 overflow-x-auto">
+          returns at sm:. The SBD triplet cells wrap instead of scrolling so
+          the table always fits the detail pane regardless of how big the
+          lifter's numbers are. */}
+      <div className="mt-6">
         <table className="w-full text-sm">
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
             <tr className="border-b border-zinc-800">
@@ -657,13 +697,11 @@ function LifterDetail({
                     <td className="py-2 pr-3 whitespace-nowrap hidden sm:table-cell">
                       {m.CanonicalWeightClass ? `${m.CanonicalWeightClass} kg` : '—'}
                       {m.class_changed && (
-                        <span className="ml-1 text-amber-400 text-xs" title="Weight class changed from previous meet">
-                          &#9650;
-                        </span>
+                        <ClassChangeBadge label="Weight class changed from previous meet" />
                       )}
                     </td>
                     <td className="py-2 pr-3 hidden md:table-cell">{m.Division ?? '—'}</td>
-                    <td className="py-2 pl-2 text-right tabular-nums whitespace-nowrap hidden sm:table-cell">
+                    <td className="py-2 pl-2 text-right tabular-nums hidden sm:table-cell">
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
                     <td className={totalCellClass}>
@@ -675,7 +713,7 @@ function LifterDetail({
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden md:table-cell">
                       {fmtKg(m.Goodlift, 2)}
                     </td>
-                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden lg:table-cell whitespace-nowrap">
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden lg:table-cell">
                       {m.TotalKg && m.Best3SquatKg && m.Best3BenchKg && m.Best3DeadliftKg
                         ? `${Math.round(100 * m.Best3SquatKg / m.TotalKg)}/${Math.round(100 * m.Best3BenchKg / m.TotalKg)}/${Math.round(100 * m.Best3DeadliftKg / m.TotalKg)}`
                         : '—'}
