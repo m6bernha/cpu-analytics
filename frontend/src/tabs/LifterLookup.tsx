@@ -1041,7 +1041,7 @@ export default function LifterLookup() {
           </p>
         </div>
         <div
-          className="flex gap-2 flex-wrap"
+          className="flex gap-2 shrink-0 -mx-1 px-1 overflow-x-auto"
           role="tablist"
           aria-label="Lifter Lookup mode"
         >
