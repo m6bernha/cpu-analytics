@@ -902,6 +902,7 @@ function ManualEntryForm({
 // CompareView is lazy-loaded: it pulls in its own Recharts + useQueries
 // and only ships to clients who actually open the Compare tab.
 const CompareView = lazy(() => import('./CompareView'))
+import { MAX_COMPARE } from './CompareView'
 
 // ---------- Tab component ----------
 

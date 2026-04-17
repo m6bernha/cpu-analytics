@@ -1,0 +1,26 @@
+name: Keep backend warm
+
+# Belt-and-braces ping of /api/health every 10 minutes during weekday
+# working hours (06:00-23:00 UTC, covering Canada daytime). UptimeRobot's
+# 5-minute HEAD poll is the primary keep-warm mechanism; this workflow
+# covers the case where UptimeRobot itself is down.
+#
+# Render free-tier instances spin down after 15 min idle. Staying under
+# that threshold avoids the 30-60 s cold-start penalty on the first
+# real user request.
+
+on:
+  schedule:
+    - cron: "*/10 6-23 * * 1-5"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: |
+          curl -sSfL --max-time 60 \
+            https://cpu-analytics-backend.onrender.com/api/health \
+            -o /dev/null
+          echo "ping ok"

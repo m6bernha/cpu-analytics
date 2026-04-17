@@ -9,11 +9,15 @@ from __future__ import annotations
 
 import math
 import os
+import time
+import traceback
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Query
+import duckdb
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from . import filters as filters_mod
 from . import lifters as lifters_mod
@@ -98,6 +102,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Request timing middleware: logs method + path + status + duration on every
+# request, including errors. Makes slow endpoints and failure spikes obvious
+# in Render logs.
+@app.middleware("http")
+async def log_request_duration(request: Request, call_next):
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        dur_ms = (time.perf_counter() - start) * 1000
+        print(f"[req] {request.method} {request.url.path} CRASH in {dur_ms:.0f}ms")
+        raise
+    dur_ms = (time.perf_counter() - start) * 1000
+    print(
+        f"[req] {request.method} {request.url.path} "
+        f"{response.status_code} {dur_ms:.0f}ms"
+    )
+    return response
+
+
+# Dedicated handler for DuckDB errors: logs the path so we know which
+# endpoint triggered the query failure, returns a user-safe 503 instead
+# of leaking stack traces through FastAPI's default 500.
+@app.exception_handler(duckdb.Error)
+async def duckdb_error_handler(request: Request, exc: duckdb.Error):
+    tb = traceback.format_exc()
+    print(
+        f"[duckdb-error] path={request.url.path} "
+        f"type={type(exc).__name__} msg={exc!s}\n{tb}"
+    )
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": "database_error",
+            "message": "Temporary database error. Please retry in a moment.",
+        },
+    )
 
 
 def _clean(obj: Any) -> Any:
