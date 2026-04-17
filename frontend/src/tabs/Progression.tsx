@@ -304,7 +304,7 @@ export default function Progression() {
                 className="accent-zinc-400"
               />
               <span className="text-zinc-300 text-xs uppercase tracking-wide">
-                Per-lift (S/B/D)
+                Per-lift (Squat / Bench / Deadlift)
               </span>
             </label>
             <Select
@@ -341,7 +341,7 @@ export default function Progression() {
               <span className="text-zinc-200 tabular-nums">
                 {liftProgQuery.data.n_lifters.toLocaleString()}
               </span>{' '}
-              lifters with complete S/B/D data at every meet
+              lifters with complete Squat / Bench / Deadlift data at every meet
             </div>
             {(filters.age_category !== 'All' ||
               filters.max_gap_months !== '' ||
@@ -541,6 +541,7 @@ export default function Progression() {
                     fill="#569cd6"
                     fillOpacity={0.1}
                     stroke="none"
+                    legendType="rect"
                     isAnimationActive={false}
                   />
                   <Line

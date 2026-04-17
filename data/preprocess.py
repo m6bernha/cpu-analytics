@@ -61,7 +61,7 @@ KEEP_COLUMNS = [
     "Best3DeadliftKg",
     "TotalKg",
     "Place",
-    "Dots",
+    "Goodlift",
     "Tested",
     "Country",
     "State",
@@ -102,7 +102,7 @@ def preprocess_openipf(src: Path, dst: Path) -> int:
     df["TotalKg"] = pd.to_numeric(df["TotalKg"], errors="coerce")
     df["Age"] = pd.to_numeric(df.get("Age"), errors="coerce")
     df["BodyweightKg"] = pd.to_numeric(df.get("BodyweightKg"), errors="coerce")
-    for c in ("Best3SquatKg", "Best3BenchKg", "Best3DeadliftKg", "Dots"):
+    for c in ("Best3SquatKg", "Best3BenchKg", "Best3DeadliftKg", "Goodlift"):
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 

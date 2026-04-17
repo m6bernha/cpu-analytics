@@ -101,7 +101,7 @@ def get_lifter_history(name: str) -> dict[str, Any]:
             SELECT
                 Name, Sex, Federation, Country, Equipment, Tested, Event, Division,
                 Age, CanonicalWeightClass, Date, TotalKg,
-                Best3SquatKg, Best3BenchKg, Best3DeadliftKg, Dots,
+                Best3SquatKg, Best3BenchKg, Best3DeadliftKg, Goodlift,
                 MeetName, MeetCountry,
                 FIRST_VALUE(TotalKg) OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName) AS FirstTotal,
                 MIN(Date) OVER (PARTITION BY Name) AS FirstDate
@@ -111,7 +111,7 @@ def get_lifter_history(name: str) -> dict[str, Any]:
         SELECT
             Name, Sex, Federation, Country, Equipment, Tested, Event, Division,
             Age, CanonicalWeightClass, Date, TotalKg,
-            Best3SquatKg, Best3BenchKg, Best3DeadliftKg, Dots,
+            Best3SquatKg, Best3BenchKg, Best3DeadliftKg, Goodlift,
             MeetName, MeetCountry,
             (TotalKg - FirstTotal) AS TotalDiffFromFirst,
             DATEDIFF('day', FirstDate, Date) AS DaysFromFirst

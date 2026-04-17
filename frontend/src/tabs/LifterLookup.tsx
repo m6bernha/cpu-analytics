@@ -375,7 +375,7 @@ function LifterDetail({
                   : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800')
               }
             >
-              {m === 'total' ? 'Total' : 'Per lift (S/B/D)'}
+              {m === 'total' ? 'Total' : 'Squat / Bench / Deadlift'}
             </button>
           ))}
         </div>
@@ -513,7 +513,13 @@ function LifterDetail({
                 y={regionalsQt}
                 stroke="#94a3b8"
                 strokeDasharray="4 4"
-                label={{ value: `Regionals ${ERA_LABEL[era]}`, position: 'right', fill: '#94a3b8', fontSize: 11 }}
+                label={{
+                  value: `Regionals ${ERA_LABEL[era]} (${regionalsQt.toFixed(0)})`,
+                  position: 'insideTopLeft',
+                  fill: '#94a3b8',
+                  fontSize: 11,
+                  offset: 6,
+                }}
               />
             )}
             {nationalsQt && (
@@ -521,7 +527,13 @@ function LifterDetail({
                 y={nationalsQt}
                 stroke="#ce9178"
                 strokeDasharray="4 4"
-                label={{ value: `Nationals ${ERA_LABEL[era]}`, position: 'right', fill: '#ce9178', fontSize: 11 }}
+                label={{
+                  value: `Nationals ${ERA_LABEL[era]} (${nationalsQt.toFixed(0)})`,
+                  position: 'insideTopLeft',
+                  fill: '#ce9178',
+                  fontSize: 11,
+                  offset: 6,
+                }}
               />
             )}
             {/* Projection confidence band (renders behind lines) */}
@@ -538,6 +550,7 @@ function LifterDetail({
                 fill="#4ec9b0"
                 fillOpacity={0.1}
                 stroke="none"
+                legendType="rect"
                 isAnimationActive={false}
               />
             )}
@@ -581,10 +594,25 @@ function LifterDetail({
               <th className="text-left py-2 pr-2 font-normal">Event</th>
               <th className="text-left py-2 pr-3 font-normal hidden sm:table-cell">Class</th>
               <th className="text-left py-2 pr-3 font-normal hidden md:table-cell">Division</th>
-              <th className="text-right py-2 pl-2 font-normal hidden sm:table-cell">S / B / D</th>
+              <th
+                className="text-right py-2 pl-2 font-normal hidden sm:table-cell whitespace-nowrap"
+                title="Squat / Bench / Deadlift (kg)"
+              >
+                Sq / Bn / Dl
+              </th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
-              <th className="text-right py-2 pl-2 font-normal hidden md:table-cell">Dots</th>
-              <th className="text-right py-2 pl-2 font-normal hidden lg:table-cell" title="Squat/Bench/Deadlift as % of total">S/B/D %</th>
+              <th
+                className="text-right py-2 pl-2 font-normal hidden md:table-cell"
+                title="IPF GL Points (Goodlift). Successor to IPF Points; Canadian lifters use this, not Dots."
+              >
+                GLP
+              </th>
+              <th
+                className="text-right py-2 pl-2 font-normal hidden lg:table-cell whitespace-nowrap"
+                title="Squat / Bench / Deadlift as % of total"
+              >
+                Sq / Bn / Dl %
+              </th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>
           </thead>
@@ -645,7 +673,7 @@ function LifterDetail({
                       )}
                     </td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden md:table-cell">
-                      {fmtKg(m.Dots, 2)}
+                      {fmtKg(m.Goodlift, 2)}
                     </td>
                     <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden lg:table-cell whitespace-nowrap">
                       {m.TotalKg && m.Best3SquatKg && m.Best3BenchKg && m.Best3DeadliftKg
@@ -1012,13 +1040,19 @@ export default function LifterLookup() {
             database may show merged histories.
           </p>
         </div>
-        <div className="flex gap-1 -mx-1 px-1 overflow-x-auto">
+        <div
+          className="flex gap-2 flex-wrap"
+          role="tablist"
+          aria-label="Lifter Lookup mode"
+        >
           {(['search', 'compare', 'manual'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
+              role="tab"
+              aria-selected={mode === m}
               className={
-                'px-3 py-1.5 rounded text-sm whitespace-nowrap ' +
+                'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
                 (mode === m
                   ? 'bg-zinc-800 text-zinc-100'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')

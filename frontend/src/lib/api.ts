@@ -226,7 +226,7 @@ export type LifterMeet = {
   Best3SquatKg: number | null
   Best3BenchKg: number | null
   Best3DeadliftKg: number | null
-  Dots: number | null
+  Goodlift: number | null
   MeetName: string | null
   MeetCountry: string | null
   TotalDiffFromFirst: number

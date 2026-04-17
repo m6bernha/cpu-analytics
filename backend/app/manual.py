@@ -102,7 +102,7 @@ def build_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
                 "Best3SquatKg": e.squat_kg,
                 "Best3BenchKg": e.bench_kg,
                 "Best3DeadliftKg": e.deadlift_kg,
-                "Dots": None,
+                "Goodlift": None,
                 "MeetName": e.meet_name,
                 "MeetCountry": None,
                 "TotalDiffFromFirst": e.total_kg - first_total,
