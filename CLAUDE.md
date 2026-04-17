@@ -239,10 +239,17 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**154 tests passing** across progression, lifters, projection, qt, manual,
+**158 tests passing** across progression, lifters, projection, qt, manual,
 security, weight_class (now with 19 Hypothesis property tests), and
 concurrency modules. 68 new edge-case tests landed 2026-04-17 in commit
-`cb7038e`.
+`cb7038e`, plus Chat A's 8 TestLiftProgressionFilters in `98cbdef`.
+
+**CI is now enforcing on main.** `.github/workflows/ci.yml` (commit
+`12cbb46`) runs frontend `tsc + npm run build` and backend `pytest` in
+parallel on every push and PR to main. Classic branch protection rule
+requires the `Frontend (tsc + build)` check to pass before merge. Backend
+check exists but is not yet required (see NEXT_STEPS.md). Expect ~3 min
+wall-clock per CI run.
 
 ## When extending this
 
@@ -273,20 +280,16 @@ items summarized here:
 
 ### Manual action for the user (immediate)
 
-- **LIVE SITE BROKEN.** Progression tab shows "Filter load failed:
-  age_category". The hotfix is in the uncommitted WIP (frontend
-  age_category removal in Progression.tsx + api.ts). Commit the WIP
-  and push to origin/main. Vercel redeploys automatically. See
-  NEXT_STEPS.md P0 section.
-- **Trigger the data-refresh GHA manually** at
-  https://github.com/m6bernha/cpu-analytics/actions to activate the Canada+IPF
-  parquet shrink in production. Until the next Sunday 06:13 UTC cron, Render
-  is still downloading the pre-shrink parquet on cold start.
-- **Enable Vercel Skew Protection** (Chrome audit Issue 11). Vercel
-  dashboard -> cpu-analytics -> Settings -> Advanced -> Skew Protection.
-- **Check UptimeRobot monitor interval** (Chrome audit Issue 2).
-  Anomaly: /api/health is being hit every ~5 s from one IP. Likely a
-  misconfigured monitor.
+- **Verify data-refresh Run #7 went green** at
+  https://github.com/m6bernha/cpu-analytics/actions/runs/24574585197.
+  When green, the Canada+IPF-filtered parquet with Goodlift column is live
+  in the data-latest release. Next Render cold-start picks it up, which
+  also auto-fixes Issue 16.
+- **Expand branch protection to require the backend pytest job** (not
+  just Frontend (tsc + build)). Requires sudo re-auth. See Chrome audit
+  table "Branch protection gap" note.
+- **Skew Protection (Issue 11)** is Pro-only on Vercel. Parked as a
+  strategic decision until traffic justifies $20/mo.
 
 ### High-priority code work
 

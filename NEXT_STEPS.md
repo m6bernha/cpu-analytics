@@ -368,16 +368,16 @@ below.
 | # | Issue | Severity | Effort | Owner | Gate | Status |
 |---|---|---|---|---|---|---|
 | 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | M shell / L per-chart | TBD | user decides shell vs per-chart | pending decision |
-| 2 | /api/health hit every ~5s from one IP (UptimeRobot misconfig suspected) | medium | S | user (Chrome prompt dispatched) | none, screenshot diag | pending user |
-| 3 | Double request logging (timing middleware + uvicorn access log) | medium | S | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
-| 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
-| 5 | No gzip middleware on backend responses | high | S | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
-| 6 | /assets/* hashed bundles served with max-age=0 | high | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
-| 7 | Stale Fly.io references in refresh-data.yml + qt.py comments | polish | S | UX chat + G2 qt sweep | qt.py waits on push | **NOT SHIPPED** (UX chat did not commit) |
-| 8 | No CI build gate (tsc + build + pytest) on PR/push | blocker | M | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
-| 9 | refresh-data.yml missing pip cache (~25s/run) | polish | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
-| 10 | Deprecated action versions (Node 20 EOL warnings) | polish | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
-| 11 | Vercel Skew Protection not enabled | medium | S dash | user (Chrome prompt dispatched) | none, dashboard | pending user |
+| 2 | /api/health hit every ~5s from one IP | low | S | none (ruled out UptimeRobot) | none | UptimeRobot verified 5min interval, likely Render internal health prober, no action needed unless logs confirm rogue source |
+| 3 | Double request logging (timing middleware + uvicorn access log) | medium | S | G1 backend-perf | closed | SHIPPED `1f0b62e` — /api/health suppressed in timing middleware, uvicorn access log retained |
+| 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | closed | SHIPPED `1f0b62e` — ETag W/"parquet-<mtime>" + Cache-Control public, max-age=300 on filters, qt/standards, qt/blocks. 304 verified on If-None-Match |
+| 5 | No gzip middleware on backend responses | high | S | G1 backend-perf | closed | SHIPPED `1f0b62e` — GZipMiddleware(minimum_size=500), Content-Encoding: gzip verified on qt/blocks |
+| 6 | /assets/* hashed bundles served with max-age=0 | high | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — vercel.json headers rule: Cache-Control public, max-age=31536000, immutable |
+| 7 | Stale Fly.io references in refresh-data.yml + qt.py comments | polish | S | CI-redispatch chat (partial) + G2 qt sweep | qt.py still outstanding | PARTIAL SHIPPED `12cbb46` — refresh-data.yml scrubbed; qt.py comment sweep still queued |
+| 8 | No CI build gate (tsc + build + pytest) on PR/push | blocker | M | CI-redispatch chat | closed | SHIPPED `12cbb46` — .github/workflows/ci.yml with Frontend (tsc + build) and backend pytest jobs, triggers on push + PR to main |
+| 9 | refresh-data.yml missing pip cache (~25s/run) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — setup-python with cache: pip |
+| 10 | Deprecated action versions (Node 20 EOL warnings) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — checkout v4→v6, setup-python v5→v6, action-gh-release v2→v3 |
+| 11 | Vercel Skew Protection not enabled | low | strategic | decision | Pro-plan feature ($20/mo), Hobby cannot toggle | PARKED, low traffic hobby project, Pro upgrade not justified |
 | 12 | Render free-tier cold start still user-visible (~50s) | medium | L | strategic | user decision | pending user |
 | 13 | Verify data.py per-request cursor fix landed cleanly | polish | S read | UX chat | none | verified, no commit needed |
 | 14 | LifterLookup.tsx ~44KB, more code-splitting possible | polish | M | G3 LifterDetail lazy-load | push current WIP first | queued |
@@ -433,6 +433,40 @@ below.
   discipline on both sides. The rest of Chat A's files stayed as WIP, giving
   a false "committed" report to the user. Documented at
   `~/.claude/rules/common/parallel-chat-isolation.md`.
+
+## Wave 1 Chrome results (2026-04-17)
+
+Ran the 5-task prompt. Two green, three blocked or closed.
+
+| Task | Result |
+|---|---|
+| 1 Trigger data-refresh GHA | Run #7 on commit 295d042 kicked off, status In progress at screenshot. URL: https://github.com/m6bernha/cpu-analytics/actions/runs/24574585197 |
+| 2 Branch protection for main | First attempt blocked. CI workflow landed `12cbb46`. **RE-RUN GREEN** same session, classic rule saved, required check `Frontend (tsc + build)`. Backend pytest job is NOT currently required (gap, see below). |
+| 3 Vercel Skew Protection | Blocked. Pro-plan feature. Hobby shows Pro badge + Upgrade button, no toggle. See strategic decision below. |
+| 4 Render health check | Only `/api/health` path visible in UI. Timeout and interval not exposed. Configurable via render.yaml or Render API if needed, currently both on platform defaults. |
+| 5 UptimeRobot monitor | HTTP/S, 5-minute interval, currently Up 16h15m. Historical 405 incident Apr 15 14:27 duration 1d5h (resolved by G3 HEAD-compatible health endpoint, commit `40ff320`). Ruled out as the source of "/api/health every ~5s" anomaly. |
+
+### Branch protection gap
+
+The saved rule requires only `Frontend (tsc + build)`. The backend pytest job
+is running in CI but is not enforced as a required check. To close this:
+re-open Settings -> Branches -> Edit rule for main, search the status-check
+picker for the backend job name (probably "Backend (pytest)" or similar
+depending on how `ci.yml` names the job), and add it. Requires a sudo-mode
+re-auth same as last time.
+
+### Follow-up decisions from Chrome run
+
+- **Vercel Pro upgrade**: $20/mo/seat unlocks Skew Protection and build-time minutes.
+  Skip recommendation: low traffic hobby project, infrequent deploys (~1 per session),
+  Skew Protection protects against in-flight requests during deploy window which is a
+  minor edge. Revisit if the site picks up traction.
+- **/api/health flood investigator**: UptimeRobot ruled out. Most likely Render's
+  internal health prober. Not an actionable problem. Close Issue 2 unless Render
+  access logs show a non-Render source IP.
+- **Render health check timing**: platform defaults in use. If cold-start recovery is
+  ever a problem, add `healthCheckTimeout: 10` and `healthCheckInterval: 30` to
+  render.yaml. Not needed today.
 
 ## New P1 issues surfaced this session
 
