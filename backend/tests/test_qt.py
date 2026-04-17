@@ -5,7 +5,12 @@ Uses the synthetic fixture from conftest.py.
 
 from __future__ import annotations
 
+import numpy as np
+import pandas as pd
+import pytest
+
 from backend.app.qt import (
+    apply_time_window,
     compute_blocks,
     compute_coverage,
     era_window_for_standard,
@@ -14,7 +19,6 @@ from backend.app.qt import (
     pct_meeting_qt,
     window_24mo_to_nationals,
 )
-import pandas as pd
 
 
 class TestEraWindows:
@@ -104,3 +108,213 @@ class TestComputeBlocks:
         )
         for k in ["M_Nationals", "M_Regionals", "F_Nationals", "F_Regionals"]:
             assert isinstance(blocks[k], list)
+
+    def test_division_param_accepted(self, test_conn):
+        """Non-Open division is accepted (falls back to Open numbers for v1)."""
+        blocks = compute_blocks(
+            country="Canada", federation="CPU", equipment="Raw",
+            tested="Yes", event="SBD", division="Junior",
+        )
+        assert set(blocks.keys()) == {
+            "M_Nationals", "M_Regionals", "F_Nationals", "F_Regionals",
+        }
+
+
+class TestAgeDivisionFallback:
+    def test_open_reports_no_override(self):
+        """Open has no override -- the base qt_standards parquet IS the Open table."""
+        from backend.app.data_static.qt_by_division import has_age_specific_qt
+        assert has_age_specific_qt("Open") is False
+
+    def test_non_open_reports_no_override(self):
+        """Every non-Open division falls back until powerlifting.ca is transcribed."""
+        from backend.app.data_static.qt_by_division import has_age_specific_qt
+        for d in ["Sub-Junior", "Junior", "Master 1", "Master 2", "Master 3", "Master 4"]:
+            assert has_age_specific_qt(d) is False, f"{d} should fall back"
+
+    def test_unknown_division_reports_no_override(self):
+        from backend.app.data_static.qt_by_division import has_age_specific_qt
+        assert has_age_specific_qt("Youth 1") is False
+
+
+class TestLifterBestTotalsEdgeCases:
+    def test_empty_dataframe_returns_empty(self):
+        empty = pd.DataFrame(
+            columns=["Sex", "CanonicalWeightClass", "Name", "TotalKg"]
+        )
+        result = lifter_best_totals(empty)
+        assert len(result) == 0
+        assert "BestTotalKg" in result.columns
+
+    def test_single_lifter_single_row(self):
+        df = pd.DataFrame([
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "Solo", "TotalKg": 500},
+        ])
+        result = lifter_best_totals(df)
+        assert len(result) == 1
+        assert result["BestTotalKg"].iloc[0] == 500
+
+    def test_all_nan_totals(self):
+        """All DQ / bombed meets: best is NaN per lifter."""
+        df = pd.DataFrame([
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "A", "TotalKg": np.nan},
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "A", "TotalKg": np.nan},
+            {"Sex": "F", "CanonicalWeightClass": "63", "Name": "B", "TotalKg": np.nan},
+        ])
+        result = lifter_best_totals(df)
+        assert len(result) == 2
+        assert result["BestTotalKg"].isna().all()
+
+    def test_mixed_sex_and_class_groups_correctly(self):
+        df = pd.DataFrame([
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "Bob", "TotalKg": 500},
+            {"Sex": "M", "CanonicalWeightClass": "93", "Name": "Bob", "TotalKg": 550},
+            {"Sex": "F", "CanonicalWeightClass": "83", "Name": "Bob", "TotalKg": 300},
+        ])
+        result = lifter_best_totals(df)
+        assert len(result) == 3
+
+    def test_max_across_multiple_meets(self):
+        df = pd.DataFrame([
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "A", "TotalKg": 500},
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "A", "TotalKg": 480},
+            {"Sex": "M", "CanonicalWeightClass": "83", "Name": "A", "TotalKg": 520},
+        ])
+        result = lifter_best_totals(df)
+        assert result["BestTotalKg"].iloc[0] == 520
+
+
+class TestPctMeetingQtEdgeCases:
+    def test_all_above_threshold(self):
+        df = pd.DataFrame({"BestTotalKg": [600, 700, 800]})
+        assert pct_meeting_qt(df, 500) == 100.0
+
+    def test_none_above_threshold(self):
+        df = pd.DataFrame({"BestTotalKg": [100, 200, 300]})
+        assert pct_meeting_qt(df, 500) == 0.0
+
+    def test_threshold_equal_to_total_counts_as_met(self):
+        df = pd.DataFrame({"BestTotalKg": [500, 500, 500]})
+        assert pct_meeting_qt(df, 500) == 100.0
+
+    def test_threshold_zero_everyone_meets(self):
+        df = pd.DataFrame({"BestTotalKg": [100, 200, 300]})
+        assert pct_meeting_qt(df, 0) == 100.0
+
+
+class TestApplyTimeWindow:
+    def test_open_start_window(self):
+        df = pd.DataFrame({"Date": [
+            pd.Timestamp("2020-01-01"), pd.Timestamp("2026-01-01"),
+        ]})
+        w = era_window_for_standard("pre2025")
+        out = apply_time_window(df, w)
+        assert len(out) == 1
+        assert out["Date"].iloc[0] == pd.Timestamp("2020-01-01")
+
+    def test_open_end_window(self):
+        df = pd.DataFrame({"Date": [
+            pd.Timestamp("2020-01-01"), pd.Timestamp("2027-06-01"),
+        ]})
+        w = era_window_for_standard("2027")
+        out = apply_time_window(df, w)
+        assert len(out) == 1
+        assert out["Date"].iloc[0] == pd.Timestamp("2027-06-01")
+
+    def test_bounded_window(self):
+        df = pd.DataFrame({"Date": [
+            pd.Timestamp("2024-01-01"),
+            pd.Timestamp("2025-06-01"),
+            pd.Timestamp("2027-02-01"),
+        ]})
+        w = era_window_for_standard("2025")
+        out = apply_time_window(df, w)
+        assert len(out) == 1
+        assert out["Date"].iloc[0] == pd.Timestamp("2025-06-01")
+
+
+class TestComputeCoverageEdgeCases:
+    def test_empty_cohort_all_pct_nan(self, test_conn):
+        """Equipment that matches nothing: every Pct_* cell is NaN."""
+        df = compute_coverage(
+            country="Canada", federation="CPU", equipment="Single-ply",
+            tested="Yes", event="SBD", age_filter="open",
+        )
+        # Still one row per QT standard row
+        assert len(df) > 0
+        pct_cols = [c for c in df.columns if c.startswith("Pct_")]
+        assert len(pct_cols) > 0
+        for c in pct_cols:
+            assert df[c].isna().all(), f"expected all NaN in {c}"
+
+    def test_non_matching_country_empty(self, test_conn):
+        df = compute_coverage(
+            country="Narnia", federation="CPU", equipment="Raw",
+            tested="Yes", event="SBD", age_filter="open",
+        )
+        pct_cols = [c for c in df.columns if c.startswith("Pct_")]
+        for c in pct_cols:
+            assert df[c].isna().all()
+
+    def test_age_open_excludes_junior_meets(self, test_conn):
+        """With age_filter='open', Alice's Junior-division pre2025 meets
+        are excluded. F/63 Nationals has no pre2025 Open data -> NaN."""
+        df = compute_coverage(age_filter="open")
+        row = df[(df["Sex"] == "F") & (df["WeightClass"] == "63") & (df["Level"] == "Nationals")]
+        assert len(row) == 1
+        assert pd.isna(row["Pct_AllEra_pre2025"].iloc[0])
+
+    def test_age_all_includes_junior_meets(self, test_conn):
+        """With age_filter='all', Alice's Junior pre2025 meets count."""
+        df = compute_coverage(age_filter="all")
+        row = df[(df["Sex"] == "F") & (df["WeightClass"] == "63") & (df["Level"] == "Nationals")]
+        assert len(row) == 1
+        # Alice had pre2025 meets at 280/305; both below 347.5 -> 0%
+        assert row["Pct_AllEra_pre2025"].iloc[0] == 0.0
+
+    def test_2027_era_no_data_returns_nan(self, test_conn):
+        """No fixture rows are in the 2027 era -> Pct_AllEra_2027 is NaN."""
+        df = compute_coverage(age_filter="open")
+        assert df["Pct_AllEra_2027"].isna().all()
+
+    def test_invalid_age_filter_raises(self, test_conn):
+        with pytest.raises(ValueError):
+            compute_coverage(age_filter="junior")
+
+    def test_mixed_sex_rows_present(self, test_conn):
+        """Both M and F rows appear when both sexes have QT standards."""
+        df = compute_coverage(age_filter="open")
+        assert (df["Sex"] == "M").any()
+        assert (df["Sex"] == "F").any()
+
+
+class TestComputeBlocksEdgeCases:
+    def test_weight_classes_sorted_within_block(self, test_conn):
+        """Within each block the WeightClass list is in ascending order."""
+        blocks = compute_blocks(
+            country="Canada", federation="CPU", equipment="Raw",
+            tested="Yes", event="SBD",
+        )
+
+        def wc_key(s: str) -> float:
+            if s.endswith("+"):
+                return float(s.rstrip("+")) + 0.5
+            return float(s)
+
+        for k, rows in blocks.items():
+            if len(rows) <= 1:
+                continue
+            wcs = [r["WeightClass"] for r in rows]
+            keys = [wc_key(w) for w in wcs]
+            assert keys == sorted(keys), f"{k} not sorted: {wcs}"
+
+    def test_record_shape(self, test_conn):
+        """Each row has the expected 4 keys."""
+        blocks = compute_blocks(
+            country="Canada", federation="CPU", equipment="Raw",
+            tested="Yes", event="SBD",
+        )
+        expected_keys = {"WeightClass", "pct_pre2025", "pct_2025", "pct_2027_today"}
+        for rows in blocks.values():
+            for row in rows:
+                assert set(row.keys()) == expected_keys
