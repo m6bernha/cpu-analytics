@@ -140,11 +140,17 @@ specifically, not the first meet of any kind.
 - **QueryClient defaults** (main.tsx): `retry: 3`, exponential backoff up to 30 s, `staleTime: 5 min`, `refetchOnWindowFocus: false`. Tuned for the Render free-tier cold start. Individual queries override staleTime where appropriate.
 - **Frontend error display pattern.** Every query uses `lib/QueryStatus.tsx`: `QueryErrorCard` (with HTTP status + Retry button + cold-start explanation) on `isError`, `LoadingSkeleton` on `isLoading`. Keeps users informed instead of rendering partially.
 - **CompareView is lazy-loaded.** `const CompareView = lazy(() => import('./CompareView'))` in `LifterLookup.tsx`. Ships as its own ~8 KB chunk. Do NOT add a static import from CompareView back into LifterLookup - it will defeat the split (vite warns `INEFFECTIVE_DYNAMIC_IMPORT`).
+- **Recharts + display:none.** Inactive tabs rendered with `display:none` still mount their `ResponsiveContainer`, which reports `width=-1 height=-1` and logs a console warning on every tab switch. Two safe patterns: (a) unmount inactive tabs via `{active === id ? <Tab /> : null}`, accepting scroll-state reset, or (b) conditionally render the Recharts subtree inside each tab based on an `isActive` prop. Do NOT add a non-zero min-height to a display:none parent as a workaround.
+- **Dots renamed to Goodlift through the SQL pipeline.** `backend/app/lifters.py` selects `Goodlift`, not `Dots`. If the locally preprocessed parquet was generated before the rename, `/api/lifter/history` returns 503 with `duckdb_error: column Goodlift not found`. Fix: re-run `python data/preprocess.py` to regenerate. The data_loader corrupt-parquet self-heal only checks row-count > 0, not schema completeness, so a stale-schema parquet will keep being served. See NEXT_STEPS.md Issue 16.
+- **Parallel-chat hook sweep risk.** When multiple Claude Code chats stage changes to the same worktree simultaneously, a concurrent commit hook or agent can sweep unrelated staged files into a single commit with only one chat's message. This happened 2026-04-17: Chat A's `main.py` per-lift changes landed inside Chat B's `e7432f5` "feat(qt-squeeze)" commit. Mitigation: run parallel chats in git worktrees, not the same checkout. See `~/.claude/rules/common/parallel-chat-isolation.md`.
 
 ## Pre-push checklist
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` -- 25 tests covering progression (age category baseline, division filter, edge cases) and lifter search/history (search, PR detection, event types).
+- CI also runs both checks on every push and PR via `.github/workflows/ci.yml`
+  (added Chrome-audit 2026-04-17, Issue 8). A local failure here will fail CI
+  too, so fix before pushing rather than relying on the remote run.
 
 ## Scope
 
@@ -233,8 +239,10 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**77 tests passing** across progression, lifters, projection, qt, manual,
-security, weight_class, and concurrency modules.
+**154 tests passing** across progression, lifters, projection, qt, manual,
+security, weight_class (now with 19 Hypothesis property tests), and
+concurrency modules. 68 new edge-case tests landed 2026-04-17 in commit
+`cb7038e`.
 
 ## When extending this
 
@@ -265,10 +273,20 @@ items summarized here:
 
 ### Manual action for the user (immediate)
 
+- **LIVE SITE BROKEN.** Progression tab shows "Filter load failed:
+  age_category". The hotfix is in the uncommitted WIP (frontend
+  age_category removal in Progression.tsx + api.ts). Commit the WIP
+  and push to origin/main. Vercel redeploys automatically. See
+  NEXT_STEPS.md P0 section.
 - **Trigger the data-refresh GHA manually** at
   https://github.com/m6bernha/cpu-analytics/actions to activate the Canada+IPF
   parquet shrink in production. Until the next Sunday 06:13 UTC cron, Render
   is still downloading the pre-shrink parquet on cold start.
+- **Enable Vercel Skew Protection** (Chrome audit Issue 11). Vercel
+  dashboard -> cpu-analytics -> Settings -> Advanced -> Skew Protection.
+- **Check UptimeRobot monitor interval** (Chrome audit Issue 2).
+  Anomaly: /api/health is being hit every ~5 s from one IP. Likely a
+  misconfigured monitor.
 
 ### High-priority code work
 

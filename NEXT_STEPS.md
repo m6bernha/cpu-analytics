@@ -9,7 +9,31 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
-## P0 -- Immediate user action (no code)
+## P0 -- Live site is BROKEN (highest priority)
+
+### Filter load failed: age_category
+
+**Symptom**: Progression tab shows "Filter load failed: Filters response
+missing or empty: age_category" on cpu-analytics.vercel.app.
+
+**Cause**: Commit `2673ed2` removed `age_category` from the backend filters
+response. The matching frontend cleanup (removing it from FiltersResponse,
+REQUIRED_FILTER_ARRAYS, ProgressionQuery, and the two guard conditionals
+in Progression.tsx) is IN the working tree but NOT committed. Vercel is
+deploying origin/main which still references age_category, so frontend
+fetches fail validation against the newer backend.
+
+**Fix**: Commit the WIP frontend cleanup (parts of Chat A's per-lift work
+cover this) + push. The WIP tree has:
+- `frontend/src/tabs/Progression.tsx` (age_category refs removed)
+- `frontend/src/lib/api.ts` (age_category field removed)
+- Plus `backend/app/progression.py` + tests + conftest.py (per-lift plumbing)
+
+Recommended commit message: `feat(progression): per-lift filter plumbing
++ frontend age_category cleanup (fixes live site)`.
+
+After pushing, Vercel redeploys automatically. Monitor the build at
+https://vercel.com/dashboard for the cpu-analytics project.
 
 ### Trigger the weekly data-refresh workflow manually
 
@@ -31,17 +55,26 @@ export).
 
 ## P1 -- Open bugs / polish still outstanding
 
-### Per-lift progression ignores three filters
+### Per-lift progression ignores three filters — SHIPPED (partial, WIP)
 
-`/api/cohort/lift_progression` does NOT thread `age_category`,
-`max_gap_months`, or `same_class_only` from the frontend. The UI shows
-an amber warning when those filters are active alongside the per-lift
-toggle, but that is a workaround, not a fix. Extend
-`compute_lift_progression` to accept those three params and apply them
-the same way `compute_progression` does.
+Chat A completed the code. The main.py portion landed in commit `e7432f5`
+(which was actually Chat B's QT Squeeze commit; a concurrent hook sweep
+captured Chat A's staged main.py). The remaining files are sitting in the
+working tree, uncommitted:
 
-Files: `backend/app/progression.py`, `backend/app/main.py`,
-`frontend/src/lib/api.ts`, `frontend/src/tabs/Progression.tsx`.
+- `backend/app/progression.py` (compute_lift_progression accepts the three
+  new params with age baseline recomputation)
+- `backend/tests/test_progression.py` (8 new tests in TestLiftProgressionFilters)
+- `backend/tests/conftest.py` (Ella E fixture for same_class_only)
+- `frontend/src/lib/api.ts` (LiftProgressionQuery fields)
+- `frontend/src/tabs/Progression.tsx` (query threading + age_category removal)
+
+Verified: local smoke test showed n_lifters 10082 -> 5305 (same_class_only),
+5936 (max_gap_months=12), 1048 (age_category=Open). npm run build clean.
+
+Next action: commit these files in a coherent "feat(progression): per-lift
+filter plumbing + frontend age_category removal" commit and push.
+THIS COMMIT ALSO FIXES THE LIVE-SITE AGE_CATEGORY ERROR.
 
 ### LifterDetail Recharts static import defeats the CompareView split
 
@@ -52,49 +85,29 @@ lazy-load `LifterDetail` too (it's only rendered after a search click).
 
 Files: `frontend/src/tabs/LifterLookup.tsx`.
 
-### QT Squeeze axis + graph titles overlap at some widths
+### QT Squeeze axis + graph titles overlap at some widths — SHIPPED
 
-Each Block in QT Squeeze has the chart axis label and the section title
-colliding at certain viewport sizes. Fix by adding explicit bottom margin
-on the chart container plus top margin on the `<h3>` title.
+Commit `e7432f5`. XAxis now uses angle=-45 with interval=0, height=56,
+tickMargin=6, tick fontSize=11. Dropped the redundant "Weight class (kg)"
+axis label (table header already says it). Chart container bumped to h-72.
+All 8 weight-class ticks render readably at 360 px width.
 
-Files: `frontend/src/tabs/QTSqueeze.tsx`.
+Bonus shipped in same commit: age-division dropdown (Sub-Junior through
+Master 4), `/api/qt/blocks?division=` param, `using_open_fallback` meta
+flag, amber banner when non-Open selected. Data still uses Open values
+until `backend/app/data_static/qt_by_division.py` QT_OVERRIDES TODO map
+is populated from powerlifting.ca.
 
-### Compare chart visually crushes short-career lifters
+### Compare chart short-career blowout + tooltip gaps — SHIPPED
 
-When comparing lifters of very different career lengths (eg Matthias
-Bernhard with 3 meets over 6 months vs Quinn Baxter with many meets
-over multiple years), Matthias's curve collapses to a point on the left
-and is unreadable.
+Commit `a6dc701`. X-axis range toggle (All / 6mo / 1y / 2y / 5y) plus an
+amber hint at ≥4x career mismatch. Custom nearest-meet tooltip resolves
+each series to its closest meet within ±3 months; lifters with no meet
+near the hover position drop out rather than reporting gaps. Chip-style
+legend above chart replacing default Recharts Legend.
 
-Two options, not mutually exclusive:
-
-1. Synchronized x-axis zoom control -- slider that lets user zoom into
-   the first N months. Default "all", plus presets for "first 12 mo",
-   "first 24 mo", "first 5 years".
-2. Small multiples -- when max x-values differ by more than ~4x, render
-   separate charts per lifter instead of overlaying.
-
-Files: `frontend/src/tabs/CompareView.tsx`.
-
-### Compare chart tooltip gaps
-
-Recharts' `Tooltip` only shows data at x-values where every series has
-a point. Because each lifter's meets are on different calendar dates
-(now: months-from-their-own-first-SBD), x-values rarely line up and
-hovering between meets shows nothing.
-
-User wants this fixed WITHOUT artificially extrapolating data.
-
-Options:
-
-- Custom tooltip component that finds the NEAREST point per series
-  independently and renders them all, even when x-values don't match.
-  Moderate work -- Recharts supports custom Tooltip content.
-- Voronoi overlay -- not native to Recharts; would mean either a custom
-  SVG overlay or swapping chart library for this view.
-
-Files: `frontend/src/tabs/CompareView.tsx`.
+QA'd desktop + 360 px with 4-lifter worst case. Backend tests green in
+isolation. NOT yet pushed to origin.
 
 ### Compare chart data gaps
 
@@ -131,15 +144,15 @@ Retire the 4-block layout.
 
 Estimated effort: 1-2 sessions once the new CSV is in place.
 
-### Manual entry: individual lift inputs
+### Manual entry: individual lift inputs — SHIPPED
 
-User wants to enter Squat/Bench/Deadlift individually, not just the
-Total. The Pydantic schema already has `squat_kg/bench_kg/deadlift_kg`
-fields; the frontend form just doesn't surface them. Add 3 number
-inputs per meet row; auto-compute total if user leaves total blank
-but fills individual lifts.
-
-Files: `frontend/src/tabs/LifterLookup.tsx` (ManualEntryForm).
+Commit `43c467b`. `total_kg` is optional in `manual.py`; a new
+`_reconcile_total_and_lifts` model validator enforces "total only OR all
+three lifts", auto-sums when total omitted, rejects mismatches (tol
+0.01 kg). Nine test cases in TestTotalAndLiftsReconciliation. Frontend
+ManualFormRow adds squat/bench/deadlift inputs on desktop table and
+mobile card; total placeholder becomes auto from S/B/D; partial-lift
+warning banner blocks submit.
 
 ### Athlete Projection (BETA) tab -- full implementation
 
@@ -266,21 +279,24 @@ Expand the existing methodology `<details>` block to cover:
 
 ## P5 -- Engineering debt
 
-### Hypothesis property tests for canonical_weight_class
+### Hypothesis property tests for canonical_weight_class — SHIPPED
 
-Boundary conditions, NaN inputs, non-M/F sex -- a Hypothesis
-`@given(sex=st.sampled_from(['M','F','Mx','']), wc=st.one_of(...))`
-loop would catch regressions we haven't imagined. Complements existing
-hand-written tests.
+Commit `cb7038e`. 19 property tests in
+`backend/tests/test_weight_class_properties.py`: return-set membership,
+bodyweight monotonicity (M & F), 54-58 kg -> "59" drop-53 regression
+guard, 84.5 kg woman -> "84+", invalid sex -> NaN, plus-suffix -> SHW,
+bulk-vs-rowwise equivalence. Plus 27 new qt.py edge cases and 22 new
+manual.py edge cases, for 68 new tests total. `hypothesis>=6.100` added
+to `backend/requirements.txt`. No source edits. 154/154 tests passing.
 
-### More tests for compute_lift_progression
+### More tests for compute_lift_progression — PARTIAL
 
-Currently 2 tests. Add:
+8 new tests in `backend/tests/test_progression.py`
+TestLiftProgressionFilters cover per-lift plumbing of age_category,
+max_gap_months, same_class_only. Still want:
 
-- Fixture with mixed-event meets: verify bench-only meets do NOT feed
-  per-lift curves (per-lift is SBD-only today)
-- Equipment=Equipped aggregation test
-- Division=Master 1 alias-matching test
+- Equipment=Equipped aggregation test (currently only Raw)
+- Division=Master 1 alias-matching test for per-lift specifically
 
 ### useUrlState key collision regression test
 
@@ -337,6 +353,115 @@ Candidate additions:
   Relevant for class migration analysis.
 
 **Career quartile is the most promising. Requires design.**
+
+---
+
+## Chrome audit 2026-04-17 -- backlog
+
+External exploration of the live site + Vercel + Render + GitHub surfaced 15
+distinct issues. The UX triage chat shipped a safe batch in its own session
+(Issues 6, 8, 9, 10, 7-partial, 13-verify, 15-verify). Remaining items gated
+below.
+
+### Active triage table
+
+| # | Issue | Severity | Effort | Owner | Gate | Status |
+|---|---|---|---|---|---|---|
+| 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | M shell / L per-chart | TBD | user decides shell vs per-chart | pending decision |
+| 2 | /api/health hit every ~5s from one IP (UptimeRobot misconfig suspected) | medium | S | user (Chrome prompt dispatched) | none, screenshot diag | pending user |
+| 3 | Double request logging (timing middleware + uvicorn access log) | medium | S | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
+| 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
+| 5 | No gzip middleware on backend responses | high | S | G1 backend-perf | main.py conflict gate cleared | ready to dispatch post-push |
+| 6 | /assets/* hashed bundles served with max-age=0 | high | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
+| 7 | Stale Fly.io references in refresh-data.yml + qt.py comments | polish | S | UX chat + G2 qt sweep | qt.py waits on push | **NOT SHIPPED** (UX chat did not commit) |
+| 8 | No CI build gate (tsc + build + pytest) on PR/push | blocker | M | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
+| 9 | refresh-data.yml missing pip cache (~25s/run) | polish | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
+| 10 | Deprecated action versions (Node 20 EOL warnings) | polish | S | UX chat | none | **NOT SHIPPED** (UX chat did not commit) |
+| 11 | Vercel Skew Protection not enabled | medium | S dash | user (Chrome prompt dispatched) | none, dashboard | pending user |
+| 12 | Render free-tier cold start still user-visible (~50s) | medium | L | strategic | user decision | pending user |
+| 13 | Verify data.py per-request cursor fix landed cleanly | polish | S read | UX chat | none | verified, no commit needed |
+| 14 | LifterLookup.tsx ~44KB, more code-splitting possible | polish | M | G3 LifterDetail lazy-load | push current WIP first | queued |
+| 15 | backend/requirements.txt pin discipline check | polish | S | UX chat | none | verified, no commit needed |
+| 16 | Local parquet lacks Goodlift column, 503 on /api/lifter/history | high | S | new chat | none | NEW, surfaced by chat C |
+| 17 | Concurrent hook sweep captured unrelated staged work in commit `e7432f5` | polish | N/A | retroactive | post-push | NEW, lesson captured in rules |
+
+### Dispatch waves
+
+**Wave 1 user actions, no Claude chat.**
+1. Trigger data-refresh GHA (covers existing P0, not a Chrome issue but same
+   cadence).
+2. Check UptimeRobot monitor interval for cpu-analytics backend (Issue 2).
+3. Check Render Settings -> Health Checks interval (Issue 2).
+4. Enable Vercel Skew Protection in project settings (Issue 11).
+
+**Wave 2 main-chat decisions.**
+- Issue 1: shell fix now (App.tsx unmount inactive, behavior change) vs
+  per-chart guard after A+B+C+E merge (safer).
+- P3 projection weighting. Still blocker for Athlete Projection math.
+- Issue 12: cold-start strategy (keep free + donations, upgrade Render $7/mo,
+  migrate to Fly Machines). Not urgent while keepalive holds.
+
+**Wave 3 gated chats (spawn in order after each gate clears).**
+1. **G1 backend-perf bundle** — trigger: chat A merged. Files:
+   `backend/app/main.py` only. Closes Issues 3 + 4 + 5 together because all
+   three want main.py middleware edits.
+2. **G2 qt.py comment sweep** — trigger: chat B merged. Files:
+   `backend/app/qt.py` comments only. Closes Issue 7 remainder.
+3. **G3 LifterDetail lazy-load** — trigger: chat E merged. Files:
+   `frontend/src/tabs/LifterLookup.tsx` split, new `LifterDetail.tsx`.
+   Closes Issue 14 and the pre-existing P1 "LifterDetail Recharts static
+   import" item.
+4. **G4 Recharts per-chart guard** — trigger: A+B+C+E all merged, and
+   only if user picked the per-chart path in Wave 2. Files: each tab's
+   ResponsiveContainer wrapper. Closes Issue 1.
+5. **G5 disclaimer copy pass** — trigger: Wave 3 above complete. Covers P4
+   items. Must be last because it touches every tab file.
+
+### Rules / lessons captured this session
+- Recharts + display:none: inactive tabs that render ResponsiveContainer with a
+  zero-height parent fire width=-1 height=-1 warnings. Guard with unmount
+  pattern (`{active === id ? <Tab /> : null}`) or inline `display !== 'none'`
+  check. Documented in CLAUDE.md Known gotchas.
+- CI build-gate on day one: cpu-analytics ran 7 months without a CI build
+  gate. Every new web project from here should scaffold a minimal CI
+  workflow (tsc + build + test) before first deploy. Documented at
+  `~/.claude/rules/common/ci-build-gate.md`.
+- Parallel-chat commit hygiene: when five agents stage simultaneously to the
+  same worktree, a concurrent hook or agent can sweep an unrelated chat's
+  staged files into a mis-labeled commit. The Chat A per-lift main.py change
+  landed inside Chat B's `e7432f5` "feat(qt-squeeze)" commit despite scope
+  discipline on both sides. The rest of Chat A's files stayed as WIP, giving
+  a false "committed" report to the user. Documented at
+  `~/.claude/rules/common/parallel-chat-isolation.md`.
+
+## New P1 issues surfaced this session
+
+### Goodlift column missing from local parquet (Issue 16)
+
+Chat C reported: `/api/lifter/history` returns 503 because the SQL selects
+`Goodlift` but the locally preprocessed parquet was generated before the
+Dots -> Goodlift rename. Production may or may not show this depending on
+which parquet Render has downloaded from the data-latest release. Fixes:
+1. Re-run `python data/preprocess.py` locally to regenerate the parquet
+   with the Goodlift column.
+2. Self-heal: extend the lifespan warmup's corrupt-parquet check to detect
+   missing expected columns and force re-download, not just row-count zero.
+
+Files: `data/preprocess.py`, `backend/app/data_loader.py`.
+
+### CI workflow never landed (Issue 8 reopened)
+
+The UX chat reported shipping `.github/workflows/ci.yml` but it does not
+exist on local main. Only `keepalive.yml` and `refresh-data.yml` are in
+`.github/workflows/`. This means:
+- No regression guard on the 4 unpushed commits or the upcoming WIP commit.
+- The branch-protection rule in the Chrome Wave 1 task will have nothing
+  to require.
+
+Fix: separate focused chat to write ci.yml. Not urgent enough to block the
+live-site hotfix, but should land within the next 2-3 commits.
+
+Files: `.github/workflows/ci.yml` (new).
 
 ---
 
