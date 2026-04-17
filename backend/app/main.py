@@ -15,15 +15,16 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import duckdb
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.gzip import GZipMiddleware
 
 from . import filters as filters_mod
 from . import lifters as lifters_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
-from .data import get_cursor
+from .data import OPENIPF_PARQUET, QT_PARQUET, get_cursor
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -103,6 +104,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Gzip JSON responses. Cohort/qt payloads compress ~5-10x and dominate the
+# wire time on Render's free tier.
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 
 # Request timing middleware: logs method + path + status + duration on every
 # request, including errors. Makes slow endpoints and failure spikes obvious
@@ -116,6 +121,10 @@ async def log_request_duration(request: Request, call_next):
         dur_ms = (time.perf_counter() - start) * 1000
         print(f"[req] {request.method} {request.url.path} CRASH in {dur_ms:.0f}ms")
         raise
+    # Skip /api/health: uvicorn access-logs it, and UptimeRobot + Render's
+    # internal prober would otherwise double-spam the app log every few seconds.
+    if request.url.path == "/api/health":
+        return response
     dur_ms = (time.perf_counter() - start) * 1000
     print(
         f"[req] {request.method} {request.url.path} "
@@ -156,6 +165,34 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
+_WEEKLY_CACHE_CONTROL = "public, max-age=300"
+
+
+def _parquet_etag() -> str:
+    """Weak ETag derived from parquet mtime. Flips on weekly data refresh."""
+    try:
+        mtime = max(
+            int(OPENIPF_PARQUET.stat().st_mtime),
+            int(QT_PARQUET.stat().st_mtime),
+        )
+        return f'W/"parquet-{mtime}"'
+    except OSError:
+        return 'W/"parquet-unknown"'
+
+
+def _maybe_304(request: Request, response: Response) -> Response | None:
+    """Set Cache-Control + ETag; return 304 Response on If-None-Match hit."""
+    etag = _parquet_etag()
+    if request.headers.get("if-none-match") == etag:
+        return Response(
+            status_code=304,
+            headers={"ETag": etag, "Cache-Control": _WEEKLY_CACHE_CONTROL},
+        )
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = _WEEKLY_CACHE_CONTROL
+    return None
+
+
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 def health() -> dict[str, str]:
     """Liveness probe. Answers GET or HEAD.
@@ -190,12 +227,18 @@ def ready():
 
 
 @app.get("/api/filters")
-def api_filters() -> dict[str, Any]:
+def api_filters(request: Request, response: Response) -> Any:
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
     return filters_mod.get_filters()
 
 
 @app.get("/api/qt/standards")
-def api_qt_standards() -> list[dict[str, Any]]:
+def api_qt_standards(request: Request, response: Response) -> Any:
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
     df = qt_mod.get_qt_standards()
     return _clean(df.to_dict(orient="records"))
 
@@ -323,13 +366,15 @@ def api_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
 
 @app.get("/api/qt/blocks")
 def api_qt_blocks(
+    request: Request,
+    response: Response,
     country: str = Query("Canada"),
     federation: str = Query("CPU"),
     equipment: str = Query("Raw"),
     tested: str = Query("Yes"),
     event: str = Query("SBD"),
     division: str = Query("Open", description="Age division for QT view."),
-) -> dict[str, Any]:
+) -> Any:
     """Four-block view for the QT tab, scoped by age division.
 
     Returns keys F_Regionals, F_Nationals, M_Regionals, M_Nationals, each a
@@ -340,6 +385,9 @@ def api_qt_blocks(
     """
     from .data_static.qt_by_division import has_age_specific_qt
 
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
     blocks = qt_mod.compute_blocks(
         country=country,
         federation=federation,
