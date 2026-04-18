@@ -434,6 +434,55 @@ below.
   a false "committed" report to the user. Documented at
   `~/.claude/rules/common/parallel-chat-isolation.md`.
 
+## Wave 2 UX polish (2026-04-17 evening)
+
+Two small UX fixes shipped in a single commit, plus the fallout:
+
+### SHIPPED `24dadb5`: meet-table no-scroll + class-change tooltip
+
+- Dropped `overflow-x-auto` from the LifterDetail meet table wrapper.
+- Removed `whitespace-nowrap` from the Sq/Bn/Dl value cell and Sq/Bn/Dl %
+  cell so triplets wrap vertically inside their column when space is tight.
+- Kept nowrap on Date, Event chip, Class (short values, safe to stay).
+- Replaced the native `title=` attribute on the amber class-change badge
+  with a portal-rendered tooltip ("Weight class changed from previous
+  meet") so it escapes the table's stacking context.
+
+Verified live on cpu-analytics.vercel.app. Frontend CI green on the push.
+
+### NEW P1: Backend pytest CI broken since the workflow landed
+
+CI job "Backend (pytest)" fails with
+`ModuleNotFoundError: No module named 'backend'` on every run. Not a
+regression from 24dadb5, pre-existing since the ci.yml landed in `12cbb46`.
+
+**Root cause**: `.github/workflows/ci.yml` runs `pytest backend/tests/`.
+The plain `pytest` shell entrypoint does NOT prepend cwd to `sys.path`,
+so `from backend.app import ...` imports in the tests fail. The fix is
+`python -m pytest backend/tests/` (python prepends cwd).
+
+Tests pass locally because `.venv/Scripts/python -m pytest ...` is what
+Matthias runs. CI was using the shortcut form.
+
+### 3rd instance of parallel-chat commit hygiene lapse
+
+Commit `24dadb5` title says "hover tooltip on class-change triangle" but
+the diff also removed `overflow-x-auto` + two `whitespace-nowrap`
+classes — those were the scroll fix from a separate "chat 1" task that
+never got its own commit. The chat 1 report to Matthias claimed "fix was
+already verified" but never reported a SHA. The fix is in production now
+but under a misleading commit message.
+
+Also inside 24dadb5: the `ClassChangeBadge` docstring still references
+`overflow-x-auto` as present tense even though the same commit removed
+it. Stale comment fixed in this session.
+
+Pattern: three times now in one day. Parallel chats against the same
+worktree keep producing commits whose messages don't match their scope.
+See `~/.claude/rules/common/parallel-chat-isolation.md` (unchanged, still
+applies). When the next pile of parallel chats kicks off, use git
+worktrees or dispatch serially.
+
 ## Wave 1 Chrome results (2026-04-17)
 
 Ran the 5-task prompt. Two green, three blocked or closed.

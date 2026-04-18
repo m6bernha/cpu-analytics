@@ -46,9 +46,12 @@ import {
 // ---------- Class-change badge with hover tooltip ----------
 //
 // Rendered next to the weight class when a lifter's class differs from their
-// previous meet. The tooltip uses a portal because the meet table lives inside
-// an `overflow-x-auto` wrapper, which per CSS spec also clips overflow-y and
-// would hide a tooltip positioned above the first row.
+// previous meet. Tooltip renders through a React portal so it escapes the
+// table cell's stacking context; this was originally needed because the meet
+// wrapper had `overflow-x-auto` (which per CSS spec also clips overflow-y),
+// and we keep the portal even now that the wrapper has been reverted to
+// `mt-6` without scroll so the pattern stays robust against a future
+// wrapper that reintroduces clipping.
 
 function ClassChangeBadge({ label }: { label: string }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
