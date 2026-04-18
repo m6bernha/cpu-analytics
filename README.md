@@ -1,55 +1,155 @@
 # CPU Powerlifting Analytics
 
-A web app for Canadian raw powerlifters competing in CPU and IPF-affiliated meets.
-Three things in one place:
+**Live app:** https://cpu-analytics.vercel.app
 
-1. **Cohort progression** — average total change over time, filterable by sex, weight class, equipment, division, age category, and x-axis unit.
-2. **QT Squeeze** — four-block view of the percentage of Open lifters who meet CPU qualifying totals across the pre-2025, 2025, and 2027 standards. Includes the forward-looking "what fraction of today's Open lifters already meet the upcoming 2027 standard" metric.
-3. **Lifter lookup** — search any Canadian lifter by name, see their full meet trajectory plotted against the qualifying total reference lines for their weight class. Manual entry available for lifters not in the dataset or for projecting hypothetical totals.
+A web app that turns the OpenPowerlifting dataset into four views a Canadian
+raw powerlifter actually uses: cohort progression, future projection,
+per-lifter history, and CPU qualifying-total coverage.
 
-Data source: [OpenPowerlifting](https://openpowerlifting.org/), CC0 licensed.
+Scoped to Canadian lifters in IPF-sanctioned meets (CPU domestic and IPF
+international). Data refreshed weekly from
+[OpenPowerlifting](https://openpowerlifting.org/)'s OpenIPF bulk export.
+
+[![CI](https://github.com/m6bernha/cpu-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/m6bernha/cpu-analytics/actions/workflows/ci.yml)
+[![Data refresh](https://github.com/m6bernha/cpu-analytics/actions/workflows/refresh-data.yml/badge.svg)](https://github.com/m6bernha/cpu-analytics/actions/workflows/refresh-data.yml)
+[![Keepalive](https://github.com/m6bernha/cpu-analytics/actions/workflows/keepalive.yml/badge.svg)](https://github.com/m6bernha/cpu-analytics/actions/workflows/keepalive.yml)
+
+---
+
+## Why this exists
+
+Three real questions Canadian raw lifters ask, and none of the existing
+dashboards answer cleanly:
+
+1. **Is a 10 kg gain in a year good or bad for my class and age?** Comparing
+   yourself to a cohort requires the cohort to actually match your class,
+   equipment, division, and age bracket. OpenPowerlifting has the data but
+   filters to the whole world and all federations by default.
+2. **Do I have a realistic shot at Nationals 2027 given the new qualifying
+   totals?** The CPU raised standards across the board starting in 2025 and
+   will raise them again in 2027. Knowing the percent of Open lifters who
+   currently meet each standard makes the bar concrete.
+3. **What does the full trajectory of lifters who DID qualify look like?**
+   Plotting a single lifter's meet-by-meet history against the exact QT
+   reference lines for their class turns "am I on pace" from a vibe into
+   a number.
+
+The OpenPowerlifting data is under CC0 and publicly available. The gap this
+app fills is the Canadian-IPF scope plus the CPU-specific qualifying-total
+reference points.
+
+---
+
+## What it does
+
+Four tabs, each answering one concrete question. All views share filters for
+sex, weight class, equipment, event, division, and age bracket, and URL state
+is shareable (every meaningful view has a clean permalink).
+
+### 1. Progression — "how much do lifters like me gain over time?"
+
+Average total improvement across a cohort, plotted over a time axis of your
+choice (months since first meet, years since first meet, or calendar date).
+Weighted OLS trendline with R-squared. Standard-deviation band around the
+mean so the noise is visible, not hidden. Optional per-lift breakdown
+(squat, bench, deadlift) and a comeback filter that excludes lifters with
+long inter-meet gaps.
+
+### 2. Athlete Projection (BETA) — "where will my total be in two years?"
+
+Applies cohort growth curves to a starting total and projects forward with a
+widening confidence interval. Percentile rank against the cohort at every
+future bucket so you see both the point estimate and the uncertainty.
+
+### 3. Lifter Lookup — "plot my own trajectory against the QT lines"
+
+Search by name and see every meet plotted with CPU qualifying-total
+reference lines for the lifter's weight class. Per-meet bodyweight, Goodlift
+(GLP) score, rate-of-improvement regression, PR detection, and a class-change
+indicator when the lifter moves between weight classes.
+
+Three modes:
+- **Search**: single lifter, full history, projection overlay.
+- **Compare**: up to four lifters side-by-side on a shared axis.
+- **Manual**: enter hypothetical meets for lifters not in the dataset, or
+  project a planned total at a future date.
+
+### 4. QT Squeeze — "what percent of Open lifters meet the new standard?"
+
+Four-block table (men's Nationals, men's Regionals, women's Nationals,
+women's Regionals) showing the fraction of Open lifters whose 24-month-best
+total clears each era's qualifying standard: pre-2025, 2025, and the
+forward-looking 2027 cutoff. Answers "how hard did they just make it, and
+how hard is it about to get" in one view.
+
+---
 
 ## Stack
 
-- **Backend**: FastAPI + DuckDB over Parquet, Python 3.11+
-- **Frontend**: Vite + React + TypeScript + TanStack Query + Recharts + Tailwind v3
-- **Data refresh**: GitHub Actions weekly cron downloads the latest OpenIPF bulk CSV, runs preprocess, publishes both parquet files as a `data-latest` GitHub Release
-- **Deploy** (planned): Vercel for frontend, Fly.io for backend
+| Layer | Tech |
+|---|---|
+| Backend | FastAPI + DuckDB over Parquet, Python 3.12 in prod |
+| Frontend | Vite + React 19 + TypeScript (strict) + TanStack Query + Recharts + Tailwind v3 |
+| Data pipeline | GitHub Actions weekly cron + pandas preprocess |
+| Backend hosting | Render.com (free tier, Docker, `render.yaml` blueprint) |
+| Frontend hosting | Vercel Hobby (auto-deploy on push to `main`) |
+| Tests | pytest + Hypothesis (158 passing), Vite build as frontend gate |
+| CI | GitHub Actions build-gate on every push and PR |
+| Uptime | UptimeRobot HEAD ping + GHA cron keepalive |
 
-## Layout
+---
+
+## Architecture at a glance
 
 ```
-cpu-analytics/
-  backend/
-    app/
-      main.py            FastAPI app + endpoints
-      data.py            DuckDB connection (singleton)
-      data_loader.py     Downloads parquet from GitHub Release in production
-      scope.py           Country=Canada / ParentFederation=IPF defaults
-      filters.py         /api/filters enumerated values
-      progression.py     Cohort progression analytics
-      qt.py              QT coverage + four-block view
-      lifters.py         Search + history
-      manual.py          Manual meet entry to lifter-history shape
-      weight_class.py    Canonical M/F class mapping
-    requirements.txt
-  data/
-    preprocess.py        CSV -> Parquet (one-shot)
-    processed/           openipf.parquet, qt_standards.parquet (gitignored)
-  frontend/
-    src/
-      App.tsx            Tab shell
-      lib/api.ts         Typed fetch helpers
-      tabs/
-        Progression.tsx  Cohort progression tab
-        QTSqueeze.tsx    QT Squeeze tab
-        LifterLookup.tsx Lifter lookup tab (search + manual entry)
-    package.json
-  .github/workflows/
-    refresh-data.yml     Weekly OpenIPF refresh
-  LICENSE
-  README.md
+         weekly cron                          cold-boot download
+OpenPowerlifting ---> [preprocess.py] ---> [GitHub Release] ---> [Render: FastAPI + DuckDB]
+                                                                        |
+                                                                        |  REST /api/*
+                                                                        v
+                                                               [Vercel: React SPA] <--- user
 ```
+
+Full system design and decision log: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Data pipeline, QT standards, scope enforcement: [docs/DATA.md](docs/DATA.md).
+
+---
+
+## Scope
+
+The app intentionally restricts queries to:
+
+- **Country = Canada**
+- **ParentFederation = IPF** (CPU domestic and IPF international meets)
+
+The restriction is applied twice: once at preprocess time (the shipped
+parquet is pre-filtered, roughly 15-20x smaller than the full OpenIPF
+export, about 5,400 lifters) and again at every API query
+(`backend/app/scope.py`). Widening the scope is a one-line change, but the
+product framing is CPU-centric by design.
+
+Weight classes are canonicalized to modern IPF (59/66/74/83/93/105/120/120+
+for men, 47/52/57/63/69/76/84/84+ for women). Historical 1kg-off variants
+collapse into their current class. Men below 58 kg drop from QT views
+because no CPU QT standard exists for that range.
+
+---
+
+## Live endpoints
+
+| Service | URL |
+|---|---|
+| Frontend | https://cpu-analytics.vercel.app |
+| Backend | https://cpu-analytics-backend.onrender.com |
+| Liveness | https://cpu-analytics-backend.onrender.com/api/health |
+| Readiness | https://cpu-analytics-backend.onrender.com/api/ready |
+| OpenAPI docs | https://cpu-analytics-backend.onrender.com/docs |
+
+Render's free tier spins down after 15 minutes of idle traffic. A cold start
+is 20-50 seconds. UptimeRobot and a GitHub Actions cron ping `/api/health`
+every 5 minutes to keep the instance warm during normal hours.
+
+---
 
 ## Local development
 
@@ -63,9 +163,11 @@ python -m venv .venv
 # source .venv/bin/activate    # macOS/Linux
 pip install -r backend/requirements.txt
 
-# Download a fresh OpenIPF CSV from openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip
-# Unzip it somewhere, then point preprocess.py at it:
-OPENIPF_CSV=/path/to/openipf-YYYY-MM-DD-HASH.csv python data/preprocess.py
+# Data
+# Download openipf-latest.zip from
+# https://openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip
+# Unzip it and point preprocess.py at the CSV:
+python data/preprocess.py
 
 # Frontend
 cd frontend
@@ -75,61 +177,142 @@ npm install
 ### Running locally
 
 ```bash
-# Terminal 1 — backend
+# Terminal 1 - backend
 cd cpu-analytics
 .venv/Scripts/activate
 uvicorn backend.app.main:app --reload
 
-# Terminal 2 — frontend
+# Terminal 2 - frontend
 cd cpu-analytics/frontend
 npm run dev
 ```
 
-Frontend runs at http://localhost:5173 and expects the backend at http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
+Frontend runs at http://localhost:5173 and expects the backend at
+http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
+
+### Tests
+
+```bash
+# Backend tests (158 passing)
+.venv/Scripts/python -m pytest backend/tests/ -v
+
+# Frontend strict typecheck + production build
+cd frontend && npm run build
+```
+
+Both commands also run in CI on every push and PR.
+
+---
 
 ## Data refresh
 
-The GitHub Actions workflow at `.github/workflows/refresh-data.yml` runs every Sunday at 06:13 UTC. It downloads the latest OpenIPF bulk CSV, runs preprocess, and publishes the resulting parquet files as a `data-latest` GitHub Release. The production backend reads `OPENIPF_PARQUET_URL` and `QT_PARQUET_URL` env vars to fetch the latest data on container start.
+`.github/workflows/refresh-data.yml` runs every Sunday at 06:13 UTC:
 
-To trigger a refresh manually: GitHub repo → Actions → Refresh OpenIPF data → Run workflow.
+1. Downloads the latest OpenIPF bulk CSV from
+   `openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip`.
+2. Runs `data/preprocess.py` to produce `openipf.parquet` (Canada + IPF
+   filtered) and `qt_standards.parquet` (hand-curated CPU standards).
+3. Publishes both files as the rolling `data-latest` GitHub Release.
 
-## Scope
+The production backend reads `OPENIPF_PARQUET_URL` and `QT_PARQUET_URL` env
+vars to fetch the latest parquet on cold start.
 
-The site is intentionally limited to Canadian lifters competing in IPF-sanctioned meets (CPU domestic + IPF international). The dataset contains the full OpenIPF dump but the API enforces this scope via default query parameters in `backend/app/scope.py`. Widening scope is a one-line change.
+Manual refresh: Actions tab -> "Refresh OpenIPF data" -> Run workflow.
+
+Full data-flow details: [docs/DATA.md](docs/DATA.md).
+
+---
 
 ## Deployment
 
 ### Backend: Render
 
-The backend is deployed to Render.com via the `Dockerfile` and `render.yaml`
-blueprint. The service reads the processed parquet from a rolling
-`data-latest` GitHub Release on cold start (env vars
-`OPENIPF_PARQUET_URL`, `QT_PARQUET_URL`).
-
-**Health Check Path:** In the Render dashboard go to Settings → Health
-Checks and set the path to `/api/health`. This endpoint accepts both
-GET and HEAD so Render's own health poll and UptimeRobot's free plan
-(HEAD-only) both work.
-
-**Liveness vs readiness:**
-- `/api/health` is a fast liveness probe. Returns 200 if the process
-  is up, does not hit DuckDB.
-- `/api/ready` is a readiness probe. Runs `SELECT 1` against DuckDB to
-  confirm the parquet views loaded. Returns 503 if not ready.
+Dockerized via the repo-root `Dockerfile` and `render.yaml` blueprint.
+Health-check path: `/api/health` (GET and HEAD both work so the free-tier
+probe and UptimeRobot's HEAD-only free plan both succeed). Readiness probe
+at `/api/ready` runs `SELECT 1` against DuckDB.
 
 ### Frontend: Vercel
 
-Auto-deploys on push to `main` from the `frontend/` subdirectory. Set
-the env var `VITE_API_BASE` to the Render backend URL.
+Vercel imports the repo with **Root Directory = `frontend`**. `vercel.json`
+lives inside `frontend/`, not at repo root. Auto-deploys on every push to
+`main`. Set the `VITE_API_BASE` env var to the Render backend URL.
 
-### Uptime monitoring
+---
 
-UptimeRobot free plan at 5-minute intervals pings `/api/health` with
-HEAD. This also keeps the Render free-tier instance warm past the
-15-minute idle spindown. A GitHub Actions cron in
-`.github/workflows/keepalive.yml` is a belt-and-braces backup in case
-UptimeRobot itself is down.
+## Repo layout
 
-## License
+```
+cpu-analytics/
+  backend/
+    app/
+      main.py            FastAPI app, routes, lifespan, middleware
+      data.py            DuckDB singleton + per-request cursor helpers
+      data_loader.py     Cold-boot download of parquet from GitHub Release
+      scope.py           Country + ParentFederation defaults (Canada + IPF)
+      filters.py         /api/filters enumerated values
+      progression.py     Cohort aggregation + projection math
+      qt.py              QT coverage + four-block view
+      lifters.py         Search + per-lifter history
+      manual.py          Manual-entry trajectory builder (validated)
+      weight_class.py    Canonical M/F class mapping
+    tests/               pytest + Hypothesis (158 tests)
+    requirements.txt
+  data/
+    preprocess.py        CSV -> Parquet, applies Canada+IPF filter
+    qualifying_totals_canpl.csv   Hand-curated CPU QT standards (vendored)
+    processed/           Gitignored output
+  frontend/
+    src/
+      App.tsx            Tab shell + URL-backed routing
+      lib/
+        api.ts           Typed fetch helpers
+        useUrlState.ts   URL-backed state hook
+        QueryStatus.tsx  Shared loading/error components
+      tabs/
+        Progression.tsx
+        AthleteProjection.tsx
+        LifterLookup.tsx  (hosts Compare mode via lazy import)
+        CompareView.tsx
+        QTSqueeze.tsx
+    package.json
+    vercel.json
+  docs/
+    ARCHITECTURE.md
+    DATA.md
+  .github/workflows/
+    ci.yml               Frontend build + backend pytest
+    refresh-data.yml     Weekly OpenIPF refresh
+    keepalive.yml        Render cold-start mitigation
+  CLAUDE.md              Dev guide for Claude Code sessions
+  CONTRIBUTING.md
+  Dockerfile
+  render.yaml
+  LICENSE
+  README.md              (you are here)
+```
 
-MIT for the application code. The OpenPowerlifting dataset is CC0 1.0 Universal — see [openpowerlifting.org](https://openpowerlifting.org/) for source data and attribution.
+---
+
+## Contributing
+
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+short version.
+
+---
+
+## License and attribution
+
+Application code: [MIT](LICENSE).
+
+Dataset: OpenPowerlifting OpenIPF bulk export, CC0 1.0 Universal. If you
+build on this, please credit
+[openpowerlifting.org](https://openpowerlifting.org/) and keep a link back
+to the source data.
+
+---
+
+## Contact
+
+Built by Matthias Bernhard, UW Nanotech '26 and a raw 83 kg CPU lifter who
+wanted to know if his numbers were going to clear the 2027 standard.
