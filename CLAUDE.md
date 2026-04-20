@@ -139,7 +139,8 @@ specifically, not the first meet of any kind.
 - **Dedicated DuckDB exception handler** catches `duckdb.Error`, logs the request path + exception + stack trace, returns a clean 503 JSON `{"error": "database_error"}`. Means future DuckDB issues show which endpoint triggered them.
 - **QueryClient defaults** (main.tsx): `retry: 3`, exponential backoff up to 30 s, `staleTime: 5 min`, `refetchOnWindowFocus: false`. Tuned for the Render free-tier cold start. Individual queries override staleTime where appropriate.
 - **Frontend error display pattern.** Every query uses `lib/QueryStatus.tsx`: `QueryErrorCard` (with HTTP status + Retry button + cold-start explanation) on `isError`, `LoadingSkeleton` on `isLoading`. Keeps users informed instead of rendering partially.
-- **CompareView is lazy-loaded.** `const CompareView = lazy(() => import('./CompareView'))` in `LifterLookup.tsx`. Ships as its own ~8 KB chunk. Do NOT add a static import from CompareView back into LifterLookup - it will defeat the split (vite warns `INEFFECTIVE_DYNAMIC_IMPORT`).
+- **CompareView is lazy-loaded.** `const CompareView = lazy(() => import('./CompareView'))` in `LifterLookup.tsx`. Ships as its own ~11 KB chunk. Do NOT add a static import from CompareView back into LifterLookup - it will defeat the split (vite warns `INEFFECTIVE_DYNAMIC_IMPORT`).
+- **LifterDetail is lazy-loaded.** `const LifterDetail = lazy(() => import('./LifterDetail'))` in `LifterLookup.tsx`. The whole detail view (chart + meet table + ClassChangeBadge + fmtDate/Kg/Sbd formatters + findQtForLifter + EVENT_DESCRIPTION + Era maps) lives in `frontend/src/tabs/LifterDetail.tsx` and ships as its own ~18 KB chunk. Both usages (search-mode and ManualEntryForm result block) are wrapped in `<Suspense fallback={<LoadingSkeleton lines={3} chart />}>`. Do NOT add a static import from LifterDetail.tsx back into LifterLookup.tsx — that would re-merge the lazy chunk into the main bundle. Recharts (~357 KB CartesianChart chunk) is now shared between CompareView and LifterDetail and only loads when either opens. Main bundle went from ~663 KB to 295.61 KB (-55%) in commit that landed 2026-04-20.
 - **Recharts + display:none.** Inactive tabs rendered with `display:none` still mount their `ResponsiveContainer`, which reports `width=-1 height=-1` and logs a console warning on every tab switch. Two safe patterns: (a) unmount inactive tabs via `{active === id ? <Tab /> : null}`, accepting scroll-state reset, or (b) conditionally render the Recharts subtree inside each tab based on an `isActive` prop. Do NOT add a non-zero min-height to a display:none parent as a workaround.
 - **Dots renamed to Goodlift through the SQL pipeline.** `backend/app/lifters.py` selects `Goodlift`, not `Dots`. If the locally preprocessed parquet was generated before the rename, `/api/lifter/history` returns 503 with `duckdb_error: column Goodlift not found`. Fix: re-run `python data/preprocess.py` to regenerate. The data_loader corrupt-parquet self-heal only checks row-count > 0, not schema completeness, so a stale-schema parquet will keep being served. See NEXT_STEPS.md Issue 16.
 - **Parallel-chat hook sweep risk.** When multiple Claude Code chats stage changes to the same worktree simultaneously, a concurrent commit hook or agent can sweep unrelated staged files into a single commit with only one chat's message. This happened three times on 2026-04-17 alone: Chat A's per-lift `main.py` inside Chat B's `e7432f5`, scroll-fix inside tooltip commit `24dadb5`, and an NEXT_STEPS.md stash/pop during the CI landing `12cbb46`. Mitigation: run parallel chats in git worktrees, not the same checkout, or dispatch serially. See `~/.claude/rules/common/parallel-chat-isolation.md`.
@@ -295,10 +296,10 @@ items summarized here:
 
 ### High-priority code work
 
-1. **Lazy-load `LifterDetail`** to claim the remaining ~200 KB Recharts saving.
-   The CompareView split only yielded 8 KB because LifterDetail imports Recharts
-   statically from the main bundle. Wrap LifterDetail the same way CompareView
-   is wrapped.
+1. **Lazy-load `LifterDetail`** — SHIPPED 2026-04-20. Main bundle dropped
+   from 663 KB to 295.61 KB (-55%). Recharts now lives in a shared 357 KB
+   CartesianChart chunk that only loads when CompareView or LifterDetail is
+   opened. LifterDetail ships as its own 18 KB chunk.
 2. **Per-lift filter plumbing.** Frontend shows an amber warning that per-lift
    view ignores age_category, same_class_only, and max_gap_months. Data-correctness
    gap. Extend `compute_lift_progression` to accept and apply those filters
@@ -318,6 +319,6 @@ items summarized here:
 ### Low-priority / polish
 
 6. **Hypothesis property-based tests** for `canonical_weight_class`.
-7. **Extract LifterDetail to its own file** for easier lazy-loading.
+7. **Extract LifterDetail to its own file** — SHIPPED 2026-04-20 alongside the lazy-load.
 8. **UptimeRobot dashboard verification** once HEAD is live (pending user
    manual navigation since the Chrome extension blocks dashboard domains).

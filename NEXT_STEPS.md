@@ -76,14 +76,20 @@ Next action: commit these files in a coherent "feat(progression): per-lift
 filter plumbing + frontend age_category removal" commit and push.
 THIS COMMIT ALSO FIXES THE LIVE-SITE AGE_CATEGORY ERROR.
 
-### LifterDetail Recharts static import defeats the CompareView split
+### LifterDetail Recharts static import defeats the CompareView split — SHIPPED
 
-The parallel agent split CompareView out (commit `19406a4`) but
-`LifterDetail` still statically imports `recharts`, so Vite keeps the
-~200 KB Recharts library in the main chunk. To claim the full savings,
-lazy-load `LifterDetail` too (it's only rendered after a search click).
+G3 LifterDetail lazy-load landed 2026-04-20. `LifterDetail` + its helpers
+(ClassChangeBadge, formatters, findQtForLifter, event/era metadata) extracted
+to new `frontend/src/tabs/LifterDetail.tsx` and lazy-imported from
+`LifterLookup.tsx`. Both usages (search-mode and inside ManualEntryForm)
+wrapped in Suspense with LoadingSkeleton fallback.
 
-Files: `frontend/src/tabs/LifterLookup.tsx`.
+**Bundle before:** `index.js` ~663 KB (Recharts bundled into main).
+**Bundle after:** `index.js` 295.61 KB (-55%), CartesianChart 357.19 KB lazy,
+LifterDetail 18.11 KB lazy, CompareView 11.18 KB lazy.
+
+Files: `frontend/src/tabs/LifterLookup.tsx` (-700 lines),
+`frontend/src/tabs/LifterDetail.tsx` (new, 679 lines).
 
 ### QT Squeeze axis + graph titles overlap at some widths — SHIPPED
 
@@ -289,14 +295,13 @@ bulk-vs-rowwise equivalence. Plus 27 new qt.py edge cases and 22 new
 manual.py edge cases, for 68 new tests total. `hypothesis>=6.100` added
 to `backend/requirements.txt`. No source edits. 154/154 tests passing.
 
-### More tests for compute_lift_progression — PARTIAL
+### More tests for compute_lift_progression — SHIPPED
 
 8 new tests in `backend/tests/test_progression.py`
 TestLiftProgressionFilters cover per-lift plumbing of age_category,
-max_gap_months, same_class_only. Still want:
-
-- Equipment=Equipped aggregation test (currently only Raw)
-- Division=Master 1 alias-matching test for per-lift specifically
+max_gap_months, same_class_only. P5 remainder shipped 2026-04-20 in
+commit `e3230a0`: Equipment=Equipped aggregation test + Division=Master 1
+alias-matching test. 165/165 backend tests passing.
 
 ### useUrlState key collision regression test
 
@@ -373,16 +378,16 @@ below.
 | 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | closed | SHIPPED `1f0b62e` — ETag W/"parquet-<mtime>" + Cache-Control public, max-age=300 on filters, qt/standards, qt/blocks. 304 verified on If-None-Match |
 | 5 | No gzip middleware on backend responses | high | S | G1 backend-perf | closed | SHIPPED `1f0b62e` — GZipMiddleware(minimum_size=500), Content-Encoding: gzip verified on qt/blocks |
 | 6 | /assets/* hashed bundles served with max-age=0 | high | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — vercel.json headers rule: Cache-Control public, max-age=31536000, immutable |
-| 7 | Stale Fly.io references in refresh-data.yml + qt.py comments | polish | S | CI-redispatch chat (partial) + G2 qt sweep | qt.py still outstanding | PARTIAL SHIPPED `12cbb46` — refresh-data.yml scrubbed; qt.py comment sweep still queued |
+| 7 | Stale Fly.io references in refresh-data.yml + qt.py comments | polish | S | CI-redispatch chat + G2 data_loader sweep | closed | SHIPPED `12cbb46` (refresh-data.yml) + `51ca6b0` (data_loader.py; qt.py was already clean) |
 | 8 | No CI build gate (tsc + build + pytest) on PR/push | blocker | M | CI-redispatch chat | closed | SHIPPED `12cbb46` — .github/workflows/ci.yml with Frontend (tsc + build) and backend pytest jobs, triggers on push + PR to main |
 | 9 | refresh-data.yml missing pip cache (~25s/run) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — setup-python with cache: pip |
 | 10 | Deprecated action versions (Node 20 EOL warnings) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — checkout v4→v6, setup-python v5→v6, action-gh-release v2→v3 |
 | 11 | Vercel Skew Protection not enabled | low | strategic | decision | Pro-plan feature ($20/mo), Hobby cannot toggle | PARKED, low traffic hobby project, Pro upgrade not justified |
 | 12 | Render free-tier cold start still user-visible (~50s) | medium | L | strategic | user decision | pending user |
 | 13 | Verify data.py per-request cursor fix landed cleanly | polish | S read | UX chat | none | verified, no commit needed |
-| 14 | LifterLookup.tsx ~44KB, more code-splitting possible | polish | M | G3 LifterDetail lazy-load | push current WIP first | queued |
+| 14 | LifterLookup.tsx ~44KB, more code-splitting possible | polish | M | G3 LifterDetail lazy-load | closed | SHIPPED 2026-04-20 — main bundle 663→295 KB (-55%); LifterDetail extracted to own file + lazy-loaded |
 | 15 | backend/requirements.txt pin discipline check | polish | S | UX chat | none | verified, no commit needed |
-| 16 | Local parquet lacks Goodlift column, 503 on /api/lifter/history | high | S | new chat | none | NEW, surfaced by chat C |
+| 16 | Local parquet lacks Goodlift column, 503 on /api/lifter/history | high | S | G2 data_loader sweep | closed | SHIPPED `51ca6b0` — assert_parquet_health() in data_loader.py self-heals on both zero-row AND missing-column |
 | 17 | Concurrent hook sweep captured unrelated staged work in commit `e7432f5` | polish | N/A | retroactive | post-push | NEW, lesson captured in rules |
 
 ### Dispatch waves
@@ -405,12 +410,17 @@ below.
 1. **G1 backend-perf bundle** — trigger: chat A merged. Files:
    `backend/app/main.py` only. Closes Issues 3 + 4 + 5 together because all
    three want main.py middleware edits.
-2. **G2 qt.py comment sweep** — trigger: chat B merged. Files:
-   `backend/app/qt.py` comments only. Closes Issue 7 remainder.
-3. **G3 LifterDetail lazy-load** — trigger: chat E merged. Files:
+2. **G2 data_loader hardening + Fly.io sweep — SHIPPED 2026-04-20**
+   (commit `51ca6b0`). Scope deviations from original prompt: the stale
+   Fly.io reference was in `backend/app/data_loader.py:4`, not
+   `backend/app/qt.py`; and the chat added a new `assert_parquet_health()`
+   function rather than touching `main.py` lifespan (out of scope). Covers
+   both zero-row and missing-column parquet in one place. Closes Issue 7
+   remainder + Issue 16.
+3. **G3 LifterDetail lazy-load — SHIPPED 2026-04-20.** Files:
    `frontend/src/tabs/LifterLookup.tsx` split, new `LifterDetail.tsx`.
-   Closes Issue 14 and the pre-existing P1 "LifterDetail Recharts static
-   import" item.
+   Closed Issue 14 and the pre-existing P1 "LifterDetail Recharts static
+   import" item. Main bundle 663 KB → 295.61 KB.
 4. **G4 Recharts per-chart guard** — trigger: A+B+C+E all merged, and
    only if user picked the per-chart path in Wave 2. Files: each tab's
    ResponsiveContainer wrapper. Closes Issue 1.
@@ -519,18 +529,20 @@ re-auth same as last time.
 
 ## New P1 issues surfaced this session
 
-### Goodlift column missing from local parquet (Issue 16)
+### Goodlift column missing from local parquet (Issue 16) — SHIPPED
 
-Chat C reported: `/api/lifter/history` returns 503 because the SQL selects
-`Goodlift` but the locally preprocessed parquet was generated before the
-Dots -> Goodlift rename. Production may or may not show this depending on
-which parquet Render has downloaded from the data-latest release. Fixes:
-1. Re-run `python data/preprocess.py` locally to regenerate the parquet
-   with the Goodlift column.
-2. Self-heal: extend the lifespan warmup's corrupt-parquet check to detect
-   missing expected columns and force re-download, not just row-count zero.
+Commit `51ca6b0` landed 2026-04-20. New `assert_parquet_health()` in
+`backend/app/data_loader.py` covers both zero-row and missing-column in one
+place, called from `ensure_parquets()` on cold-start. Raises HTTPException(503)
+surfaced via FastAPI middleware when called per-request. Also scrubbed the
+stale Fly.io reference at `backend/app/data_loader.py:4` (qt.py was already
+clean, despite the original prompt's scope guess).
 
-Files: `data/preprocess.py`, `backend/app/data_loader.py`.
+Remaining user step: re-run `python data/preprocess.py` locally to regenerate
+the Goodlift-column parquet if the dev environment still has the stale file.
+Production Render picked up the fresh parquet at next cold-start via the
+data-latest release; the self-heal now catches future schema drift
+automatically.
 
 ### CI workflow never landed (Issue 8 reopened)
 
