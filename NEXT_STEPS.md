@@ -9,6 +9,56 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-20 (laptop campus study day)
+
+Active work this session, running as parallel worktree chats with explicit
+filename staging:
+
+1. **Compare chart summary cards + QT reference lines** (P1) --
+   `frontend/src/tabs/CompareView.tsx`. Per-lifter cards above chart
+   (best total, rate kg/month, meet count, first-meet date, class
+   migrations, QT status) + optional QT reference line set.
+2. **Bodyweight + GLP cohort progression curves** (P2) --
+   `backend/app/progression.py`, `backend/app/main.py`,
+   `backend/tests/test_progression.py`, `frontend/src/lib/api.ts`,
+   `frontend/src/tabs/Progression.tsx`. Metric selector
+   (TotalKg / Bodyweight / Goodlift) using the existing
+   compute_progression pattern.
+3. **useUrlState key collision Vitest** (P5) --
+   `frontend/src/lib/useUrlState.test.tsx` (new). Asserts the dev-mode
+   warn fires on overlapping URL keys.
+4. **Playwright E2E smoke test scaffold** (P5) --
+   `frontend/playwright.config.ts`, `frontend/e2e/smoke.spec.ts`,
+   `frontend/package.json`. Runnable locally. Not wired into CI yet
+   (separate strategic decision).
+
+Each runs in its own git worktree with explicit-filename staging and
+`git show --name-only HEAD` verification to prevent hook-sweep. Worktree
+paths + branch names are returned in the session summary so they can be
+reviewed, pushed, or cherry-picked from the desktop setup.
+
+### Gated items NOT touched this session
+
+User decision or manual browser action required before these can start:
+
+- Issue 1 Recharts display:none warnings: shell fix vs per-chart guard.
+- P3 projection weighting methodology: pick A/B/C/D. C recommended.
+- G4 per-chart Recharts guard: blocks on Issue 1.
+- G5 disclaimer copy pass: blocks on everything else, touches every tab
+  file.
+- Branch protection for backend pytest: user manual via Chrome, needs
+  sudo re-auth.
+- P0 data-refresh Run #7 green verification: user manual.
+
+### Housekeeping (address when resuming)
+
+- P0 "Filter load failed: age_category" block likely predates the
+  2026-04-20 wave. Verify live site is clean then delete the block.
+- P1 "Compare chart short-career blowout" entry says "NOT yet pushed to
+  origin" but commit `a6dc701` is on main. Update.
+
+---
+
 ## P0 -- Live site is BROKEN (highest priority)
 
 ### Filter load failed: age_category
@@ -172,6 +222,31 @@ Placeholder exists (commit `fd017fe`). Core feature spec:
 5. **Critical UI**: slider between "personal trajectory weight" and
    "cohort average weight". See the math roundtable below -- this
    tab cannot ship numbers until we pick a weighting methodology.
+
+### Coach "on pace for Nationals 2027" widget
+
+Fills the Athlete Projection BETA placeholder with one useful widget that
+does NOT need the P3 weighting decision to ship.
+
+Inputs: lifter (search) or current manual entry, target date (default
+next Nationals), target QT (Regionals 2025/2027, Nationals 2025/2027,
+custom).
+
+Output: predicted total using the existing individual linear projection,
+kg gap to selected QT, on-pace badge with honest-brokerage disclaimer.
+
+Depends on nothing new. Reuses projection math in
+`backend/app/projection.py`. UI-only change in the BETA tab file.
+
+Does NOT replace the full Athlete Projection spec above (which still
+needs P3 for the blended personal+cohort math). Ships independently as
+a useful-while-you-wait widget.
+
+Estimated effort: 1 focused session.
+
+Files: `frontend/src/tabs/AthleteProjection.tsx` (fill placeholder),
+possibly a small helper in `backend/app/projection.py` if kg-gap needs
+server-side QT lookup.
 
 ---
 
