@@ -11,7 +11,11 @@ Uses the synthetic fixture from conftest.py. The fixture has:
 from __future__ import annotations
 
 import pytest
-from backend.app.progression import compute_lift_progression, compute_progression
+from backend.app.progression import (
+    METRIC_COLS,
+    compute_lift_progression,
+    compute_progression,
+)
 
 
 class TestBasicProgression:
@@ -314,3 +318,126 @@ class TestLiftProgressionFilters:
         # she contributes; with it she's excluded (ClassCount=2).
         assert all_equipped["n_lifters"] == 1
         assert same_class["n_lifters"] == 0
+
+
+class TestMetricParam:
+    """Tests for the metric= parameter (total / bodyweight / goodlift)."""
+
+    def test_total_is_default(self, test_conn):
+        """metric='total' and no metric arg produce identical results."""
+        explicit = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="total", x_axis="Years",
+        )
+        default = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Years",
+        )
+        assert explicit["points"] == default["points"]
+        assert explicit["metric"] == "total"
+        assert default["metric"] == "total"
+
+    def test_response_has_metric_and_y_label(self, test_conn):
+        """Response always contains 'metric' and 'y_label' keys."""
+        result = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="total", x_axis="Years",
+        )
+        assert "metric" in result
+        assert "y_label" in result
+        assert result["y_label"] == METRIC_COLS["total"][1]
+
+    def test_avg_first_value_key(self, test_conn):
+        """avg_first_value (not avg_first_total) is present in the response."""
+        result = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Years",
+        )
+        assert "avg_first_value" in result
+        assert "avg_first_total" not in result
+
+    def test_bodyweight_metric_returns_data(self, test_conn):
+        """metric='bodyweight' returns points and correct y_label."""
+        result = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="bodyweight", x_axis="Years",
+        )
+        assert result["metric"] == "bodyweight"
+        assert result["y_label"] == METRIC_COLS["bodyweight"][1]
+        assert result["n_lifters"] >= 1
+        # Day-0 diff is 0 for every lifter
+        first_points = [p for p in result["points"] if p["x"] == 0]
+        assert len(first_points) == 1
+        assert abs(first_points[0]["y"]) < 0.01
+
+    def test_goodlift_metric_returns_data(self, test_conn):
+        """metric='goodlift' returns points and correct y_label."""
+        result = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="goodlift", x_axis="Years",
+        )
+        assert result["metric"] == "goodlift"
+        assert result["y_label"] == METRIC_COLS["goodlift"][1]
+        assert result["n_lifters"] >= 1
+        first_points = [p for p in result["points"] if p["x"] == 0]
+        assert len(first_points) == 1
+        assert abs(first_points[0]["y"]) < 0.01
+
+    def test_invalid_metric_raises(self, test_conn):
+        """Unknown metric value raises ValueError."""
+        import pytest as _pytest
+        with _pytest.raises(ValueError, match="Unknown metric"):
+            compute_progression(
+                sex="M", equipment="Raw", event="SBD",
+                country="Canada", parent_federation="IPF",
+                metric="dots",
+            )
+
+    def test_bodyweight_filters_honored(self, test_conn):
+        """max_gap_months filter applies to bodyweight metric."""
+        no_gap = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="bodyweight", x_axis="Years",
+        )
+        short_gap = compute_progression(
+            sex="M", equipment="Raw", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="bodyweight", x_axis="Years",
+            max_gap_months=24,
+        )
+        # Carl has a 4-year gap; with max_gap_months=24 he is dropped.
+        assert no_gap["n_lifters"] > short_gap["n_lifters"]
+
+    def test_goodlift_filters_honored(self, test_conn):
+        """same_class_only filter applies to goodlift metric."""
+        all_f = compute_progression(
+            sex="F", equipment="Equipped", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="goodlift", x_axis="Years",
+        )
+        same = compute_progression(
+            sex="F", equipment="Equipped", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="goodlift", x_axis="Years",
+            same_class_only=True,
+        )
+        # Ella changes class, so same_class_only drops her.
+        assert all_f["n_lifters"] >= same["n_lifters"]
+
+    def test_empty_response_has_metric(self, test_conn):
+        """Empty result for an impossible filter still returns metric/y_label."""
+        result = compute_progression(
+            sex="M", equipment="Single-ply", event="SBD",
+            country="Canada", parent_federation="IPF",
+            metric="bodyweight",
+        )
+        assert result["points"] == []
+        assert result["metric"] == "bodyweight"
+        assert result["y_label"] == METRIC_COLS["bodyweight"][1]

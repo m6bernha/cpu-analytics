@@ -1,11 +1,12 @@
-// Progression tab (M4).
+// Progression tab.
 //
 // Cohort progression over time. Filter controls on the left, chart on the right.
 // Fetches /api/filters once on mount for dropdown values, then refetches
 // /api/cohort/progression whenever any filter changes.
 //
+// Three metrics: TotalKg (default), BodyweightKg, Goodlift (GLP).
 // The chart shows two lines:
-//   - mean TotalDiffFromFirst at each x-value (blue)
+//   - mean value change from first meet (blue)
 //   - linear trendline fit on points with >= 5 lifters (orange, dashed)
 // The trendline is computed client-side from slope/intercept returned by the
 // backend, so it spans the full x range and doesn't wiggle through noise.
@@ -44,6 +45,7 @@ type FilterState = {
   event: string
   division: string
   x_axis: string
+  metric: string
   max_gap_months: string
   same_class_only: string
   per_lift: string
@@ -57,9 +59,22 @@ const DEFAULT_FILTERS: FilterState = {
   event: 'SBD',
   division: 'Open',
   x_axis: 'Years',
+  metric: 'total',
   max_gap_months: '',
   same_class_only: '',
   per_lift: '',
+}
+
+const METRIC_OPTIONS = ['total', 'bodyweight', 'goodlift'] as const
+const METRIC_LABELS: Record<string, string> = {
+  total:      'Total (kg)',
+  bodyweight: 'Bodyweight (kg)',
+  goodlift:   'Goodlift (GLP)',
+}
+const METRIC_Y_AXIS_LABELS: Record<string, string> = {
+  total:      'Change from first meet (kg)',
+  bodyweight: 'Change from first meet (kg)',
+  goodlift:   'Change from first meet (GLP)',
 }
 
 // Minimum lifters a point needs to be worth plotting. Below this the chart
@@ -132,6 +147,7 @@ export default function Progression() {
         weight_class: filters.weight_class,
         division: filters.division,
         x_axis: filters.x_axis,
+        metric: filters.metric || 'total',
         max_gap_months: filters.max_gap_months || undefined,
         same_class_only: filters.same_class_only === 'true' ? 'true' : undefined,
       }),
@@ -269,6 +285,14 @@ export default function Progression() {
               optionLabels={{ SBD: 'Full Power (SBD)', B: 'Bench Only' }}
               onChange={(v) => update({ event: v })}
               hint="Use the Per-lift toggle below to see Squat, Bench, or Deadlift trajectories within Full Power meets."
+            />
+            <Select
+              label="Metric"
+              value={filters.metric}
+              options={[...METRIC_OPTIONS]}
+              optionLabels={METRIC_LABELS}
+              onChange={(v) => update({ metric: v })}
+              hint="Total: sum of S+B+D. Bodyweight: lifter's recorded bodyweight. Goodlift: IPF GL score."
             />
             <Select
               label="Division"
@@ -462,9 +486,10 @@ export default function Progression() {
               <div>
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_meets.toLocaleString()}</span> meets
               </div>
-              {progQuery.data.avg_first_total != null && (
+              {progQuery.data.avg_first_value != null && (
                 <div>
-                  Avg first total: <span className="text-zinc-200 tabular-nums">{progQuery.data.avg_first_total.toFixed(1)} kg</span>
+                  Avg first {METRIC_LABELS[filters.metric] ?? filters.metric}:{' '}
+                  <span className="text-zinc-200 tabular-nums">{progQuery.data.avg_first_value.toFixed(1)}</span>
                   <span className="text-zinc-500 ml-1">(all lifters incl. one-and-done)</span>
                 </div>
               )}
@@ -500,7 +525,7 @@ export default function Progression() {
                     stroke="#a1a1aa"
                     width={56}
                     label={{
-                      value: 'Change from first meet (kg)',
+                      value: METRIC_Y_AXIS_LABELS[filters.metric] ?? 'Change from first meet',
                       angle: -90,
                       position: 'insideLeft',
                       offset: 0,
@@ -517,7 +542,8 @@ export default function Progression() {
                     formatter={(value, name) => {
                       const n = typeof value === 'number' ? value : Number(value)
                       if (!Number.isFinite(n)) return ['—', name]
-                      return [n.toFixed(2) + ' kg', name]
+                      const unit = filters.metric === 'goodlift' ? ' GLP' : ' kg'
+                      return [n.toFixed(2) + unit, name]
                     }}
                     labelFormatter={(label) =>
                       `${progQuery.data?.x_label}: ${String(label ?? '')}`

@@ -276,6 +276,7 @@ def api_progression(
     division: str | None = Query(None, description="e.g. 'Open' to restrict to Open lifters."),
     age_category: str | None = Query(None, description="Sub-Jr/Jr/Open/M1/M2/M3/M4 or 'All'. Sparse Age column means many rows are silently dropped."),
     x_axis: str = Query("Days"),
+    metric: str = Query("total", description="Metric to track: 'total' (TotalKg), 'bodyweight' (BodyweightKg), or 'goodlift' (GLP score)."),
     max_gap_months: int | None = Query(None, description="Exclude lifters with any inter-meet gap longer than this many months. Filters out comeback lifters."),
     same_class_only: bool = Query(False, description="Only include lifters who stayed in the same weight class for all meets in scope."),
 ) -> dict[str, Any]:
@@ -292,6 +293,7 @@ def api_progression(
             division=division,
             age_category=age_category,
             x_axis=x_axis,
+            metric=metric,
             max_gap_months=max_gap_months,
             same_class_only=same_class_only,
         )

@@ -1,20 +1,32 @@
-"""Cohort progression: average TotalDiffFromFirst over time, with optional trendline.
+"""Cohort progression: average value change from first meet over time.
 
-Generalized from the original main.py:193-237 `compute_series` so every filter is
-a parameter and the underlying data is queried from DuckDB instead of a global
-DataFrame. The matplotlib UI is gone — this returns plain rows the frontend
-plots with Recharts.
+Supports three metrics via the `metric` parameter:
+  - "total"      -- TotalKg (default, original behaviour)
+  - "bodyweight" -- BodyweightKg
+  - "goodlift"   -- Goodlift (GLP score)
+
+The generalized compute_progression function routes to the right SQL column and
+returns the same payload shape regardless of metric.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 
 from .data import get_cursor
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
+
+Metric = Literal["total", "bodyweight", "goodlift"]
+
+# Maps metric key -> (parquet column, human label for y-axis)
+METRIC_COLS: dict[str, tuple[str, str]] = {
+    "total":      ("TotalKg",      "Total (kg)"),
+    "bodyweight": ("BodyweightKg", "Bodyweight (kg)"),
+    "goodlift":   ("Goodlift",     "Goodlift (GLP)"),
+}
 
 
 # Canonical CPU age divisions mapped to the string values that actually
@@ -65,15 +77,18 @@ def age_to_category(age: float) -> str | float:
     return "M4"
 
 
-def _empty_response(x_axis: str) -> dict[str, Any]:
+def _empty_response(x_axis: str, metric: str = "total") -> dict[str, Any]:
     """Shape-complete empty response so the frontend TS types hold.
 
     All early-return branches in compute_progression must use this to avoid
     missing-key crashes when any filter combination produces zero rows.
     """
+    _, y_label = METRIC_COLS.get(metric, METRIC_COLS["total"])
     return {
         "x_label": X_AXIS_COLS[x_axis][1],
         "x_axis": x_axis,
+        "metric": metric,
+        "y_label": y_label,
         "points": [],
         "trend": None,
         "projection": None,
@@ -81,7 +96,7 @@ def _empty_response(x_axis: str) -> dict[str, Any]:
         "n_meets": 0,
         "n_lifters_before_age_filter": 0,
         "n_all_lifters": 0,
-        "avg_first_total": None,
+        "avg_first_value": None,
     }
 
 
@@ -152,24 +167,37 @@ def compute_progression(
     division: str | None = None,
     age_category: str | None = None,
     x_axis: str = "Days",
+    metric: str = "total",
     min_lifters_for_trend: int = 5,
     max_gap_months: int | None = None,
     same_class_only: bool = False,
 ) -> dict[str, Any]:
-    """Return mean TotalDiffFromFirst over time for the cohort defined by filters.
+    """Return mean value change from first meet over time for the cohort.
+
+    metric controls which column is tracked:
+      "total"      -- TotalKg (default)
+      "bodyweight" -- BodyweightKg
+      "goodlift"   -- Goodlift (GLP score)
 
     Returns:
         {
           "x_label": str,
           "x_axis": str,
+          "metric": str,
+          "y_label": str,
           "points": [{"x": int, "y": float, "lifter_count": int}, ...],
           "trend": {"slope": float, "intercept": float, "unit": str} | None,
           "n_lifters": int,
           "n_meets": int,
+          "avg_first_value": float | None,
         }
     """
     if x_axis not in X_AXIS_COLS:
         raise ValueError(f"Unknown x_axis: {x_axis}. Use one of {list(X_AXIS_COLS)}")
+    if metric not in METRIC_COLS:
+        raise ValueError(f"Unknown metric: {metric}. Use one of {list(METRIC_COLS)}")
+
+    val_col, y_label = METRIC_COLS[metric]
 
     clauses, params = _build_filter_clauses(
         sex, equipment, tested, event, federation, country, parent_federation,
@@ -183,9 +211,12 @@ def compute_progression(
     # this fast even for big scopes (e.g. all-Canada with no class filter).
     # CanonicalWeightClass is included so we can detect class changes for
     # the same_class_only filter.
+    # Order by TotalKg DESC as the tiebreaker so behaviour is stable regardless
+    # of metric -- for bodyweight/goodlift meets, TotalKg may be null (bench-only)
+    # but the primary sort is Date which handles most cases.
     sql = f"""
         WITH filtered AS (
-            SELECT Name, Date, TotalKg, Age, MeetName, CanonicalWeightClass
+            SELECT Name, Date, {val_col}, TotalKg, Age, MeetName, CanonicalWeightClass
             FROM openipf
             {where_sql}
         ),
@@ -193,11 +224,11 @@ def compute_progression(
             SELECT
                 Name,
                 Date,
-                TotalKg,
+                {val_col},
                 Age,
                 CanonicalWeightClass,
-                ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName) AS MeetNumber,
-                FIRST_VALUE(TotalKg) OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC, MeetName) AS FirstTotal,
+                ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC NULLS LAST, MeetName) AS MeetNumber,
+                FIRST_VALUE({val_col}) OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC NULLS LAST, MeetName) AS FirstValue,
                 MIN(Date) OVER (PARTITION BY Name) AS FirstDate,
                 COUNT(*) OVER (PARTITION BY Name) AS MeetCount,
                 COUNT(DISTINCT CanonicalWeightClass) OVER (PARTITION BY Name) AS ClassCount
@@ -206,40 +237,42 @@ def compute_progression(
         SELECT
             Name,
             Age,
-            TotalKg,
+            {val_col} AS Value,
             CanonicalWeightClass,
             MeetNumber,
             ClassCount,
             DATEDIFF('day', FirstDate, Date) AS DaysFromFirst,
-            (TotalKg - FirstTotal) AS TotalDiffFromFirst
+            ({val_col} - FirstValue) AS DiffFromFirst
         FROM ranked
         WHERE MeetCount >= 2
+          AND {val_col} IS NOT NULL
+          AND FirstValue IS NOT NULL
     """
     conn = get_cursor()
     df = conn.execute(sql, params).df()
 
     # Survivorship stats: count ALL lifters in scope (including 1-meet)
-    # and compute the average first-meet total, so the frontend can show
+    # and compute the average first-meet value, so the frontend can show
     # retention rate and day-0 population context.
     all_lifters_sql = f"""
         WITH filtered AS (
-            SELECT Name, Date, TotalKg, MeetName
+            SELECT Name, Date, {val_col}, TotalKg, MeetName
             FROM openipf
             {where_sql}
         ),
         first_meets AS (
-            SELECT DISTINCT ON (Name) Name, TotalKg AS FirstTotal
+            SELECT DISTINCT ON (Name) Name, {val_col} AS FirstValue
             FROM filtered
-            ORDER BY Name, Date, TotalKg DESC, MeetName
+            ORDER BY Name, Date, TotalKg DESC NULLS LAST, MeetName
         )
         SELECT
             COUNT(*) AS total_lifters,
-            AVG(FirstTotal) AS avg_first_total
+            AVG(FirstValue) AS avg_first_value
         FROM first_meets
     """
     surv_row = conn.execute(all_lifters_sql, params).fetchone()
     n_all_lifters = int(surv_row[0]) if surv_row else 0
-    avg_first_total = round(float(surv_row[1]), 1) if surv_row and surv_row[1] is not None else None
+    avg_first_value = round(float(surv_row[1]), 1) if surv_row and surv_row[1] is not None else None
 
     # Optional gap filter: exclude lifters who have any inter-meet gap
     # longer than max_gap_months. These "comeback" lifters contaminate
@@ -258,7 +291,7 @@ def compute_progression(
         df = df.drop(columns=["_prev_days", "_gap"])
 
     if df.empty:
-        return _empty_response(x_axis)
+        return _empty_response(x_axis, metric)
 
     # Track pre-age-filter count BEFORE same_class_only + age filter so the
     # "dropped due to missing Age" message isn't contaminated by the
@@ -271,14 +304,14 @@ def compute_progression(
     if same_class_only and not df.empty and "ClassCount" in df.columns:
         df = df[df["ClassCount"] == 1]
 
-    # Apply optional age category filter in pandas — Age is sparse and the
+    # Apply optional age category filter in pandas -- Age is sparse and the
     # category boundaries don't align with any column literal in the dataset.
     #
-    # IMPORTANT: after filtering, we recompute TotalDiffFromFirst and
-    # DaysFromFirst relative to the first meet *within the surviving rows*.
-    # Without this, an Open lifter who started as Junior sees their delta
-    # measured from the invisible Junior-era baseline, which produces
-    # inflated progression curves for the Open cohort.
+    # IMPORTANT: after filtering, we recompute DiffFromFirst and DaysFromFirst
+    # relative to the first meet *within the surviving rows*. Without this, an
+    # Open lifter who started as Junior sees their delta measured from the
+    # invisible Junior-era baseline, which produces inflated progression curves
+    # for the Open cohort. This rebaseline applies for all three metrics.
     if age_category and age_category != "All":
         df["AgeCategory"] = df["Age"].apply(age_to_category)
         df = df[df["AgeCategory"] == age_category]
@@ -286,6 +319,8 @@ def compute_progression(
             return {
                 "x_label": X_AXIS_COLS[x_axis][1],
                 "x_axis": x_axis,
+                "metric": metric,
+                "y_label": y_label,
                 "points": [],
                 "trend": None,
                 "n_lifters": 0,
@@ -294,23 +329,25 @@ def compute_progression(
 
         # Recompute baseline from first meet that survived the age filter.
         first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
-        first_totals = (
-            df.loc[first_idx, ["Name", "TotalKg", "DaysFromFirst"]]
-            .rename(columns={"TotalKg": "_FirstTotal", "DaysFromFirst": "_FirstDays"})
+        first_vals = (
+            df.loc[first_idx, ["Name", "Value", "DaysFromFirst"]]
+            .rename(columns={"Value": "_FirstValue", "DaysFromFirst": "_FirstDays"})
         )
-        df = df.merge(first_totals, on="Name")
-        df["TotalDiffFromFirst"] = df["TotalKg"] - df["_FirstTotal"]
+        df = df.merge(first_vals, on="Name")
+        df["DiffFromFirst"] = df["Value"] - df["_FirstValue"]
         df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
         # Re-number meets within this age category
         df["MeetNumber"] = df.groupby("Name").cumcount() + 1
         # Drop lifters with only one meet in this category
         meet_counts = df.groupby("Name")["MeetNumber"].transform("max")
         df = df[meet_counts >= 2]
-        df = df.drop(columns=["_FirstTotal", "_FirstDays"])
+        df = df.drop(columns=["_FirstValue", "_FirstDays"])
         if df.empty:
             return {
                 "x_label": X_AXIS_COLS[x_axis][1],
                 "x_axis": x_axis,
+                "metric": metric,
+                "y_label": y_label,
                 "points": [],
                 "trend": None,
                 "n_lifters": 0,
@@ -326,8 +363,8 @@ def compute_progression(
     grouped = (
         df.groupby(x_col)
         .agg(
-            y=("TotalDiffFromFirst", "mean"),
-            std=("TotalDiffFromFirst", "std"),
+            y=("DiffFromFirst", "mean"),
+            std=("DiffFromFirst", "std"),
             lifter_count=("Name", "nunique"),
         )
         .reset_index()
@@ -408,13 +445,15 @@ def compute_progression(
     return {
         "x_label": x_label,
         "x_axis": x_axis,
+        "metric": metric,
+        "y_label": y_label,
         "points": points,
         "trend": trend,
         "n_lifters": int(df["Name"].nunique()),
         "n_meets": int(len(df)),
         "n_lifters_before_age_filter": n_lifters_before_age_filter,
         "n_all_lifters": n_all_lifters,
-        "avg_first_total": avg_first_total,
+        "avg_first_value": avg_first_value,
         "projection": projection,
     }
 

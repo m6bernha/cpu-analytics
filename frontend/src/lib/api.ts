@@ -48,6 +48,8 @@ export type CohortProjection = {
 export type ProgressionResponse = {
   x_label: string
   x_axis: string
+  metric: string
+  y_label: string
   points: ProgressionPoint[]
   trend: ProgressionTrend | null
   projection: CohortProjection | null
@@ -55,7 +57,7 @@ export type ProgressionResponse = {
   n_meets: number
   n_lifters_before_age_filter: number
   n_all_lifters: number
-  avg_first_total: number | null
+  avg_first_value: number | null
 }
 
 export type LifterSearchResult = {
@@ -111,6 +113,7 @@ export type ProgressionQuery = {
   weight_class?: string
   division?: string
   x_axis?: string
+  metric?: string
   max_gap_months?: string
   same_class_only?: string
 }
