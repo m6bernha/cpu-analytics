@@ -1,18 +1,23 @@
 """Runtime parquet loader for production deploys.
 
 In local dev, `python data/preprocess.py` writes the parquet files into
-data/processed/ and the backend reads them directly. In production (Fly.io),
-the container is ephemeral and there's no preprocess step at startup. Instead,
-the parquet files are downloaded once on first request from a GitHub Release
+data/processed/ and the backend reads them directly. In production (Render),
+the container has writable local storage but is rebuilt on every deploy, so
+the parquet files are downloaded on first startup from a GitHub Release
 asset built by .github/workflows/refresh-data.yml.
 
 Env vars:
-    OPENIPF_PARQUET_URL   — direct download URL for openipf.parquet
-    QT_PARQUET_URL        — direct download URL for qt_standards.parquet
+    OPENIPF_PARQUET_URL   - direct download URL for openipf.parquet
+    QT_PARQUET_URL        - direct download URL for qt_standards.parquet
 
 If both files already exist locally, no download happens. If they're missing
 and the URLs aren't set, we raise a clear error pointing the developer at
 either preprocess.py or the env vars.
+
+Self-heal: after download (or on cold start with files already present), we
+validate that openipf has >0 rows AND every required column. On failure we
+delete the local parquets so the next cold-start re-downloads, and raise a
+503 so the in-flight request gets a user-safe error.
 """
 
 from __future__ import annotations
@@ -22,6 +27,27 @@ import shutil
 import tempfile
 import urllib.request
 from pathlib import Path
+
+
+REQUIRED_OPENIPF_COLUMNS: frozenset[str] = frozenset(
+    {
+        "Date",
+        "Name",
+        "Sex",
+        "CanonicalWeightClass",
+        "Equipment",
+        "Event",
+        "Best3SquatKg",
+        "Best3BenchKg",
+        "Best3DeadliftKg",
+        "TotalKg",
+        "Goodlift",
+        "Country",
+        "ParentFederation",
+        "Division",
+        "BirthYearClass",
+    }
+)
 
 
 def _download(url: str, dest: Path) -> None:
@@ -56,39 +82,96 @@ def _gc_after() -> None:
     gc.collect()
 
 
+def assert_parquet_health(openipf_path: Path, qt_path: Path) -> None:
+    """Validate parquets are usable; trigger self-heal and 503 on failure.
+
+    Checks:
+      1. openipf has > 0 rows
+      2. openipf contains every REQUIRED_OPENIPF_COLUMNS entry
+
+    On failure: logs the specific problem, deletes BOTH local parquets so the
+    next cold-start re-downloads them from the GitHub Release, and raises
+    HTTPException(503). Called from ensure_parquets() so every cold-start
+    validates, whether the files were just downloaded or already on disk.
+    """
+    import duckdb
+    from fastapi import HTTPException
+
+    conn = duckdb.connect(database=":memory:")
+    try:
+        row_count: int = conn.execute(
+            f"SELECT COUNT(*) FROM parquet_scan('{openipf_path.as_posix()}')"
+        ).fetchone()[0]
+        columns: set[str] = {
+            r[0]
+            for r in conn.execute(
+                f"DESCRIBE SELECT * FROM parquet_scan('{openipf_path.as_posix()}')"
+            ).fetchall()
+        }
+    finally:
+        conn.close()
+
+    problem: str | None = None
+    if row_count == 0:
+        problem = "openipf parquet has zero rows"
+    else:
+        missing = sorted(REQUIRED_OPENIPF_COLUMNS - columns)
+        if missing:
+            problem = f"openipf parquet missing required columns: {missing}"
+
+    if problem is None:
+        return
+
+    print(
+        f"[data_loader] {problem}. Removing local parquets to trigger "
+        f"re-download on next cold-start."
+    )
+    openipf_path.unlink(missing_ok=True)
+    qt_path.unlink(missing_ok=True)
+    raise HTTPException(
+        status_code=503,
+        detail=f"Data not ready: {problem}. Please retry in a moment.",
+    )
+
+
 def ensure_parquets(openipf_path: Path, qt_path: Path) -> None:
     """Ensure both parquet files exist locally, downloading if necessary.
 
     Raises FileNotFoundError with a clear message if the files are missing
-    and no download URL is configured.
+    and no download URL is configured. Raises HTTPException(503) via
+    assert_parquet_health if the loaded parquet is empty or missing
+    required columns.
     """
     needs_openipf = not openipf_path.exists()
     needs_qt = not qt_path.exists()
 
-    if not needs_openipf and not needs_qt:
-        return
+    if needs_openipf or needs_qt:
+        openipf_url = os.environ.get("OPENIPF_PARQUET_URL")
+        qt_url = os.environ.get("QT_PARQUET_URL")
 
-    openipf_url = os.environ.get("OPENIPF_PARQUET_URL")
-    qt_url = os.environ.get("QT_PARQUET_URL")
+        if needs_openipf:
+            if not openipf_url:
+                raise FileNotFoundError(
+                    f"openipf.parquet not found at {openipf_path} and "
+                    f"OPENIPF_PARQUET_URL env var is not set. "
+                    f"Run `python data/preprocess.py` for local dev, or set "
+                    f"OPENIPF_PARQUET_URL to a GitHub Release asset URL for production."
+                )
+            _download(openipf_url, openipf_path)
 
-    if needs_openipf:
-        if not openipf_url:
-            raise FileNotFoundError(
-                f"openipf.parquet not found at {openipf_path} and "
-                f"OPENIPF_PARQUET_URL env var is not set. "
-                f"Run `python data/preprocess.py` for local dev, or set "
-                f"OPENIPF_PARQUET_URL to a GitHub Release asset URL for production."
-            )
-        _download(openipf_url, openipf_path)
+        if needs_qt:
+            if not qt_url:
+                raise FileNotFoundError(
+                    f"qt_standards.parquet not found at {qt_path} and "
+                    f"QT_PARQUET_URL env var is not set."
+                )
+            _download(qt_url, qt_path)
 
-    if needs_qt:
-        if not qt_url:
-            raise FileNotFoundError(
-                f"qt_standards.parquet not found at {qt_path} and "
-                f"QT_PARQUET_URL env var is not set."
-            )
-        _download(qt_url, qt_path)
+        # Release any transient buffers from the downloads before the caller
+        # builds the DuckDB connection. Matters on the 512 MB Render tier.
+        _gc_after()
 
-    # Release any transient buffers from the downloads before the caller
-    # builds the DuckDB connection. Matters on the 512 MB Render tier.
-    _gc_after()
+    # Validate whether the file was just downloaded OR was already on disk.
+    # A stale/corrupt parquet that survived a previous deploy must still
+    # trigger self-heal.
+    assert_parquet_health(openipf_path, qt_path)
