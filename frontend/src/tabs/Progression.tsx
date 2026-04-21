@@ -121,7 +121,7 @@ function Select({
 
 // ---------- Component ----------
 
-export default function Progression() {
+export default function Progression({ isActive }: { isActive: boolean }) {
   const [filters, setFilters] = useUrlState<FilterState>(DEFAULT_FILTERS)
 
   // Filter enum values for dropdowns. Fetched once on mount.
@@ -379,6 +379,7 @@ export default function Progression() {
               lifters with complete Squat / Bench / Deadlift data at every meet
             </div>
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+              {isActive && (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   margin={{ top: 8, right: 32, bottom: 36, left: 4 }}
@@ -451,6 +452,7 @@ export default function Progression() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+              )}
             </div>
           </>
         )}
@@ -508,6 +510,7 @@ export default function Progression() {
             </div>
 
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+              {isActive && (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 8, right: 24, bottom: 36, left: 4 }}>
                   <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
@@ -585,6 +588,7 @@ export default function Progression() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+              )}
             </div>
 
             {/* Survivorship bias + methodology notes */}

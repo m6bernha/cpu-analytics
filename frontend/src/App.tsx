@@ -77,22 +77,22 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">
-            <Progression />
+            <Progression isActive={tab === 'progression'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'projection' ? undefined : 'none' }}>
           <ErrorBoundary label="Athlete Projection">
-            <AthleteProjection />
+            <AthleteProjection isActive={tab === 'projection'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'lookup' ? undefined : 'none' }}>
           <ErrorBoundary label="Lifter Lookup">
-            <LifterLookup />
+            <LifterLookup isActive={tab === 'lookup'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
           <ErrorBoundary label="QT Squeeze">
-            <QTSqueeze />
+            <QTSqueeze isActive={tab === 'qt'} />
           </ErrorBoundary>
         </div>
       </main>

@@ -162,9 +162,11 @@ const ERA_LABEL: Record<Era, string> = {
 export default function LifterDetail({
   history,
   standards,
+  isActive,
 }: {
   history: LifterHistory
   standards: QtStandardRow[] | undefined
+  isActive: boolean
 }) {
   const [era, setEra] = useState<Era>('2025')
   const [viewMode, setViewMode] = useState<'total' | 'per_lift'>('total')
@@ -409,6 +411,7 @@ export default function LifterDetail({
         </div>
       ) : viewMode === 'per_lift' ? (
         <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
+          {isActive && (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={perLiftChartData}
@@ -483,9 +486,11 @@ export default function LifterDetail({
               />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </div>
       ) : (
       <div className="h-80 md:h-[400px] bg-zinc-900 rounded border border-zinc-800 p-2">
+        {isActive && (
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 8, right: 32, bottom: 36, left: 16 }}>
             <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
@@ -592,6 +597,7 @@ export default function LifterDetail({
             )}
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </div>
       )}
 

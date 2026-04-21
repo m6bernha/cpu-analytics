@@ -5,7 +5,7 @@
 // under heavy design -- see NEXT_STEPS.md and the open roundtable question
 // about how to weight a lifter's own trajectory vs the cohort average.
 
-export default function AthleteProjection() {
+export default function AthleteProjection({ isActive: _isActive }: { isActive: boolean }) {
   return (
     <div>
       <div className="mb-6">

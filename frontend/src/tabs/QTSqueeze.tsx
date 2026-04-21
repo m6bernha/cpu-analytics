@@ -107,7 +107,7 @@ function downloadText(filename: string, body: string, mime = 'text/plain') {
 
 // ---------- Block sub-component ----------
 
-function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
+function Block({ title, rows, isActive }: { title: string; rows: QtBlockRow[]; isActive: boolean }) {
   // Recharts wants flat objects with the value keys.
   const chartData = useMemo(
     () =>
@@ -151,6 +151,7 @@ function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
 
         {/* Chart */}
         <div className="lg:col-span-3 h-72 bg-zinc-900 rounded border border-zinc-800 p-2">
+          {isActive && (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
               <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" />
@@ -183,6 +184,7 @@ function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
               <Bar dataKey="cur2027" name="2027 Today" fill={COLORS.cur2027} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
+          )}
         </div>
       </div>
     </section>
@@ -191,7 +193,7 @@ function Block({ title, rows }: { title: string; rows: QtBlockRow[] }) {
 
 // ---------- Tab component ----------
 
-export default function QTSqueeze() {
+export default function QTSqueeze({ isActive }: { isActive: boolean }) {
   const [division, setDivision] = useState<string>('Open')
 
   const blocksQuery = useQuery<QtBlocksResponse>({
@@ -298,7 +300,7 @@ export default function QTSqueeze() {
 
       {blocksQuery.data &&
         BLOCK_ORDER.map(({ key, title }) => (
-          <Block key={key} title={title} rows={blocksQuery.data![key]} />
+          <Block key={key} title={title} rows={blocksQuery.data![key]} isActive={isActive} />
         ))}
     </div>
   )

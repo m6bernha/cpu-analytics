@@ -95,12 +95,14 @@ function ManualEntryForm({
   result,
   error,
   standards,
+  isActive,
 }: {
   onSubmit: (req: { sex: string; rows: ManualFormRow[] }) => void
   pending: boolean
   result: LifterHistory | null
   error: Error | null
   standards: QtStandardRow[] | undefined
+  isActive: boolean
 }) {
   const [sex, setSex] = useState<'M' | 'F'>('M')
   const [rows, setRows] = useState<ManualFormRow[]>([
@@ -401,7 +403,7 @@ function ManualEntryForm({
       {result && (
         <div className="mt-6">
           <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
-            <LifterDetail history={result} standards={standards} />
+            <LifterDetail history={result} standards={standards} isActive={isActive} />
           </Suspense>
         </div>
       )}
@@ -442,7 +444,7 @@ function parseLifters(raw: string): string[] {
     .slice(0, MAX_COMPARE)
 }
 
-export default function LifterLookup() {
+export default function LifterLookup({ isActive }: { isActive: boolean }) {
   // URL state covers all shareable lookup views:
   //   ?tab=lookup                                  -> search, nothing selected
   //   ?tab=lookup&lifter=Matthias%20Bernhard       -> deep-link to a lifter
@@ -641,7 +643,7 @@ export default function LifterLookup() {
             )}
             {historyQuery.data && historyQuery.data.found && (
               <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
-                <LifterDetail history={historyQuery.data} standards={standardsQuery.data} />
+                <LifterDetail history={historyQuery.data} standards={standardsQuery.data} isActive={isActive} />
               </Suspense>
             )}
             {historyQuery.data && !historyQuery.data.found && (
@@ -663,6 +665,7 @@ export default function LifterLookup() {
             searchResults={searchQuery.data}
             searchIsFetching={searchQuery.isFetching}
             searchError={searchQuery.error}
+            isActive={isActive}
           />
         </Suspense>
       )}
@@ -674,6 +677,7 @@ export default function LifterLookup() {
           result={manualMutation.data ?? null}
           error={(manualMutation.error as Error | null) ?? null}
           standards={standardsQuery.data}
+          isActive={isActive}
         />
       )}
     </div>

@@ -335,6 +335,7 @@ export default function CompareView({
   searchResults,
   searchIsFetching,
   searchError,
+  isActive,
 }: {
   compareNames: string[]
   addCompare: (name: string) => void
@@ -345,6 +346,7 @@ export default function CompareView({
   searchResults: LifterSearchResult[] | undefined
   searchIsFetching: boolean
   searchError: unknown
+  isActive: boolean
 }) {
   const [xRange, setXRange] = useState<XRange>('all')
   // 'off' means no reference lines; otherwise it's the selected weight class.
@@ -721,6 +723,7 @@ export default function CompareView({
             </div>
 
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
+              {isActive && (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={combinedData}
@@ -796,6 +799,7 @@ export default function CompareView({
                   )}
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </div>
           </>
         )}
