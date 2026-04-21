@@ -62,21 +62,26 @@ individual projection math.
 
 ## P0 -- Live site monitoring
 
-### Trigger the weekly data-refresh workflow manually
+### Data refresh workflow -- VERIFIED HEALTHY 2026-04-21
 
-The parquet is now filtered to Canada+IPF at preprocess time (commit
-`0f1f691`). The shrink does not take effect in production until the
-GitHub Actions workflow regenerates the published parquet.
+Latest Run #7 (manually triggered) completed Success in 39 s total
+(refresh job 35 s), Release step uploaded data-latest successfully.
+One non-blocking Node 20 deprecation annotation, no failures.
+
+Live site `https://cpu-analytics.vercel.app/?tab=progression` hydrates
+cleanly. Progression chart renders with mean change line, +-1 SD band,
+and dashed trendline. Filter fetches succeed (sex M->F repopulates
+female weight classes, selecting a class refreshes the cohort). No
+"Filter load failed: age_category" banner present.
+
+Weekly cron fires Sundays 06:13 UTC. If a future run fails, trigger
+manually:
 
 1. Go to https://github.com/m6bernha/cpu-analytics/actions
 2. Open "Refresh OpenIPF data"
 3. Click "Run workflow" -> "Run workflow"
 4. Wait ~3 minutes
 5. Either restart Render manually or wait for next spin-down/up cycle
-
-After that, Render logs show `[startup] process RSS: <MB>` dramatically
-lower than before. Expected: well under 200 MB (was 400+ on the full
-export).
 
 ---
 
@@ -440,7 +445,7 @@ below.
 
 | # | Issue | Severity | Effort | Owner | Gate | Status |
 |---|---|---|---|---|---|---|
-| 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | M shell / L per-chart | TBD | user decides shell vs per-chart | pending decision |
+| 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | L per-chart | G4 parallel chat | DECIDED 2026-04-21: per-chart guard (Option B). In-flight on branch `work/g4-chart-guard`. | in progress |
 | 2 | /api/health hit every ~5s from one IP | low | S | none (ruled out UptimeRobot) | none | UptimeRobot verified 5min interval, likely Render internal health prober, no action needed unless logs confirm rogue source |
 | 3 | Double request logging (timing middleware + uvicorn access log) | medium | S | G1 backend-perf | closed | SHIPPED `1f0b62e` — /api/health suppressed in timing middleware, uvicorn access log retained |
 | 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | closed | SHIPPED `1f0b62e` — ETag W/"parquet-<mtime>" + Cache-Control public, max-age=300 on filters, qt/standards, qt/blocks. 304 verified on If-None-Match |
@@ -451,7 +456,7 @@ below.
 | 9 | refresh-data.yml missing pip cache (~25s/run) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — setup-python with cache: pip |
 | 10 | Deprecated action versions (Node 20 EOL warnings) | polish | S | CI-redispatch chat | closed | SHIPPED `12cbb46` — checkout v4→v6, setup-python v5→v6, action-gh-release v2→v3 |
 | 11 | Vercel Skew Protection not enabled | low | strategic | decision | Pro-plan feature ($20/mo), Hobby cannot toggle | PARKED, low traffic hobby project, Pro upgrade not justified |
-| 12 | Render free-tier cold start still user-visible (~50s) | medium | L | strategic | user decision | pending user |
+| 12 | Render free-tier cold start still user-visible (~50s) | medium | L | strategic | DECIDED 2026-04-21: stay on Option A (free + keepalive). Fly Machines free tier requires a credit card Matthias declined to add. Upgrade path is Render Hobby $7/mo if keepalive ever misses or a user complains. | closed (decision) |
 | 13 | Verify data.py per-request cursor fix landed cleanly | polish | S read | UX chat | none | verified, no commit needed |
 | 14 | LifterLookup.tsx ~44KB, more code-splitting possible | polish | M | G3 LifterDetail lazy-load | closed | SHIPPED 2026-04-20 — main bundle 663→295 KB (-55%); LifterDetail extracted to own file + lazy-loaded |
 | 15 | backend/requirements.txt pin discipline check | polish | S | UX chat | none | verified, no commit needed |
@@ -573,14 +578,13 @@ Ran the 5-task prompt. Two green, three blocked or closed.
 | 4 Render health check | Only `/api/health` path visible in UI. Timeout and interval not exposed. Configurable via render.yaml or Render API if needed, currently both on platform defaults. |
 | 5 UptimeRobot monitor | HTTP/S, 5-minute interval, currently Up 16h15m. Historical 405 incident Apr 15 14:27 duration 1d5h (resolved by G3 HEAD-compatible health endpoint, commit `40ff320`). Ruled out as the source of "/api/health every ~5s" anomaly. |
 
-### Branch protection gap
+### Branch protection gap -- CLOSED 2026-04-21
 
-The saved rule requires only `Frontend (tsc + build)`. The backend pytest job
-is running in CI but is not enforced as a required check. To close this:
-re-open Settings -> Branches -> Edit rule for main, search the status-check
-picker for the backend job name (probably "Backend (pytest)" or similar
-depending on how `ci.yml` names the job), and add it. Requires a sudo-mode
-re-auth same as last time.
+Classic branch protection rule on `main` now requires both
+`Frontend (tsc + build)` and `Backend (pytest)` status checks. Admin
+bypass remains enabled ("Do not allow bypassing" left unchecked) so
+admin pushes can still land WIP when explicitly needed. Verified via
+Claude in Chrome session after sudo re-auth.
 
 ### Follow-up decisions from Chrome run
 

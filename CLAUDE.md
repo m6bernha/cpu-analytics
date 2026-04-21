@@ -299,16 +299,19 @@ items summarized here:
 
 ### Manual action for the user (immediate)
 
-- **Verify data-refresh Run #7 went green** at
-  https://github.com/m6bernha/cpu-analytics/actions/runs/24574585197.
-  When green, the Canada+IPF-filtered parquet with Goodlift column is live
-  in the data-latest release. Next Render cold-start picks it up, which
-  also auto-fixes Issue 16.
-- **Expand branch protection to require the backend pytest job** (not
-  just Frontend (tsc + build)). Requires sudo re-auth. See Chrome audit
-  table "Branch protection gap" note.
+- **Data refresh Run #7 verified Success 2026-04-21.** data-latest
+  release updated with Canada+IPF-filtered parquet including Goodlift
+  column. Live site renders cleanly.
+- **Branch protection CLOSED 2026-04-21.** Classic rule on `main` now
+  requires both `Frontend (tsc + build)` and `Backend (pytest)`. Admin
+  bypass retained.
 - **Skew Protection (Issue 11)** is Pro-only on Vercel. Parked as a
   strategic decision until traffic justifies $20/mo.
+- **Render cold-start strategy (Issue 12) DECIDED 2026-04-21.** Staying
+  on Render free tier with keepalive cron. Fly Machines free tier
+  requires a credit card which the user declined to add. Upgrade path
+  to Render Hobby $7/mo is queued for if keepalive misses become
+  user-visible.
 
 ### High-priority code work
 
