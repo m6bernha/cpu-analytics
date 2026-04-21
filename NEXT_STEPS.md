@@ -30,19 +30,17 @@ the same day:
    Needs `npx playwright install chromium` on first run. NOT wired into
    CI yet (strategic decision deferred).
 
-### Gated items NOT touched this session
+### Gated items -- status after 2026-04-21 desktop wave
 
-User decision or manual browser action required before these can start:
-
-- Issue 1 Recharts display:none warnings: shell fix vs per-chart guard.
-- Issue 12 Render cold-start strategy: keep free+keepalive / Hobby $7 /
-  Fly Machines migration.
-- G4 per-chart Recharts guard: blocks on Issue 1.
-- G5 disclaimer copy pass: blocks on everything else, touches every tab
-  file.
-- Branch protection for backend pytest: user manual via Chrome, needs
-  sudo re-auth.
-- P0 data-refresh Run #7 green verification: user manual.
+- Issue 1 Recharts display:none: DECIDED + SHIPPED (`cd5e579`, Option B
+  per-chart guard).
+- Issue 12 Render cold-start: DECIDED, stay on free + keepalive.
+- G4 per-chart Recharts guard: SHIPPED via Issue 1 above.
+- G5 disclaimer copy pass: READY to run, no more upstream gates.
+  Blocks only on Matthias's go-ahead because it touches every tab file
+  and changes user-visible copy.
+- Branch protection for backend pytest: CLOSED 2026-04-21 via Chrome.
+- P0 data-refresh Run #7: VERIFIED green 2026-04-21.
 
 ### Athlete Projection / P3 weighting methodology -- BACKBURNER
 
@@ -445,7 +443,7 @@ below.
 
 | # | Issue | Severity | Effort | Owner | Gate | Status |
 |---|---|---|---|---|---|---|
-| 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | L per-chart | G4 parallel chat | DECIDED 2026-04-21: per-chart guard (Option B). In-flight on branch `work/g4-chart-guard`. | in progress |
+| 1 | Recharts -1x-1 warnings from display:none inactive tabs in App.tsx | high | L per-chart | G4 parallel chat | closed | SHIPPED `cd5e579` 2026-04-21. isActive prop plumbed from App.tsx through each tab, gates ResponsiveContainer subtree only. Tab components stay mounted (scroll + dropdown + search-query state preserved). Bundle delta +219 B. Zero width(-1) height(-1) warnings on tab switches. |
 | 2 | /api/health hit every ~5s from one IP | low | S | none (ruled out UptimeRobot) | none | UptimeRobot verified 5min interval, likely Render internal health prober, no action needed unless logs confirm rogue source |
 | 3 | Double request logging (timing middleware + uvicorn access log) | medium | S | G1 backend-perf | closed | SHIPPED `1f0b62e` — /api/health suppressed in timing middleware, uvicorn access log retained |
 | 4 | No Cache-Control or ETag on weekly-stable JSON endpoints | high | S-M | G1 backend-perf | closed | SHIPPED `1f0b62e` — ETag W/"parquet-<mtime>" + Cache-Control public, max-age=300 on filters, qt/standards, qt/blocks. 304 verified on If-None-Match |
