@@ -55,8 +55,9 @@ Frontend talks to `VITE_API_BASE` (defaults to `http://127.0.0.1:8000`).
 
 ## Pre-push checklist
 
-- `cd frontend && npm run build` — catches TypeScript strict errors that will blow up the Vercel build. Skipping this and pushing is how we broke the first frontend deploy attempt.
-- No need to run the backend's test suite because there isn't one (yet).
+See the "Pre-push checklist" section further down (line ~150) for the
+full commands. Summary: `npm run build`, `python -m pytest backend/tests/`,
+`npm run test` (Vitest), optionally `npm run test:e2e` (Playwright local).
 
 ## URL state conventions
 
@@ -150,10 +151,21 @@ specifically, not the first meet of any kind.
 ## Pre-push checklist
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
-- `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` -- 25 tests covering progression (age category baseline, division filter, edge cases) and lifter search/history (search, PR detection, event types).
-- CI also runs both checks on every push and PR via `.github/workflows/ci.yml`
-  (added Chrome-audit 2026-04-17, Issue 8). A local failure here will fail CI
-  too, so fix before pushing rather than relying on the remote run.
+- `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
+  174 backend tests covering progression (age baseline, division filter,
+  per-lift filter plumbing, BW/GLP metrics, edge cases), lifter search and
+  history (search, PR detection, event types), projection, QT, manual
+  entry, security, weight class Hypothesis, and concurrency. Always use
+  `python -m pytest`, NOT plain `pytest`, or the `backend.app` imports
+  fail with `ModuleNotFoundError`.
+- `cd frontend && npm run test` -- 3 Vitest unit tests for useUrlState
+  key collisions. Runs in jsdom, ~1.5 s.
+- `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests, local
+  only (NOT in CI). Requires `npx playwright install chromium` first run.
+- CI runs the tsc+build + pytest pair on every push and PR via
+  `.github/workflows/ci.yml` (Chrome audit Issue 8). Vitest and
+  Playwright are NOT yet wired into CI. A local failure will also fail
+  CI, so fix before pushing rather than relying on the remote run.
 
 ## Scope
 
@@ -242,10 +254,14 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**158 tests passing** across progression, lifters, projection, qt, manual,
-security, weight_class (now with 19 Hypothesis property tests), and
-concurrency modules. 68 new edge-case tests landed 2026-04-17 in commit
-`cb7038e`, plus Chat A's 8 TestLiftProgressionFilters in `98cbdef`.
+**174 pytest + 3 Vitest passing.** Pytest covers progression, lifters,
+projection, qt, manual, security, weight_class (with 19 Hypothesis
+property tests), and concurrency modules. 68 edge-case tests landed
+2026-04-17 in `cb7038e`, 8 TestLiftProgressionFilters in `98cbdef`,
+2 per-lift (Equipped + Master 1) in `e3230a0`, and 9 BW/GLP tests in
+`fca221e`. Vitest (added 2026-04-20, commit `84a7ea7`) covers
+useUrlState key-collision warnings. Playwright scaffold (commit
+`454f1de`) covers 6 smoke flows locally, not wired into CI.
 
 **CI is now enforcing on main.** `.github/workflows/ci.yml` (commit
 `12cbb46`) runs frontend `tsc + npm run build` and backend `pytest` in
@@ -307,18 +323,26 @@ items summarized here:
 
 ### Medium-priority features
 
-3. **Bodyweight + Dots progression curves.** Already in the parquet, shown in
-   the meet table, never plotted. Copy the progression pattern to plot Dots/BW
-   over time.
-4. **Coach view**: "Am I on pace for Nationals 2027?" Given a target date and
-   the already-built individual projection, compute expected total on that date
-   and the gap to the QT.
-5. **Monitor RSS after next cold start.** Look at Render logs for the
+3. **Bodyweight + Goodlift progression curves.** SHIPPED 2026-04-20
+   (commit `fca221e`). Metric selector on the Progression tab
+   (TotalKg / Bodyweight / Goodlift). 9 new pytests (165 -> 174).
+4. **Compare chart summary cards + QT reference lines.** SHIPPED
+   2026-04-20 (commit `0e9f0ba`). Per-lifter cards and optional QT
+   reference line set on CompareView.
+5. **Coach "on pace for Nationals 2027" widget.** UNBLOCKED, not
+   started. Fills the Athlete Projection BETA placeholder using the
+   existing linear individual projection. Does NOT require the P3
+   weighting decision (which is now backburnered pending Matthias's
+   statistics consultation). UI-only change in `AthleteProjection.tsx`.
+   ~1 focused session.
+6. **Monitor RSS after next cold start.** Look at Render logs for the
    `[startup] process RSS: <MB>` line to quantify the G2 memory improvement.
 
 ### Low-priority / polish
 
-6. **Hypothesis property-based tests** for `canonical_weight_class`.
-7. **Extract LifterDetail to its own file** — SHIPPED 2026-04-20 alongside the lazy-load.
-8. **UptimeRobot dashboard verification** once HEAD is live (pending user
+7. **Hypothesis property-based tests** for `canonical_weight_class` — SHIPPED (commit `cb7038e`, 19 tests).
+8. **Extract LifterDetail to its own file** — SHIPPED 2026-04-20 alongside the lazy-load.
+9. **UptimeRobot dashboard verification** once HEAD is live (pending user
    manual navigation since the Chrome extension blocks dashboard domains).
+10. **useUrlState collision Vitest** — SHIPPED 2026-04-20 (commit `84a7ea7`, 3 tests).
+11. **Playwright E2E smoke scaffold** — SHIPPED 2026-04-20 (commit `454f1de`, 6 tests, local only).

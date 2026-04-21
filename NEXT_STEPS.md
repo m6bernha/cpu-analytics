@@ -9,40 +9,34 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
-## Session plan -- 2026-04-20 (laptop campus study day)
+## Session plan -- 2026-04-20 (laptop campus study day) -- ALL SHIPPED
 
-Active work this session, running as parallel worktree chats with explicit
-filename staging:
+Four parallel worktree chats on laptop, all merged to main on desktop
+the same day:
 
-1. **Compare chart summary cards + QT reference lines** (P1) --
-   `frontend/src/tabs/CompareView.tsx`. Per-lifter cards above chart
-   (best total, rate kg/month, meet count, first-meet date, class
-   migrations, QT status) + optional QT reference line set.
-2. **Bodyweight + GLP cohort progression curves** (P2) --
-   `backend/app/progression.py`, `backend/app/main.py`,
-   `backend/tests/test_progression.py`, `frontend/src/lib/api.ts`,
-   `frontend/src/tabs/Progression.tsx`. Metric selector
-   (TotalKg / Bodyweight / Goodlift) using the existing
-   compute_progression pattern.
-3. **useUrlState key collision Vitest** (P5) --
-   `frontend/src/lib/useUrlState.test.tsx` (new). Asserts the dev-mode
-   warn fires on overlapping URL keys.
-4. **Playwright E2E smoke test scaffold** (P5) --
-   `frontend/playwright.config.ts`, `frontend/e2e/smoke.spec.ts`,
-   `frontend/package.json`. Runnable locally. Not wired into CI yet
-   (separate strategic decision).
-
-Each runs in its own git worktree with explicit-filename staging and
-`git show --name-only HEAD` verification to prevent hook-sweep. Worktree
-paths + branch names are returned in the session summary so they can be
-reviewed, pushed, or cherry-picked from the desktop setup.
+1. **Compare chart summary cards + QT reference lines** (P1) -- SHIPPED
+   `0e9f0ba`. Per-lifter cards (best total, rate kg/month, meet count,
+   first-meet date, class migrations, QT status) + optional QT reference
+   line set. Single-file scope in CompareView.tsx.
+2. **Bodyweight + GLP cohort progression curves** (P2) -- SHIPPED
+   `fca221e`. Metric selector (TotalKg / Bodyweight / Goodlift) via the
+   existing compute_progression pattern. Adds 9 pytests (165 -> 174).
+3. **useUrlState key collision Vitest** (P5) -- SHIPPED `84a7ea7`.
+   Vitest wired from scratch (vitest + @testing-library + jsdom).
+   3/3 passing. Also `e2b9d5f` excludes `e2e/**` from Vitest discovery
+   so Playwright tests don't run in jsdom.
+4. **Playwright E2E smoke test scaffold** (P5) -- SHIPPED `454f1de`.
+   Chromium config + 6 smoke tests. `npm run test:e2e` local only.
+   Needs `npx playwright install chromium` on first run. NOT wired into
+   CI yet (strategic decision deferred).
 
 ### Gated items NOT touched this session
 
 User decision or manual browser action required before these can start:
 
 - Issue 1 Recharts display:none warnings: shell fix vs per-chart guard.
-- P3 projection weighting methodology: pick A/B/C/D. C recommended.
+- Issue 12 Render cold-start strategy: keep free+keepalive / Hobby $7 /
+  Fly Machines migration.
 - G4 per-chart Recharts guard: blocks on Issue 1.
 - G5 disclaimer copy pass: blocks on everything else, touches every tab
   file.
@@ -50,40 +44,23 @@ User decision or manual browser action required before these can start:
   sudo re-auth.
 - P0 data-refresh Run #7 green verification: user manual.
 
-### Housekeeping (address when resuming)
+### Athlete Projection / P3 weighting methodology -- BACKBURNER
 
-- P0 "Filter load failed: age_category" block likely predates the
-  2026-04-20 wave. Verify live site is clean then delete the block.
-- P1 "Compare chart short-career blowout" entry says "NOT yet pushed to
-  origin" but commit `a6dc701` is on main. Update.
+Matthias parked this on 2026-04-21 pending direct consultation with
+statistics professors to ensure the methodology is academically sound
+before any projection numbers ship to production. The four candidate
+methodologies (A pure personal / B pure cohort / C Bayesian shrinkage /
+D mixed-effects) remain documented in the P3 section below, but no
+implementation work should happen on the Athlete Projection tab until
+he returns with an academic-grounded decision.
+
+The Coach "on pace for Nationals 2027" widget (P2) does NOT require the
+P3 decision and can ship independently using the existing linear
+individual projection math.
 
 ---
 
-## P0 -- Live site is BROKEN (highest priority)
-
-### Filter load failed: age_category
-
-**Symptom**: Progression tab shows "Filter load failed: Filters response
-missing or empty: age_category" on cpu-analytics.vercel.app.
-
-**Cause**: Commit `2673ed2` removed `age_category` from the backend filters
-response. The matching frontend cleanup (removing it from FiltersResponse,
-REQUIRED_FILTER_ARRAYS, ProgressionQuery, and the two guard conditionals
-in Progression.tsx) is IN the working tree but NOT committed. Vercel is
-deploying origin/main which still references age_category, so frontend
-fetches fail validation against the newer backend.
-
-**Fix**: Commit the WIP frontend cleanup (parts of Chat A's per-lift work
-cover this) + push. The WIP tree has:
-- `frontend/src/tabs/Progression.tsx` (age_category refs removed)
-- `frontend/src/lib/api.ts` (age_category field removed)
-- Plus `backend/app/progression.py` + tests + conftest.py (per-lift plumbing)
-
-Recommended commit message: `feat(progression): per-lift filter plumbing
-+ frontend age_category cleanup (fixes live site)`.
-
-After pushing, Vercel redeploys automatically. Monitor the build at
-https://vercel.com/dashboard for the cpu-analytics project.
+## P0 -- Live site monitoring
 
 ### Trigger the weekly data-refresh workflow manually
 
@@ -163,18 +140,15 @@ near the hover position drop out rather than reporting gaps. Chip-style
 legend above chart replacing default Recharts Legend.
 
 QA'd desktop + 360 px with 4-lifter worst case. Backend tests green in
-isolation. NOT yet pushed to origin.
+isolation. On main at `a6dc701`.
 
-### Compare chart data gaps
+### Compare chart data gaps -- SHIPPED
 
-Compare is the most data-barren page. Add:
-
-- Per-lifter summary cards above the chart (best total, rate kg/month,
-  meet count, first-meet date, class migration count, QT status).
-- Optionally, QT reference lines for one of the selected lifters'
-  classes (user picks, or default to mode across selected lifters).
-
-Files: `frontend/src/tabs/CompareView.tsx`.
+Commit `0e9f0ba` landed 2026-04-20. Per-lifter summary cards above the
+chart (best total, rate kg/month, meet count, first-meet date, class
+migrations, QT status) plus optional QT reference line set chosen by the
+user. Single-file scope in `frontend/src/tabs/CompareView.tsx`. Bundle
+went from 11.18 KB to 16.00 KB as expected.
 
 ---
 
@@ -250,7 +224,16 @@ server-side QT lookup.
 
 ---
 
-## P3 -- Projection weighting roundtable (PRE-SHIP, user input needed)
+## P3 -- Projection weighting roundtable (BACKBURNER pending stats consult)
+
+**Status 2026-04-21**: Matthias has parked this item pending direct
+consultation with statistics professors. The four methodologies below
+remain documented for reference. No implementation work on the Athlete
+Projection tab math should happen until an academically grounded
+decision lands. The Coach "on pace for Nationals 2027" widget (P2) is
+the correct path to fill the Athlete Projection BETA placeholder in
+the meantime because it reuses the existing linear projection without
+requiring this decision.
 
 Open question: **how much weight should individual projection put on a
 lifter's own trajectory vs the cohort average for their sex / class /
@@ -378,16 +361,26 @@ max_gap_months, same_class_only. P5 remainder shipped 2026-04-20 in
 commit `e3230a0`: Equipment=Equipped aggregation test + Division=Master 1
 alias-matching test. 165/165 backend tests passing.
 
-### useUrlState key collision regression test
+### useUrlState key collision regression test -- SHIPPED
 
-Dev-only console.warn now. Write a Vitest that renders two components
-with overlapping key sets and asserts the warning fires.
+Commit `84a7ea7` landed 2026-04-20. Vitest wired from scratch
+(`vitest`, `@testing-library/react`, `@testing-library/jest-dom`,
+`jsdom`). Three tests in `frontend/src/lib/useUrlState.test.tsx`:
+overlapping keys fire the warning, disjoint keys do not fire, ref
+count survives unmount. 3/3 passing. `npm run test` runs via Vitest.
+`e2b9d5f` follow-up excludes `e2e/**` from Vitest discovery.
 
-### End-to-end smoke test
+### End-to-end smoke test -- SHIPPED (local only, not in CI)
 
-Manual today. Once Playwright or Cypress is worth the dependency,
-smoke-test these routes: `/`, `/?tab=qt`, `/?tab=lookup`, search,
-compare deep link, manual entry submit.
+Commit `454f1de` landed 2026-04-20. Playwright chromium scaffold with
+six smoke tests in `frontend/e2e/smoke.spec.ts`. Covers `/`, `/?tab=qt`,
+`/?tab=lookup`, search flow, compare deep link, manual entry submit.
+Runnable via `npm run test:e2e` locally after
+`npx playwright install chromium`. NOT wired into CI -- strategic
+decision deferred because GHA runners need the browser binary download
+on every run (~30 s cold start tax per CI run, weighed against the
+~6 smoke tests it catches). Revisit if the frontend sprouts a flaky
+interaction the unit tests miss.
 
 ---
 
