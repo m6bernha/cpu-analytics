@@ -425,13 +425,23 @@ export type AthleteProjectionHistoryPoint = {
   total_kg: number
 }
 
+export type AthleteProjectionLifterBracket = {
+  bracket: string                  // '<60', '60-70', …, '>=120'
+  n_cell: number
+  merged_from: string[]            // [] if not merged; list of constituent brackets if merged
+  is_global_fallback: boolean
+  glp_score: number | null
+}
+
 export type AthleteProjectionMeta = {
-  cohort_tables_available: number
+  lifter_bracket: AthleteProjectionLifterBracket | null
   km_multiplier: number
   km_sample_size: number
   precomputed: boolean
   small_n_warning: boolean
   long_horizon_warning: boolean
+  brackets_per_point: string[]     // bracket label per horizon point
+  bracket_transitions: number      // count of boundary crossings in the projection
   engine_d_available?: boolean
   engine_d_note?: string
 }

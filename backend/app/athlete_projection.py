@@ -32,6 +32,11 @@ import numpy as np
 import pandas as pd
 
 from .data import get_cursor
+from .ipf_gl_points import (
+    GLP_BRACKET_LABELS,
+    assign_glp_bracket,
+    ipf_gl_points,
+)
 from .progression import age_to_category
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -66,7 +71,7 @@ SMALL_N_THRESHOLD: int = 5
 OUTLIER_SIGMA: float = 2.5            # latest meet > this many sigma below fit -> flag
 
 DAYS_PER_MONTH: float = 30.44
-MIN_COHORT_LIFTERS_FOR_FIT: int = 20  # fewer than this -> global-mean fallback
+MIN_COHORT_CELL_SIZE: int = 20        # (division x bracket x lift) cell floor; below, merge
 
 
 # =============================================================================
@@ -115,33 +120,24 @@ class AthleteProjectionResult:
 
 
 @dataclass(frozen=True)
-class CohortSlopeTable:
-    """Level-conditioned slope lookup for one (age_division, lift) pair.
+class GlpCohortCell:
+    """Cohort slope for one (age_division, GLP bracket, lift) cell.
 
-    Primary fit: slope = a * exp(-b * level). Falls back to LOESS on the
-    (level, slope) scatter, then to the global mean slope.
+    Fit: mean of per-lifter Huber slopes in the cell. Merge-fallback may
+    combine adjacent GLP brackets within the same division to reach
+    MIN_COHORT_CELL_SIZE. If the entire division has fewer than the
+    minimum, a division-global fallback is applied and is_global_fallback
+    is set to True.
     """
 
     division: str
+    glp_bracket: str                    # canonical label (lower bracket if merged)
     lift: str
-    n_samples: int                      # number of lifters contributing (level, slope) pairs
-    fit_method: str                     # "exp_decay" | "loess" | "global_mean"
-    a: float | None
-    b: float | None
-    loess_grid: tuple[float, ...] | None
-    loess_slopes: tuple[float, ...] | None
-    global_mean_slope: float            # kg/day; always populated
-    residual_std: float                 # kg/day; std of observed slopes around fit
-
-    def predict(self, level: float | None) -> float:
-        """Return the expected slope (kg/day) at the given current level."""
-        if level is None or level <= 0:
-            return float(self.global_mean_slope)
-        if self.fit_method == "exp_decay" and self.a is not None and self.b is not None:
-            return float(self.a * np.exp(-self.b * level))
-        if self.fit_method == "loess" and self.loess_grid and self.loess_slopes:
-            return float(np.interp(level, self.loess_grid, self.loess_slopes))
-        return float(self.global_mean_slope)
+    n_lifters: int
+    slope_kg_per_day: float
+    residual_std: float                 # std of per-lifter slopes in cell, kg/day
+    merged_from: tuple[str, ...]        # all bracket labels combined; empty if no merge
+    is_global_fallback: bool
 
 
 @dataclass(frozen=True)
@@ -175,7 +171,7 @@ class KMTable:
 
 
 # Module-level cache. precompute_tables() fills these; endpoints read them.
-_COHORT: dict[tuple[str, str], CohortSlopeTable] = {}
+_COHORT: dict[tuple[str, str, str], GlpCohortCell] = {}
 _KM: dict[str, KMTable] = {}
 _PRECOMPUTED: bool = False
 
@@ -185,8 +181,10 @@ def is_precomputed() -> bool:
     return _PRECOMPUTED
 
 
-def get_cohort_table(division: str, lift: str) -> CohortSlopeTable | None:
-    return _COHORT.get((division, lift))
+def get_cohort_cell(
+    division: str, bracket: str, lift: str,
+) -> GlpCohortCell | None:
+    return _COHORT.get((division, bracket, lift))
 
 
 def get_km_table(division: str) -> KMTable | None:
@@ -194,56 +192,73 @@ def get_km_table(division: str) -> KMTable | None:
 
 
 def precompute_tables(cursor=None) -> dict[str, int]:
-    """Build cohort slope tables and K-M tables. Idempotent.
+    """Build (age_division x GLP bracket x lift) cohort cells and K-M tables.
 
-    Called from FastAPI lifespan after DuckDB warmup. Failures are logged
-    and the tables remain empty, causing endpoints to fall back to the
-    global-mean cohort slope and the neutral K-M multiplier.
+    Idempotent. Called from FastAPI lifespan after DuckDB warmup. Failures
+    are logged and the tables remain empty, causing endpoints to fall back
+    to zero cohort contribution and the neutral K-M multiplier.
 
-    Returns a small stats dict for logging: {"cohort_tables": n, "km_tables": n}.
+    Returns a small stats dict for logging: {"cohort_cells": n, "km_tables": n}.
     """
     global _COHORT, _KM, _PRECOMPUTED
     try:
         if cursor is None:
             cursor = get_cursor()
-        _COHORT = _fit_cohort_tables(cursor)
+        _COHORT = _fit_cohort_cells(cursor)
         _KM = _fit_km_tables(cursor)
         _PRECOMPUTED = True
-        stats = {"cohort_tables": len(_COHORT), "km_tables": len(_KM)}
+        stats = {"cohort_cells": len(_COHORT), "km_tables": len(_KM)}
         logger.info(
-            "[athlete_projection] precomputed cohort_tables=%d km_tables=%d",
-            stats["cohort_tables"], stats["km_tables"],
+            "[athlete_projection] precomputed cohort_cells=%d km_tables=%d",
+            stats["cohort_cells"], stats["km_tables"],
         )
         return stats
     except Exception as exc:
         logger.exception("[athlete_projection] precompute failed: %s", exc)
         _COHORT, _KM = {}, {}
         _PRECOMPUTED = False
-        return {"cohort_tables": 0, "km_tables": 0}
+        return {"cohort_cells": 0, "km_tables": 0}
 
 
 def _load_cohort_history(cursor) -> pd.DataFrame:
     """Pull per-lifter per-meet history needed for cohort slope + K-M fitting.
 
-    Scope: Canada + IPF, SBD only. Age populated (cohort assignment requires
-    it; bench-only meets still contribute to bench-lift slopes via the
-    per-lift non-null filter downstream).
+    Scope: Canada + IPF, Raw only (v1). BW + Sex + Age non-null so the
+    IPF-GL formula can be computed on every row. Division assignment uses
+    Age (not free-text Division); per-lift slope fitting uses the lift
+    columns directly (non-null only).
     """
     sql = f"""
-        SELECT Name, Age, Date,
+        SELECT Name, Sex, Age, BodyweightKg, Date, Equipment,
                Best3SquatKg, Best3BenchKg, Best3DeadliftKg,
                TotalKg, Event
         FROM openipf
         WHERE Country = '{DEFAULT_COUNTRY}'
           AND ParentFederation = '{DEFAULT_PARENT_FEDERATION}'
           AND Age IS NOT NULL
+          AND BodyweightKg IS NOT NULL
+          AND Sex IS NOT NULL
+          AND Equipment = 'Raw'
         ORDER BY Name, Date
     """
     return cursor.execute(sql).df()
 
 
-def _fit_cohort_tables(cursor) -> dict[tuple[str, str], CohortSlopeTable]:
-    """For each (age_division, lift), fit slope(level) = a * exp(-b * level)."""
+def _fit_cohort_cells(
+    cursor,
+) -> dict[tuple[str, str, str], GlpCohortCell]:
+    """Fit the (age_division x GLP bracket x lift) 2D cohort matrix.
+
+    Steps:
+      1. Pull Canada + IPF + Raw history with non-null BW/Sex/Age.
+      2. Per lifter: compute latest valid TotalKg's IPF-GL score, derive
+         their GLP bracket + age division from that row.
+      3. Fit per-lifter Huber slope per lift (if >=3 meets contesting it).
+      4. Bucket slopes into (division, bracket, lift) cells.
+      5. Apply merge-fallback: sparse cells merge upward first, then downward,
+         within the same division. Entire-division-too-small falls back to
+         division-level mean slope across ALL brackets for that lift.
+    """
     hist = _load_cohort_history(cursor)
     if hist.empty:
         return {}
@@ -253,131 +268,162 @@ def _fit_cohort_tables(cursor) -> dict[tuple[str, str], CohortSlopeTable]:
     if hist.empty:
         return {}
 
-    out: dict[tuple[str, str], CohortSlopeTable] = {}
-    for division in AGE_DIVISIONS:
-        div_rows = hist[hist["AgeDivision"] == division]
-        if div_rows.empty:
+    # Per-lifter: assign (division, bracket) from their latest SBD meet with
+    # non-null TotalKg. Fall back to the latest meet of any kind if no SBD.
+    hist_sorted = hist.sort_values(["Name", "Date"])
+    last_sbd = hist_sorted[hist_sorted["Event"] == "SBD"]
+    last_sbd = last_sbd[last_sbd["TotalKg"].notna()]
+    latest_per_name = last_sbd.groupby("Name").tail(1) if not last_sbd.empty else last_sbd
+
+    name_assignment: dict[str, tuple[str, str]] = {}
+    for row in latest_per_name.itertuples(index=False):
+        glp = ipf_gl_points(
+            total_kg=float(row.TotalKg),
+            bw_kg=float(row.BodyweightKg),
+            age=float(row.Age),
+            sex=str(row.Sex),
+        )
+        bracket = assign_glp_bracket(glp)
+        name_assignment[row.Name] = (str(row.AgeDivision), bracket)
+
+    # Per-lifter, per-lift Huber slope -> accumulate into cell bucket.
+    cell_slopes: dict[tuple[str, str, str], list[float]] = {}
+    for name, group in hist_sorted.groupby("Name", sort=False):
+        if name not in name_assignment:
             continue
+        division, bracket = name_assignment[name]
+        for lift, col in LIFT_COLS.items():
+            lift_rows = group[group[col].notna()]
+            if len(lift_rows) < 3:
+                continue
+            lift_dates = pd.to_datetime(lift_rows["Date"].values)
+            days = ((lift_dates - lift_dates[0]) / np.timedelta64(1, "D")).astype(float)
+            vals = lift_rows[col].astype(float).to_numpy()
+            if len(np.unique(days)) < 2:
+                continue
+            fit = _robust_slope(days, vals)
+            if fit is None:
+                continue
+            slope, _i, _r = fit
+            if not np.isfinite(slope) or abs(slope) > 5.0:
+                continue
+            key = (division, bracket, lift)
+            cell_slopes.setdefault(key, []).append(float(slope))
+
+    out: dict[tuple[str, str, str], GlpCohortCell] = {}
+    for division in AGE_DIVISIONS:
         for lift in LIFT_KEYS:
-            col = LIFT_COLS[lift]
-            pairs = _collect_level_slope_pairs(div_rows, col)
-            out[(division, lift)] = _fit_level_conditioned(division, lift, pairs)
+            _build_division_cells(cell_slopes, division, lift, out)
     return out
 
 
-def _collect_level_slope_pairs(
-    div_rows: pd.DataFrame,
-    lift_col: str,
-) -> list[tuple[float, float]]:
-    """Per lifter, compute (starting_level, observed_slope) if they have 3+
-    meets contesting this lift."""
-    sub = div_rows[div_rows[lift_col].notna()].copy()
-    if sub.empty:
-        return []
-    sub = sub.sort_values(["Name", "Date"])
-    pairs: list[tuple[float, float]] = []
-    for name, group in sub.groupby("Name", sort=False):
-        if len(group) < 3:
-            continue
-        dates = pd.to_datetime(group["Date"].values)
-        days = ((dates - dates[0]) / np.timedelta64(1, "D")).astype(float)
-        vals = group[lift_col].astype(float).to_numpy()
-        if len(np.unique(days)) < 2:
-            continue
-        # Huber-robust slope; fall back to polyfit.
-        fit = _robust_slope(days, vals)
-        if fit is None:
-            continue
-        slope, _intercept, _resid_std = fit
-        # Exclude absurd slopes (data entry errors, class changes masquerading as lift jumps).
-        if not np.isfinite(slope) or abs(slope) > 5.0:  # 5 kg/day = wildly implausible
-            continue
-        level = float(vals[0])   # starting level
-        if level <= 0:
-            continue
-        pairs.append((level, float(slope)))
-    return pairs
-
-
-def _fit_level_conditioned(
+def _build_division_cells(
+    cell_slopes: dict[tuple[str, str, str], list[float]],
     division: str,
     lift: str,
-    pairs: list[tuple[float, float]],
-) -> CohortSlopeTable:
-    """Try exp-decay fit, then LOESS, then global mean as the floor."""
-    n = len(pairs)
-    if n == 0:
-        return CohortSlopeTable(
-            division=division, lift=lift, n_samples=0,
-            fit_method="global_mean", a=None, b=None,
-            loess_grid=None, loess_slopes=None,
-            global_mean_slope=0.0, residual_std=0.0,
-        )
+    out: dict[tuple[str, str, str], GlpCohortCell],
+) -> None:
+    """Fill the 11 bracket cells for one (division, lift) pair.
 
-    levels = np.array([p[0] for p in pairs], dtype=float)
-    slopes = np.array([p[1] for p in pairs], dtype=float)
-    global_mean = float(np.mean(slopes))
-    global_std = float(np.std(slopes))
+    Algorithm:
+      - If a cell meets MIN_COHORT_CELL_SIZE alone, emit as-is.
+      - Otherwise merge upward with the next unassigned bracket until the
+        combined count reaches the minimum, then downward if still short.
+      - If the entire division has fewer than MIN across all brackets,
+        store a division-global-fallback cell for every bracket with the
+        mean of all collected slopes.
+    """
+    brackets = list(GLP_BRACKET_LABELS)
 
-    if n < MIN_COHORT_LIFTERS_FOR_FIT:
-        return CohortSlopeTable(
-            division=division, lift=lift, n_samples=n,
-            fit_method="global_mean", a=None, b=None,
-            loess_grid=None, loess_slopes=None,
-            global_mean_slope=global_mean, residual_std=global_std,
-        )
-
-    # Exp decay: slope = a * exp(-b * level). a should be positive (novices
-    # gain fastest), b should be >0 (gain rate decreases with level).
-    try:
-        from scipy.optimize import curve_fit
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            popt, _ = curve_fit(
-                lambda x, a, b: a * np.exp(-b * x),
-                levels, slopes,
-                p0=[max(global_mean * 2, 0.1), 0.001],
-                maxfev=2000,
-            )
-        a, b = float(popt[0]), float(popt[1])
-        if np.isfinite(a) and np.isfinite(b) and b > 0 and a > 0:
-            predicted = a * np.exp(-b * levels)
-            resid_std = float(np.std(slopes - predicted))
-            return CohortSlopeTable(
-                division=division, lift=lift, n_samples=n,
-                fit_method="exp_decay", a=a, b=b,
-                loess_grid=None, loess_slopes=None,
-                global_mean_slope=global_mean, residual_std=resid_std,
-            )
-    except Exception:
-        pass
-
-    # LOESS via statsmodels lowess. Smooth on (level, slope) scatter.
-    try:
-        from statsmodels.nonparametric.smoothers_lowess import lowess
-        order = np.argsort(levels)
-        smoothed = lowess(slopes[order], levels[order], frac=0.4, it=1, return_sorted=False)
-        # Build an evenly-spaced grid for fast predict().
-        grid = np.linspace(float(levels.min()), float(levels.max()), 60)
-        grid_slopes = np.interp(grid, levels[order], smoothed)
-        predicted = np.interp(levels, grid, grid_slopes)
-        resid_std = float(np.std(slopes - predicted))
-        return CohortSlopeTable(
-            division=division, lift=lift, n_samples=n,
-            fit_method="loess", a=None, b=None,
-            loess_grid=tuple(grid.tolist()),
-            loess_slopes=tuple(grid_slopes.tolist()),
-            global_mean_slope=global_mean, residual_std=resid_std,
-        )
-    except Exception:
-        pass
-
-    return CohortSlopeTable(
-        division=division, lift=lift, n_samples=n,
-        fit_method="global_mean", a=None, b=None,
-        loess_grid=None, loess_slopes=None,
-        global_mean_slope=global_mean, residual_std=global_std,
+    total_in_div = sum(
+        len(cell_slopes.get((division, b, lift), [])) for b in brackets
     )
+    if total_in_div == 0:
+        # No data at all; silent zero fallback so endpoints don't crash.
+        for b in brackets:
+            out[(division, b, lift)] = GlpCohortCell(
+                division=division, glp_bracket=b, lift=lift,
+                n_lifters=0, slope_kg_per_day=0.0, residual_std=0.0,
+                merged_from=(), is_global_fallback=True,
+            )
+        return
+
+    if total_in_div < MIN_COHORT_CELL_SIZE:
+        # Whole division too small: division-global fallback.
+        all_slopes: list[float] = []
+        for b in brackets:
+            all_slopes.extend(cell_slopes.get((division, b, lift), []))
+        mean_slope = float(np.mean(all_slopes)) if all_slopes else 0.0
+        resid_std = float(np.std(all_slopes)) if all_slopes else 0.0
+        logger.info(
+            "[athlete_projection] division %s/%s total n=%d < %d -> global fallback",
+            division, lift, total_in_div, MIN_COHORT_CELL_SIZE,
+        )
+        merged = tuple(brackets)
+        for b in brackets:
+            out[(division, b, lift)] = GlpCohortCell(
+                division=division, glp_bracket=b, lift=lift,
+                n_lifters=total_in_div, slope_kg_per_day=mean_slope,
+                residual_std=resid_std,
+                merged_from=merged,
+                is_global_fallback=True,
+            )
+        return
+
+    # Iterate low -> high, merge sparse with neighbours as needed.
+    assigned = [False] * len(brackets)
+    for i in range(len(brackets)):
+        if assigned[i]:
+            continue
+        merged_labels = [brackets[i]]
+        accumulated: list[float] = list(
+            cell_slopes.get((division, brackets[i], lift), [])
+        )
+
+        # Merge upward while short.
+        j = i + 1
+        while len(accumulated) < MIN_COHORT_CELL_SIZE and j < len(brackets):
+            if assigned[j]:
+                j += 1
+                continue
+            accumulated.extend(cell_slopes.get((division, brackets[j], lift), []))
+            merged_labels.append(brackets[j])
+            assigned[j] = True
+            j += 1
+
+        # Merge downward if still short.
+        k = i - 1
+        while len(accumulated) < MIN_COHORT_CELL_SIZE and k >= 0:
+            if assigned[k]:
+                k -= 1
+                continue
+            accumulated = list(cell_slopes.get((division, brackets[k], lift), [])) + accumulated
+            merged_labels.insert(0, brackets[k])
+            assigned[k] = True
+            k -= 1
+
+        if len(merged_labels) > 1:
+            logger.info(
+                "[athlete_projection] merged %s %s [%s] -> n=%d",
+                division, lift, ",".join(merged_labels), len(accumulated),
+            )
+
+        mean_slope = float(np.mean(accumulated)) if accumulated else 0.0
+        resid_std = float(np.std(accumulated)) if accumulated else 0.0
+        merged_tuple = tuple(merged_labels) if len(merged_labels) > 1 else ()
+        cell = GlpCohortCell(
+            division=division,
+            glp_bracket=merged_labels[0],
+            lift=lift,
+            n_lifters=len(accumulated),
+            slope_kg_per_day=mean_slope,
+            residual_std=resid_std,
+            merged_from=merged_tuple,
+            is_global_fallback=False,
+        )
+        for label in merged_labels:
+            out[(division, label, lift)] = cell
+        assigned[i] = True
 
 
 def _fit_km_tables(cursor) -> dict[str, KMTable]:
@@ -483,9 +529,13 @@ def shrinkage_projection(
     horizon_months: int = 12,
     n_points: int = 6,
 ) -> AthleteProjectionResult | None:
-    """Engine C: Bayesian shrinkage with Huber personal + level-conditioned cohort.
+    """Engine C: Bayesian shrinkage with Huber personal + GLP-bracket cohort.
 
     Returns None if the lifter has no meets or no age data to assign a cohort.
+
+    Two-pass bracket transition: pass 1 uses the lifter's starting GLP
+    bracket's cohort slope; if the projected total crosses a bracket edge
+    during the horizon, pass 2 re-projects with per-segment cohort cells.
     """
     cursor = get_cursor()
     lifter_df = _load_lifter_history(cursor, lifter_name)
@@ -499,29 +549,75 @@ def shrinkage_projection(
     n_total_meets = int(lifter_df["Name"].count())
     effective_horizon, capped = _clamp_horizon(horizon_months, n_total_meets)
 
+    glp, initial_bracket, bw_used, age_used, sex_used = _compute_lifter_glp(lifter_df)
+
     km = get_km_table(age_division)
     km_multiplier = km.multiplier(effective_horizon) if km else 1.0
 
-    lift_results: dict[str, LiftProjection] = {}
-    outlier_lifts: list[str] = []
+    # Pass 1: use the initial bracket for all n_points.
+    pass1_projs: dict[str, LiftProjection] = {}
     for lift in LIFT_KEYS:
-        proj = _project_single_lift(
-            lifter_df,
+        cell = get_cohort_cell(age_division, initial_bracket, lift)
+        pass1_projs[lift] = _project_single_lift(
+            lifter_df=lifter_df,
             lift=lift,
-            age_division=age_division,
+            cohort_cell=cell,
             horizon_months=effective_horizon,
             n_points=n_points,
             km_multiplier=km_multiplier,
         )
-        lift_results[lift] = proj
-        if _is_outlier_latest(lifter_df, lift, proj):
-            outlier_lifts.append(lift)
 
-    total_history, total_projected = _aggregate_total(lifter_df, lift_results, n_points)
-
-    cohort_tables_available = sum(
-        1 for lift in LIFT_KEYS if get_cohort_table(age_division, lift) is not None
+    # Determine bracket per horizon point from pass-1 totals.
+    brackets_per_point = _compute_brackets_per_point(
+        pass1_projs, bw_used, age_used, sex_used, initial_bracket, n_points,
     )
+
+    # Pass 2 only if any point's bracket differs from the initial.
+    if all(b == initial_bracket for b in brackets_per_point):
+        lift_results = pass1_projs
+    else:
+        lift_results = {}
+        for lift in LIFT_KEYS:
+            cells_per_point = [
+                get_cohort_cell(age_division, b, lift) for b in brackets_per_point
+            ]
+            lift_results[lift] = _project_single_lift(
+                lifter_df=lifter_df,
+                lift=lift,
+                cohort_cell=get_cohort_cell(age_division, initial_bracket, lift),
+                horizon_months=effective_horizon,
+                n_points=n_points,
+                km_multiplier=km_multiplier,
+                cohort_cells_per_point=cells_per_point,
+            )
+
+    outlier_lifts = [
+        lift for lift in LIFT_KEYS
+        if _is_outlier_latest(lifter_df, lift, lift_results[lift])
+    ]
+
+    total_history, total_projected = _aggregate_total(
+        lifter_df, lift_results, n_points,
+    )
+
+    # Lifter-bracket meta: pull from the squat cell as representative (all
+    # three lifts share the same bracket for the initial cell).
+    primary_cell = get_cohort_cell(age_division, initial_bracket, "squat")
+    lifter_bracket_meta: dict[str, Any] | None = None
+    if primary_cell is not None:
+        lifter_bracket_meta = {
+            "bracket": initial_bracket,
+            "n_cell": primary_cell.n_lifters,
+            "merged_from": list(primary_cell.merged_from),
+            "is_global_fallback": primary_cell.is_global_fallback,
+            "glp_score": round(glp, 1) if glp is not None else None,
+        }
+
+    bracket_transitions = sum(
+        1 for i in range(1, len(brackets_per_point))
+        if brackets_per_point[i] != brackets_per_point[i - 1]
+    )
+
     return AthleteProjectionResult(
         lifter_name=lifter_name,
         engine="shrinkage",
@@ -534,19 +630,83 @@ def shrinkage_projection(
         total_projected_points=tuple(total_projected),
         outlier_lifts=tuple(outlier_lifts),
         meta={
-            "cohort_tables_available": cohort_tables_available,
+            "lifter_bracket": lifter_bracket_meta,
             "km_multiplier": km_multiplier,
             "km_sample_size": km.sample_size if km else 0,
             "precomputed": _PRECOMPUTED,
             "small_n_warning": n_total_meets < SMALL_N_THRESHOLD,
             "long_horizon_warning": horizon_months > HORIZON_MONTHS_WARN,
+            "brackets_per_point": list(brackets_per_point),
+            "bracket_transitions": bracket_transitions,
         },
     )
 
 
+def _compute_lifter_glp(
+    lifter_df: pd.DataFrame,
+) -> tuple[float | None, str, float | None, float | None, str | None]:
+    """From the most recent SBD meet with non-null total/BW/Age/Sex, compute
+    GLP and the assigned bracket. Falls back to any meet if no SBD match.
+
+    Returns (glp, bracket_label, bw_used, age_used, sex_used).
+    """
+    sbd = lifter_df[
+        (lifter_df["Event"] == "SBD")
+        & lifter_df["TotalKg"].notna()
+        & lifter_df["BodyweightKg"].notna()
+        & lifter_df["Age"].notna()
+        & lifter_df["Sex"].notna()
+    ]
+    source = sbd if not sbd.empty else lifter_df[lifter_df["TotalKg"].notna()]
+    if source.empty:
+        return None, GLP_BRACKET_LABELS[0], None, None, None
+
+    row = source.iloc[-1]
+    total = float(row["TotalKg"]) if pd.notna(row["TotalKg"]) else None
+    bw = float(row["BodyweightKg"]) if pd.notna(row["BodyweightKg"]) else None
+    age = float(row["Age"]) if pd.notna(row["Age"]) else None
+    sex = str(row["Sex"]) if pd.notna(row["Sex"]) else None
+    glp = ipf_gl_points(total, bw, age, sex)
+    return glp, assign_glp_bracket(glp), bw, age, sex
+
+
+def _compute_brackets_per_point(
+    pass1_projs: dict[str, "LiftProjection"],
+    bw: float | None,
+    age: float | None,
+    sex: str | None,
+    initial_bracket: str,
+    n_points: int,
+) -> list[str]:
+    """Per horizon point, assign a bracket from the pass-1 projected total.
+
+    If any required IPF-GL input is missing, keep the initial bracket for
+    every point (no transitions attempted).
+    """
+    if bw is None or age is None or sex is None:
+        return [initial_bracket] * n_points
+
+    squat_pts = pass1_projs["squat"].projected_points
+    bench_pts = pass1_projs["bench"].projected_points
+    dead_pts = pass1_projs["deadlift"].projected_points
+    if not (len(squat_pts) == len(bench_pts) == len(dead_pts) == n_points):
+        return [initial_bracket] * n_points
+
+    out: list[str] = []
+    for i in range(n_points):
+        total_i = (
+            float(squat_pts[i]["projected_kg"])
+            + float(bench_pts[i]["projected_kg"])
+            + float(dead_pts[i]["projected_kg"])
+        )
+        glp_i = ipf_gl_points(total_i, bw, age, sex)
+        out.append(assign_glp_bracket(glp_i))
+    return out
+
+
 def _load_lifter_history(cursor, name: str) -> pd.DataFrame | None:
     sql = f"""
-        SELECT Name, Age, Date, Event,
+        SELECT Name, Sex, Age, BodyweightKg, Date, Event,
                Best3SquatKg, Best3BenchKg, Best3DeadliftKg, TotalKg,
                CanonicalWeightClass, Equipment
         FROM openipf
@@ -602,11 +762,25 @@ def compute_current_level(values: list[float]) -> float | None:
 def _project_single_lift(
     lifter_df: pd.DataFrame,
     lift: str,
-    age_division: str,
+    cohort_cell: GlpCohortCell | None,
     horizon_months: int,
     n_points: int,
     km_multiplier: float,
+    cohort_cells_per_point: list[GlpCohortCell | None] | None = None,
 ) -> LiftProjection:
+    """Project one lift across n_points using a cohort cell for the cohort slope.
+
+    If cohort_cells_per_point is provided (length n_points), each segment's
+    cohort slope comes from that list, supporting bracket transitions. The
+    personal slope stays constant across the horizon (shrinkage is only on
+    the combined-slope contribution each segment).
+
+    PI variance at point t:
+      var_personal_at_t = sigma_personal^2 * (1 + 1/n + (t - t_mean)^2 / S_xx)
+      var_cohort_slope(t) = (cohort_slope_std * km_mult * t_offset)^2
+      var_total = w_p^2 * var_personal_at_t + (1 - w_p)^2 * var_cohort_slope(t)
+      pi_half = z95 * sqrt(var_total)
+    """
     col = LIFT_COLS[lift]
     sub = lifter_df[lifter_df[col].notna()].copy()
     n_meets = int(len(sub))
@@ -631,7 +805,6 @@ def _project_single_lift(
 
     # Personal slope (Huber, with polyfit fallback).
     slope_personal: float | None = None
-    intercept_personal: float | None = None
     sigma_personal: float | None = None
     s_xx: float | None = None
     t_mean_days: float | None = None
@@ -639,62 +812,116 @@ def _project_single_lift(
     if n_meets >= 2 and len(np.unique(days)) >= 2:
         fit = _robust_slope(days, np.asarray(values))
         if fit is not None:
-            slope_personal, intercept_personal, sigma_personal = fit
+            slope_personal, _intercept, sigma_personal = fit
         t_mean_days = float(np.mean(days))
         s_xx = float(np.sum((days - t_mean_days) ** 2))
 
-    # Cohort slope (level-conditioned lookup).
-    cohort_table = get_cohort_table(age_division, lift)
-    slope_cohort: float | None = None
-    sigma_cohort: float = 0.0
-    if cohort_table is not None:
-        slope_cohort = cohort_table.predict(current_level)
-        sigma_cohort = cohort_table.residual_std
+    def _cell_slope(cell: GlpCohortCell | None) -> tuple[float | None, float]:
+        if cell is None:
+            return None, 0.0
+        return float(cell.slope_kg_per_day), float(cell.residual_std)
 
-    # Combined slope via slope-only shrinkage. Level is NOT shrunk.
+    initial_slope_cohort, initial_sigma_cohort = _cell_slope(cohort_cell)
+
+    # Combined slope (for the reported top-level metric; segments may differ).
     w_personal = n_meets / (n_meets + SHRINKAGE_K)
     slope_combined: float | None = None
-    if slope_personal is not None and slope_cohort is not None:
-        slope_combined = w_personal * slope_personal + (1 - w_personal) * slope_cohort
+    if slope_personal is not None and initial_slope_cohort is not None:
+        slope_combined = (
+            w_personal * slope_personal
+            + (1 - w_personal) * initial_slope_cohort
+        )
     elif slope_personal is not None:
         slope_combined = slope_personal
-    elif slope_cohort is not None:
-        slope_combined = slope_cohort
+    elif initial_slope_cohort is not None:
+        slope_combined = initial_slope_cohort
         w_personal = 0.0  # no personal data -> pure cohort
 
-    # Residual std for PI. Prefer personal (honest for this lifter) with
-    # cohort as fallback. K-M multiplier inflates the cohort portion.
+    # Instantaneous kg noise. Prefer the lifter's own residual std.
     if sigma_personal is not None and sigma_personal > 0:
         sigma_resid = float(sigma_personal)
     else:
-        sigma_resid = float(sigma_cohort * km_multiplier)
+        # Rough kg fallback: scale the cohort slope's per-day std by half
+        # the horizon to produce a plausible kg magnitude for PI display.
+        sigma_resid = float(
+            initial_sigma_cohort * km_multiplier
+            * (horizon_months * DAYS_PER_MONTH) * 0.5
+        )
 
-    # Project forward from last_meet_day.
+    # Project forward segment by segment.
     projected: list[dict[str, Any]] = []
-    if slope_combined is not None and current_level is not None:
+    if current_level is not None and (
+        slope_personal is not None or initial_slope_cohort is not None
+    ):
         step_days = (horizon_months * DAYS_PER_MONTH) / max(1, n_points)
+        running_level = float(current_level)
+        running_day = last_meet_day
         for i in range(1, n_points + 1):
-            future_day = last_meet_day + step_days * i
-            # Level-anchored projection: start from current level, extend by slope.
-            future_offset_days = future_day - last_meet_day
-            pred = current_level + slope_combined * future_offset_days
-            # Prediction interval: PI = sigma_resid^2 + var_params(t).
+            next_day = last_meet_day + step_days * i
+            segment_days = next_day - running_day
+
+            # Pick segment cohort cell.
+            if cohort_cells_per_point is not None and (i - 1) < len(cohort_cells_per_point):
+                seg_cell = cohort_cells_per_point[i - 1]
+            else:
+                seg_cell = cohort_cell
+            seg_slope_cohort, seg_sigma_cohort = _cell_slope(seg_cell)
+
+            # Segment combined slope with slope-only shrinkage.
+            if slope_personal is not None and seg_slope_cohort is not None:
+                seg_slope = (
+                    w_personal * slope_personal
+                    + (1 - w_personal) * seg_slope_cohort
+                )
+            elif slope_personal is not None:
+                seg_slope = slope_personal
+            elif seg_slope_cohort is not None:
+                seg_slope = seg_slope_cohort
+            else:
+                seg_slope = 0.0
+
+            running_level = running_level + seg_slope * segment_days
+
+            # PI variance at this horizon point.
+            t_offset = next_day - last_meet_day
             if s_xx is not None and s_xx > 0 and sigma_personal is not None and n_meets >= 2:
-                # Classical linear-regression prediction variance around t.
-                var_params = sigma_personal ** 2 * (
-                    1.0 / n_meets + (future_day - (t_mean_days or 0.0)) ** 2 / s_xx
+                var_personal_at_t = sigma_personal ** 2 * (
+                    1.0 + 1.0 / n_meets
+                    + (next_day - (t_mean_days or 0.0)) ** 2 / s_xx
                 )
             else:
-                # No personal fit -> lean on cohort, inflated by K-M.
-                var_params = (sigma_cohort * km_multiplier) ** 2
-            pi_half = Z_95 * float(np.sqrt(max(sigma_resid ** 2 + var_params, 0.0)))
+                var_personal_at_t = 0.0
+            var_cohort_at_t = (
+                seg_sigma_cohort * km_multiplier * t_offset
+            ) ** 2
+
+            w2_personal = w_personal ** 2
+            w2_cohort = (1.0 - w_personal) ** 2
+            if slope_personal is None:
+                w2_cohort = 1.0
+                w2_personal = 0.0
+            if seg_slope_cohort is None:
+                w2_cohort = 0.0
+                w2_personal = 1.0 if slope_personal is not None else 0.0
+            var_total = (
+                w2_personal * var_personal_at_t
+                + w2_cohort * var_cohort_at_t
+            )
+            if w2_personal == 0 and w2_cohort == 0:
+                # No data whatsoever, show a neutral band from sigma_resid.
+                var_total = sigma_resid ** 2
+            pi_half = Z_95 * float(np.sqrt(max(var_total, 0.0)))
+
             projected.append({
-                "days_from_first": round(future_day, 1),
-                "months_from_last": round((future_day - last_meet_day) / DAYS_PER_MONTH, 2),
-                "projected_kg": round(pred, 1),
-                "lower_kg": round(pred - pi_half, 1),
-                "upper_kg": round(pred + pi_half, 1),
+                "days_from_first": round(next_day, 1),
+                "months_from_last": round(
+                    (next_day - last_meet_day) / DAYS_PER_MONTH, 2,
+                ),
+                "projected_kg": round(running_level, 1),
+                "lower_kg": round(running_level - pi_half, 1),
+                "upper_kg": round(running_level + pi_half, 1),
             })
+            running_day = next_day
 
     return LiftProjection(
         lift=lift,
@@ -704,7 +931,7 @@ def _project_single_lift(
             round(slope_personal, 5) if slope_personal is not None else None
         ),
         slope_cohort_kg_per_day=(
-            round(slope_cohort, 5) if slope_cohort is not None else None
+            round(initial_slope_cohort, 5) if initial_slope_cohort is not None else None
         ),
         slope_combined_kg_per_day=(
             round(slope_combined, 5) if slope_combined is not None else None

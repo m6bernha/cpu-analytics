@@ -76,7 +76,7 @@ async def lifespan(_app: FastAPI):
             stats = athlete_proj_mod.precompute_tables(conn)
             print(
                 f"[startup] athlete_projection tables: "
-                f"cohort={stats['cohort_tables']} km={stats['km_tables']}"
+                f"cohort_cells={stats['cohort_cells']} km={stats['km_tables']}"
             )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
