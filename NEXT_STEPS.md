@@ -427,11 +427,13 @@ mode per entry:
 
 **Open follow-ups (not blocking)**
 
-* OPA Dropbox-link regression (2026-04-22 run): the Ontario scraper's
-  landing-page regex no longer finds a Dropbox href, and the
-  orchestrator correctly graceful-degrades. Needs a look at whether
-  OPA moved the xlsx or the page structure changed. Data-stale risk
-  only, not a crash.
+* ~~OPA Dropbox-link regression~~ -- RESOLVED 2026-04-22. Re-verified end
+  to end against the live OPA landing page: ``discover_xlsx_url`` finds
+  the Dropbox href, ``download_xlsx`` streams the workbook, and
+  ``parse_xlsx`` emits 116 Classic SBD rows. Full orchestrator run
+  produces 1392 in-scope rows across CPU + 6 provincial scrapers. The
+  earlier graceful-degrade warning was likely a transient OPA page
+  update that has since re-stabilised.
 * FQD Quebec ``DEFAULT_EFFECTIVE_YEAR`` currently hardcoded to 2026;
   bump when FQD publishes a revision tied to the CPU calendar.
 * Alberta transcribed releases under ``apu_transcribed/`` grow over
