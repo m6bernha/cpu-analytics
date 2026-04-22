@@ -8,11 +8,17 @@ data/processed/*.parquet
 # published to the data-latest release. The backend downloads it at
 # cold start; the file is never committed.
 data/qt_current.csv
+# Diff summary is a transient scraper artefact; only the CSV + snapshot
+# are canonical. --dry-run writes this next to qt_current.csv.
+data/qt_diff_summary.md
 # Local scraper output dir (used by manual --dry-run invocations).
 scraper_out/
 frontend/node_modules/
 frontend/dist/
 .DS_Store
+
+# Claude Code per-project hook/config/launch directory.
+.claude/
 
 # Verification scratch files from VSCode Claude verification runs.
 # These are ad-hoc curl dumps, not source of truth.
