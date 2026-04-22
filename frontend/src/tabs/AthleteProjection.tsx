@@ -15,6 +15,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   Tooltip,
@@ -25,11 +26,42 @@ import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
   fetchAthleteProjection,
   fetchLifterSearch,
+  fetchQtStandards,
   type AthleteProjectionEngine,
   type AthleteProjectionLift,
   type AthleteProjectionResponse,
   type LifterSearchResult,
+  type QtStandardRow,
 } from '../lib/api'
+
+type QtEra = 'pre2025' | '2025' | '2027'
+
+const QT_ERA_FIELD: Record<QtEra, 'QT_pre2025' | 'QT_2025' | 'QT_2027'> = {
+  pre2025: 'QT_pre2025',
+  '2025': 'QT_2025',
+  '2027': 'QT_2027',
+}
+
+const QT_ERA_LABEL: Record<QtEra, string> = {
+  pre2025: 'Pre-2025',
+  '2025': '2025',
+  '2027': '2027',
+}
+
+function findQtForLifter(
+  standards: QtStandardRow[] | undefined,
+  sex: string | undefined,
+  weightClass: string | null | undefined,
+): { regionals?: QtStandardRow; nationals?: QtStandardRow } {
+  if (!standards || !sex || !weightClass) return {}
+  const matches = standards.filter(
+    (s) => s.Sex === sex && s.WeightClass === weightClass,
+  )
+  return {
+    regionals: matches.find((m) => m.Level === 'Regionals'),
+    nationals: matches.find((m) => m.Level === 'Nationals'),
+  }
+}
 
 type LiftKey = 'total' | 'squat' | 'bench' | 'deadlift'
 
@@ -64,6 +96,8 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
   const [engine, setEngine] = useState<AthleteProjectionEngine>('shrinkage')
   const [horizon, setHorizon] = useState<number>(12)
   const [liftKey, setLiftKey] = useState<LiftKey>('total')
+  const [showQt, setShowQt] = useState<boolean>(false)
+  const [qtEra, setQtEra] = useState<QtEra>('2027')
 
   const debouncedQuery = useDebouncedValue(query, 300)
 
@@ -80,6 +114,13 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
       fetchAthleteProjection(selected!.Name, engine, horizon, 6),
     enabled: !!selected && isActive,
     staleTime: 5 * 60 * 1000,
+  })
+
+  const qtStandardsQuery = useQuery({
+    queryKey: ['ap-qt-standards'],
+    queryFn: fetchQtStandards,
+    enabled: !!selected && isActive && showQt && liftKey === 'total',
+    staleTime: 60 * 60 * 1000,
   })
 
   const resetSelection = () => {
@@ -121,6 +162,10 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
         setHorizon={setHorizon}
         liftKey={liftKey}
         setLiftKey={setLiftKey}
+        showQt={showQt}
+        setShowQt={setShowQt}
+        qtEra={qtEra}
+        setQtEra={setQtEra}
       />
 
       {!selected && (
@@ -150,6 +195,13 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
           liftKey={liftKey}
           horizon={horizon}
           isActive={isActive}
+          showQt={showQt}
+          qtEra={qtEra}
+          qtRows={findQtForLifter(
+            qtStandardsQuery.data,
+            selected.Sex,
+            selected.LatestWeightClass,
+          )}
         />
       )}
 
@@ -181,6 +233,10 @@ function SelectorPanel({
   setHorizon,
   liftKey,
   setLiftKey,
+  showQt,
+  setShowQt,
+  qtEra,
+  setQtEra,
 }: {
   selected: LifterSearchResult | null
   query: string
@@ -195,6 +251,10 @@ function SelectorPanel({
   setHorizon: (h: number) => void
   liftKey: LiftKey
   setLiftKey: (l: LiftKey) => void
+  showQt: boolean
+  setShowQt: (v: boolean) => void
+  qtEra: QtEra
+  setQtEra: (e: QtEra) => void
 }) {
   return (
     <section
@@ -271,7 +331,14 @@ function SelectorPanel({
             Simple-only to avoid a toggle that silently falls back. */}
         {false && <EngineToggle engine={engine} setEngine={setEngine} />}
         <HorizonSelect horizon={horizon} setHorizon={setHorizon} />
-        <LiftSelect liftKey={liftKey} setLiftKey={setLiftKey} />
+        <LiftSelect
+          liftKey={liftKey}
+          setLiftKey={setLiftKey}
+          showQt={showQt}
+          setShowQt={setShowQt}
+          qtEra={qtEra}
+          setQtEra={setQtEra}
+        />
       </div>
     </section>
   )
@@ -361,9 +428,17 @@ function HorizonSelect({
 function LiftSelect({
   liftKey,
   setLiftKey,
+  showQt,
+  setShowQt,
+  qtEra,
+  setQtEra,
 }: {
   liftKey: LiftKey
   setLiftKey: (l: LiftKey) => void
+  showQt: boolean
+  setShowQt: (v: boolean) => void
+  qtEra: QtEra
+  setQtEra: (e: QtEra) => void
 }) {
   return (
     <div>
@@ -393,6 +468,46 @@ function LiftSelect({
           </button>
         ))}
       </div>
+
+      {liftKey === 'total' && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <label className="inline-flex items-center gap-2 text-zinc-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showQt}
+              onChange={(e) => setShowQt(e.target.checked)}
+              className="accent-amber-500"
+              aria-label="Show CPU QT reference lines"
+            />
+            <span>Show CPU QT reference lines</span>
+          </label>
+          {showQt && (
+            <div
+              role="radiogroup"
+              aria-label="QT standard era"
+              className="inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden"
+            >
+              {(['pre2025', '2025', '2027'] as QtEra[]).map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  role="radio"
+                  aria-checked={qtEra === e}
+                  onClick={() => setQtEra(e)}
+                  className={
+                    'px-3 py-1.5 text-xs transition-colors ' +
+                    (qtEra === e
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-400 hover:text-zinc-200')
+                  }
+                >
+                  {QT_ERA_LABEL[e]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -404,12 +519,21 @@ function ResultPanel({
   liftKey,
   horizon,
   isActive,
+  showQt,
+  qtEra,
+  qtRows,
 }: {
   data: AthleteProjectionResponse
   liftKey: LiftKey
   horizon: number
   isActive: boolean
+  showQt: boolean
+  qtEra: QtEra
+  qtRows: { regionals?: QtStandardRow; nationals?: QtStandardRow }
 }) {
+  const qtField = QT_ERA_FIELD[qtEra]
+  const regionalsQt = showQt && liftKey === 'total' ? qtRows.regionals?.[qtField] : undefined
+  const nationalsQt = showQt && liftKey === 'total' ? qtRows.nationals?.[qtField] : undefined
   const chartData = useMemo(
     () => buildChartData(data, liftKey),
     [data, liftKey],
@@ -515,6 +639,36 @@ function ResultPanel({
                 fill={COLORS.history}
                 isAnimationActive={false}
               />
+              {regionalsQt != null && (
+                <ReferenceLine
+                  y={regionalsQt}
+                  stroke="#94a3b8"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: `Regionals ${QT_ERA_LABEL[qtEra]} (${regionalsQt.toFixed(0)})`,
+                    position: 'insideTopLeft',
+                    fill: '#94a3b8',
+                    fontSize: 11,
+                    offset: 6,
+                  }}
+                />
+              )}
+              {nationalsQt != null && (
+                <ReferenceLine
+                  y={nationalsQt}
+                  stroke="#f59e0b"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: `Nationals ${QT_ERA_LABEL[qtEra]} (${nationalsQt.toFixed(0)})`,
+                    position: 'insideTopLeft',
+                    fill: '#f59e0b',
+                    fontSize: 11,
+                    offset: 6,
+                  }}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         )}
