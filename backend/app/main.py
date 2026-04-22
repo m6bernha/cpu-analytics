@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 
+from . import athlete_projection as athlete_proj_mod
 from . import filters as filters_mod
 from . import lifters as lifters_mod
 from . import progression as progression_mod
@@ -67,6 +68,16 @@ async def lifespan(_app: FastAPI):
             print(f"[startup] process RSS: {rss_mb:.1f} MB")
         except ImportError:
             pass
+        # Athlete Projection cohort + Kaplan-Meier precompute. Populates
+        # module-level tables so per-request projection endpoints never run
+        # a cohort fit. Non-raising on failure (falls back to global-mean
+        # cohort slope and neutral K-M multiplier).
+        if n_meets > 0:
+            stats = athlete_proj_mod.precompute_tables(conn)
+            print(
+                f"[startup] athlete_projection tables: "
+                f"cohort={stats['cohort_tables']} km={stats['km_tables']}"
+            )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
         if n_meets == 0 or n_qt == 0:
@@ -527,3 +538,53 @@ def api_qt_live_coverage(
             "fetched_at": filters_meta.get("fetched_at"),
         },
     })
+
+
+# ---------------------------------------------------------------------------
+# Athlete Projection (BETA) -- per-lift Engine C / Engine D
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/athlete/{name}/projection")
+def api_athlete_projection(
+    name: str,
+    engine: str = Query(
+        "shrinkage",
+        description="Projection engine: 'shrinkage' (default) or 'mixed_effects'.",
+    ),
+    horizon: int = Query(
+        12,
+        ge=1,
+        le=24,
+        description="Projection horizon in months. Server may clamp to 18 (hard) or 6 (small-N).",
+    ),
+    n_points: int = Query(
+        6,
+        ge=2,
+        le=12,
+        description="Number of points to draw along the projection curve.",
+    ),
+) -> dict[str, Any]:
+    """Per-lift projection for a named lifter.
+
+    `engine=shrinkage` is the shipping default. `engine=mixed_effects` is
+    an advanced toggle that currently delegates to shrinkage and stamps
+    meta.engine_d_available=false until the MixedLM wiring lands.
+    """
+    if engine == "mixed_effects":
+        result = athlete_proj_mod.mixed_effects_projection(
+            lifter_name=name, horizon_months=horizon, n_points=n_points,
+        )
+    else:
+        result = athlete_proj_mod.shrinkage_projection(
+            lifter_name=name, horizon_months=horizon, n_points=n_points,
+        )
+    if result is None:
+        return {
+            "found": False,
+            "lifter_name": name,
+            "reason": "no_meets_or_missing_age",
+        }
+    payload = athlete_proj_mod.to_response_dict(result)
+    payload["found"] = True
+    return _clean(payload)
