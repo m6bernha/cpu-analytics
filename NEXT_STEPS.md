@@ -36,9 +36,7 @@ the same day:
   per-chart guard).
 - Issue 12 Render cold-start: DECIDED, stay on free + keepalive.
 - G4 per-chart Recharts guard: SHIPPED via Issue 1 above.
-- G5 disclaimer copy pass: READY to run, no more upstream gates.
-  Blocks only on Matthias's go-ahead because it touches every tab file
-  and changes user-visible copy.
+- G5 disclaimer copy pass: SHIPPED 2026-04-21 (commit `61d010c`).
 - Branch protection for backend pytest: CLOSED 2026-04-21 via Chrome.
 - P0 data-refresh Run #7: VERIFIED green 2026-04-21.
 
@@ -297,9 +295,18 @@ math ships to production.** Until then the tab renders a BETA placeholder.
 
 ---
 
-## P4 -- Transparency / methodology writing (no-code, high-value)
+## P4 -- Transparency / methodology writing -- SHIPPED
 
-Every page needs honest-brokerage disclaimers. Sketch:
+Commit `61d010c` landed 2026-04-21. Every user-facing tab now carries a
+collapsed `<details>` block styled consistently with the existing
+Progression methodology block. Content sketch preserved below for
+reference. One unresolved follow-up: the Athlete Projection BETA tab is
+a placeholder with no chart, so no disclaimer is rendered there yet.
+When the Coach "on pace for Nationals 2027" widget fills that tab,
+attach a methodology block covering the projection assumptions and the
+qualifying-total comparison used by that widget.
+
+Original content sketch (now implemented):
 
 ### Progression tab
 
@@ -495,8 +502,12 @@ below.
 4. **G4 Recharts per-chart guard** — trigger: A+B+C+E all merged, and
    only if user picked the per-chart path in Wave 2. Files: each tab's
    ResponsiveContainer wrapper. Closes Issue 1.
-5. **G5 disclaimer copy pass** — trigger: Wave 3 above complete. Covers P4
-   items. Must be last because it touches every tab file.
+5. **G5 disclaimer copy pass** — SHIPPED 2026-04-21 (commit `61d010c`).
+   Closes P4. Methodology/caveat `<details>` blocks on every tab:
+   Progression expanded, Lifter Lookup top-level + Manual entry form,
+   Compare mode, QT Squeeze. Athlete Projection BETA placeholder is
+   still without a disclaimer; when the Coach widget fills that tab
+   it should get one describing projection assumptions.
 
 ### Rules / lessons captured this session
 - Recharts + display:none: inactive tabs that render ResponsiveContainer with a
