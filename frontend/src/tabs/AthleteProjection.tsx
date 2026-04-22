@@ -7,7 +7,7 @@
 // Methodology lives on the About page (C6). The `<details>` block at the
 // bottom of this tab is the short methodology note + link to About.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Area,
@@ -33,6 +33,10 @@ import {
   type LifterSearchResult,
   type QtStandardRow,
 } from '../lib/api'
+import { useUrlState } from '../lib/useUrlState'
+
+const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
+const QT_ERAS_STATIC = ['pre2025', '2025', '2027'] as const
 
 type QtEra = 'pre2025' | '2025' | '2027'
 
@@ -91,13 +95,87 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 }
 
 export default function AthleteProjection({ isActive }: { isActive: boolean }) {
+  // URL-backed state so the whole projection view (lifter + horizon + lift
+  // + QT overlay) is shareable via a single paste-able link. Keys are
+  // prefixed `ap_` so they cannot collide with the `lifter` key the
+  // Lifter Lookup tab already owns (both tabs stay mounted behind the
+  // display:none pattern, so a shared key would stomp).
+  const [urlState, setUrlState] = useUrlState({
+    ap_lifter: '',
+    ap_horizon: '12',
+    ap_lift: 'total',
+    ap_show_qt: 'false',
+    ap_qt_era: '2027',
+  })
+
+  const horizon = (() => {
+    const n = Number(urlState.ap_horizon)
+    return Number.isFinite(n) && n > 0 ? n : 12
+  })()
+  const liftKey: LiftKey = (LIFT_KEYS_STATIC as readonly string[]).includes(
+    urlState.ap_lift,
+  )
+    ? (urlState.ap_lift as LiftKey)
+    : 'total'
+  const showQt = urlState.ap_show_qt === 'true'
+  const qtEra: QtEra = (QT_ERAS_STATIC as readonly string[]).includes(
+    urlState.ap_qt_era,
+  )
+    ? (urlState.ap_qt_era as QtEra)
+    : '2027'
+
+  const setHorizon = useCallback(
+    (h: number) => setUrlState({ ap_horizon: String(h) }),
+    [setUrlState],
+  )
+  const setLiftKey = useCallback(
+    (l: LiftKey) => setUrlState({ ap_lift: l }),
+    [setUrlState],
+  )
+  const setShowQt = useCallback(
+    (v: boolean) => setUrlState({ ap_show_qt: String(v) }),
+    [setUrlState],
+  )
+  const setQtEra = useCallback(
+    (e: QtEra) => setUrlState({ ap_qt_era: e }),
+    [setUrlState],
+  )
+
+  // Engine toggle is gated off until MixedLM wiring lands (see C5 commit).
+  // Keep the state so the UI stays prewired for the day it comes back.
+  const [engine, setEngine] = useState<AthleteProjectionEngine>('shrinkage')
+
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<LifterSearchResult | null>(null)
-  const [engine, setEngine] = useState<AthleteProjectionEngine>('shrinkage')
-  const [horizon, setHorizon] = useState<number>(12)
-  const [liftKey, setLiftKey] = useState<LiftKey>('total')
-  const [showQt, setShowQt] = useState<boolean>(false)
-  const [qtEra, setQtEra] = useState<QtEra>('2027')
+
+  // URL -> selected bootstrap. When someone pastes a shared link
+  // `?tab=projection&ap_lifter=Matthias%20Bernhard`, the component mounts
+  // with urlState.ap_lifter set but selected=null. Fetch the search-result
+  // row for that name and auto-select so the projection query fires.
+  useEffect(() => {
+    const urlName = urlState.ap_lifter.trim()
+    if (!urlName) {
+      // URL cleared -> clear selection too (back-button, manual edit).
+      if (selected) setSelected(null)
+      return
+    }
+    if (selected?.Name === urlName) return
+    let cancelled = false
+    fetchLifterSearch(urlName, 1)
+      .then((results) => {
+        if (cancelled) return
+        if (results.length > 0) {
+          setSelected(results[0])
+          setQuery(results[0].Name)
+        }
+      })
+      .catch(() => {
+        // Silently ignore; user can retry via the search box.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [urlState.ap_lifter, selected])
 
   const debouncedQuery = useDebouncedValue(query, 300)
 
@@ -123,9 +201,16 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     staleTime: 60 * 60 * 1000,
   })
 
+  const onSelectLifter = (r: LifterSearchResult) => {
+    setSelected(r)
+    setQuery(r.Name)
+    setUrlState({ ap_lifter: r.Name })
+  }
+
   const resetSelection = () => {
     setSelected(null)
     setQuery('')
+    setUrlState({ ap_lifter: '' })
   }
 
   return (
@@ -151,10 +236,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
         setQuery={setQuery}
         searchResults={searchQuery.data ?? []}
         searchIsLoading={searchQuery.isLoading && debouncedQuery.trim().length >= 2}
-        onSelect={(r) => {
-          setSelected(r)
-          setQuery(r.Name)
-        }}
+        onSelect={onSelectLifter}
         onReset={resetSelection}
         engine={engine}
         setEngine={setEngine}
@@ -314,6 +396,7 @@ function SelectorPanel({
                 {selected.LatestEquipment})
               </span>
             </div>
+            <ShareButton />
             <button
               type="button"
               onClick={onReset}
@@ -1154,5 +1237,52 @@ function MethodologyBlock() {
         </p>
       </div>
     </details>
+  )
+}
+
+// ---------- Share button (copies the current URL to the clipboard) ----------
+
+function ShareButton() {
+  const [copied, setCopied] = useState<boolean>(false)
+
+  const onClick = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard API can reject (insecure context, user gesture missing).
+      // Fall back to a selection-based copy via a temporary textarea.
+      const ta = document.createElement('textarea')
+      ta.value = window.location.href
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+      } catch {
+        // Give up silently; the URL is still visible in the address bar.
+      }
+      document.body.removeChild(ta)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Copy shareable link to this projection"
+      className={
+        'px-3 py-2 text-xs rounded border transition-colors ' +
+        (copied
+          ? 'text-emerald-300 border-emerald-800 bg-emerald-950/30'
+          : 'text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800')
+      }
+    >
+      {copied ? 'Copied!' : 'Share'}
+    </button>
   )
 }
