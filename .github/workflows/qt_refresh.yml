@@ -91,9 +91,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TITLE="QT standards updated ($(date -u +%Y-%m-%d))"
-          gh issue create \
-            --title "$TITLE" \
-            --body-file scraper_out/qt_diff_summary.md
+          # GitHub's createIssue GraphQL caps the body at 65_536 chars. On a
+          # first publish (no existing.csv) every scraped row is a diff, so
+          # the raw summary blows through the cap. Truncate to 60 KB and
+          # link to the run for the full detail.
+          BODY=$(mktemp)
+          head -c 60000 scraper_out/qt_diff_summary.md > "$BODY"
+          if [ "$(wc -c < scraper_out/qt_diff_summary.md)" -gt 60000 ]; then
+            printf '\n\n_Truncated to fit the 65 KB issue body limit. See the full summary in workflow run %s._\n' \
+              "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$BODY"
+          fi
+          gh issue create --title "$TITLE" --body-file "$BODY"
 
       - name: Commit history snapshot
         if: steps.scrape.outputs.changed == 'true' && steps.scrape.outputs.snapshot_path != ''
