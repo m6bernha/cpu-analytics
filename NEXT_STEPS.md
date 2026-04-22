@@ -285,31 +285,118 @@ Frontend UX rebuild -- SHIPPED 2026-04-22 (commit `da4fa24`):
   exercise the Provincials path in the live-coverage tests.
 * Total pytest: 207.
 
-**Phase 3+ -- remaining provinces** (IN PROGRESS / AUDIT)
+**Phase 3+ -- remaining provinces** (AUDIT SHIPPED, scrapers NOT STARTED)
 
-Provincial-landscape research 2026-04-22:
+Provincial-landscape audit 2026-04-22 (parallel Claude chat). Treat this
+as the source of truth for scraper scope. Do not re-audit; only open a
+federation site when implementing its scraper.
 
-| Province | Separate Provincial QTs? | Source |
+| Province | Status | Action |
 |---|---|---|
-| Ontario (OPA) | YES -- Excel on Dropbox | SHIPPED above |
-| British Columbia (BCPA) | NO -- explicitly "meet the regional qualifying total" | No scraper needed; UI maps BC Provincials -> CPU Regional |
-| Alberta (APU) | LIKELY YES -- page text says "PROVINCIAL qualifying standards listed below"; site was ECONNREFUSED during first audit | Needs re-audit + scraper |
-| Quebec (FQD) | UNKNOWN -- JS-rendered site, WebFetch returned title only | Needs re-audit |
-| SK, MB, NB, NS, PE, NL | Not yet audited | Needs audit |
+| Ontario (OPA) | Separate QTs, Dropbox xlsx | SHIPPED Phase 2 above |
+| British Columbia (BCPA) | Reuses CPU Regional | Route Provincials view to CPU Western data |
+| Alberta (APU) | Separate QTs, JPG images | Build scraper (OCR) |
+| Saskatchewan (SPA) | Reuses CPU Regional, no provincial QT imposed | Route Provincials view to CPU Western data |
+| Manitoba (MPA) | Separate QTs, PDF | Build scraper |
+| Quebec (FQD) | Separate QTs, JS-rendered table | Build scraper (Playwright) |
+| New Brunswick (NBPL) | No QT, open entry | Hide Provincials or render "no QT required" notice |
+| Nova Scotia (NSPL) | Separate QTs, 0.9 * CPU rounded up to 2.5 kg, Google Sheet | Build scraper (do NOT derive from CPU) |
+| PEI (PEIPLA) | No published standards | Hide Provincials or route to CPU Regional Eastern with notice |
+| Newfoundland (NLPA) | Separate QTs, .docx from 2022 (stale) | Build scraper, flag staleness |
 
-Per-province work is scoped to its own session using the OPA module
-as the template:
+**Scraper targets (5)**
 
-* Audit first: determine format (PDF, Excel, HTML table, image) and
-  whether numbers differ from CPU Regional.
-* If separate: add `data/scrapers/<federation>.py` with the same
-  discover/download/parse shape as `opa.py`, register in
-  `scrape_qt.py` orchestrator, add fixture + tests.
-* If same as CPU Regional: no scraper needed. Add a one-line note to
-  `VALID_PROVINCE` mapping in the docs so the frontend dropdown
-  routes that province's Provincials view to the Regional data.
-* Dispatch as their own sessions so a single provincial site
-  redesign doesn't block the whole pipeline.
+1. **Alberta** -- https://albertapowerlifting.com/?page_id=164
+   * Format: embedded JPGs under `/wp-content/uploads/2024/12/`, named
+     `menclassic_orig`, `womenclassic_orig`, plus equipped + bench-only.
+   * Approach: image OCR (Tesseract or Claude vision at scrape time).
+     JPG -> OCR pipeline is new infrastructure, reuse across any future
+     image-only federation.
+   * Spot checks: Men 83 Open = 525; Women 63 Open = 297.5;
+     Men 83 Master 1 = 450; Women 63 Sub-Junior = 185.
+   * No effective date on page. Last upload Dec 2024.
+
+2. **Manitoba** -- http://manitobapowerlifting.ca/wp-content/uploads/2024/11/MPA-Qual-Stds-2025.pdf
+   * Format: 3-page PDF, footnote legend (green = up from prior year,
+     blue = down). No CPU-comparison text.
+   * Approach: pdfplumber or pypdf text extraction, same shape as
+     `cpu.py`.
+   * Spot checks: Men 83 Open = 517.5; Women 63 Open = 290;
+     Men 83 Master 1 = 420; Women 63 Sub-Junior = 180.
+   * Discovery: file pattern `MPA-Qual-Stds-YYYY.pdf`. Probe
+     `manitobapowerlifting.ca/qualifying-totals/` for anchor text
+     "MPA PROVINCIAL QUALIFYING TOTALS" to catch next year's URL.
+
+3. **Newfoundland** -- https://docs.google.com/document/d/1064rndgGmi9X_Ebf8RgH5dg7OljNmGgQ/edit
+   * Format: .docx via Google Docs export. Created Sep 27 2022,
+     title still says 2022. 8 tables (Classic/Equipped x 3-Lift/Bench
+     x Men/Women).
+   * Approach: export to .docx then python-docx. Log staleness
+     warning if created-at older than 24 months so frontend can
+     surface a badge.
+   * Spot checks: Men 83 Open = 507.5; Women 63 Open = 287.5;
+     Men 83 Master 1 = 427.5; Women 63 Master 2 = 180.
+   * Index: https://www.nlpowerlifting.ca/athletes/qualifying-totals
+
+4. **Quebec** -- https://www.fqd-quebec.com/standards
+   * Format: interactive on-page table, toggles for
+     Dynamophilia/Bench, Classic/Equipped, Provincial/National,
+     Men/Women. 2*2*2*2 = 16 toggle states. No PDF. Static
+     WebFetch returns title only.
+   * Approach: Playwright. Click through toggles or script state
+     changes, read rendered table.
+   * Spot checks (Provincial/Classic): Men 83 Open = 625;
+     Women 63 Open = 345; Men 83 Master 1 = 450; Women 63 Master 1 = 227.5.
+   * Caveat: no effective date, no affiliation disclaimer, no PDF
+     fallback. Deferred last in build order because Playwright is
+     a new runtime dependency for the scraper layer.
+
+5. **Nova Scotia** -- https://docs.google.com/spreadsheets/d/16uX-NiqUiwO_cR75e09-hpj--owzUvEi1WAAmXUgdnw/edit
+   * Format: Google Sheet with tabs "2026 Provincial QTs", "2026
+     Regional QTs", "2027 Provincial QTs", "2027 Regional QTs". No
+     classic/equipped label on tabs; numbers match CPU Unequipped
+     so treat as Classic.
+   * Approach: scrape via gviz JSON export, no API key needed.
+   * Key invariant: do NOT skip this scraper and derive NSPL = 0.9
+     * CPU Regional. NSPL rounds up to 2.5 kg AFTER multiplying, so
+     11 rows deviate by +1.25 kg. Example: Men 59 Open 0.9 * 412.5
+     = 371.25, published = 372.5.
+   * Spot checks: Men 83 Open = 482.5; Women 63 Open = 272.5.
+   * Landing page: https://sites.google.com/view/novascotiapowerlifting/getting-started/qualifying-requirements
+
+**Routing-only targets (3, no scraper)**
+
+* **Saskatchewan**: SPA defers explicitly to CPU Regional. Provincials
+  view for SK should render CPU Western numbers with a tooltip
+  explaining SPA has no separate standard.
+* **New Brunswick**: NBPL provincials are open-entry. Either hide the
+  Provincials dropdown entry for NB or render copy like "NBPL
+  provincials are open-entry. No qualifying total is required." Do
+  NOT fall back to CPU Regional Eastern here.
+* **PEI**: no published standards. Same behaviour as NB: hide or
+  surface a notice. Facebook and the .ca site have no QT page.
+
+**Build order recommendation**
+
+1. Alberta. Largest missing province by membership. Ships first so
+   the JPG + OCR pipeline is ready for future image-only federations.
+2. Manitoba. Single dated PDF, straightforward extraction.
+3. Newfoundland. .docx parsing is trivial; file is stale so add a
+   staleness warning at scrape time.
+4. Quebec. Requires Playwright. Defer until non-JS scrapers ship so
+   the runtime dependency stays isolated.
+5. Nova Scotia. Public sheet, gviz-scrapable. Low effort.
+
+Each new scraper is its own session using `opa.py` as the template:
+add `data/scrapers/<federation>.py`, register in `scrape_qt.py`, add
+fixture PDFs/xlsx/images + `.expected.csv`, extend tests. Frontend
+Province dropdown updates automatically as the backend `provinces`
+filter list picks up new rows.
+
+Routing-only work (SK, NB, PE) is a single frontend session after any
+one scraper ships: extend the Province dropdown to surface a per-
+province mode (Scrape QT / Use Regional / Open-entry notice) and wire
+the coverage call accordingly.
 
 **Estimated effort**
 
@@ -317,9 +404,13 @@ as the template:
 * Phase 1c: SHIPPED (1 session: backend + frontend MVP).
 * UX rebuild: SHIPPED (folded into same session as OPA).
 * Phase 2 (OPA): SHIPPED (1 session).
-* Phase 3+ audit: 1 session to audit all 8 remaining sites and
-  produce a structured report. Each "yes, separate" outcome becomes
-  its own build session after that.
+* Phase 3 audit: SHIPPED 2026-04-22 (parallel chat, read-only).
+* Phase 3a Alberta (scraper + OCR infra): ~1 session.
+* Phase 3b Manitoba: ~0.5 session.
+* Phase 3c Newfoundland: ~0.5 session.
+* Phase 3d Quebec (Playwright infra): ~1.5 sessions.
+* Phase 3e Nova Scotia: ~0.5 session.
+* Phase 3f Routing (SK / NB / PE frontend): ~0.5 session.
 
 **Operational notes**
 
