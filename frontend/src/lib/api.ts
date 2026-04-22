@@ -405,6 +405,12 @@ export type AthleteProjectionPoint = {
   upper_kg: number
 }
 
+export type AthleteProjectionLiftHistoryPoint = {
+  date: string
+  days_from_first: number
+  kg: number
+}
+
 export type AthleteProjectionLift = {
   lift: 'squat' | 'bench' | 'deadlift'
   n_meets: number
@@ -417,6 +423,7 @@ export type AthleteProjectionLift = {
   sigma_resid_kg: number
   last_meet_day: number | null
   projected_points: AthleteProjectionPoint[]
+  history?: AthleteProjectionLiftHistoryPoint[]
 }
 
 export type AthleteProjectionHistoryPoint = {

@@ -591,13 +591,25 @@ function buildChartData(
   } else {
     const lift = data.lifts?.[liftKey]
     if (!lift) return rows
-    // Reuse the SBD history's days_from_first as x-axis for per-lift chart.
-    // Per-lift actual values come from the response's total_history when the
-    // meet contested that lift; we don't have per-lift history series in the
-    // response, so use the history array structure with the lift's current
-    // level as the last point.
-    // For v1 we plot: last_meet marker + 6 projected points with PI band.
-    if (lift.current_level != null && lift.last_meet_day != null) {
+    // Per-lift history dots come from the response's `lift.history` (one
+    // entry per meet that contested this lift). The x-axis is days_from_first
+    // relative to the lifter's first meet of this lift, matching the scale
+    // used by projected_points.
+    const liftHistory = lift.history ?? []
+    if (liftHistory.length > 0) {
+      for (const h of liftHistory) {
+        rows.push({ days: h.days_from_first, history: h.kg })
+      }
+      // Seed the projection line at the last historical point so the chart
+      // joins history to projection without a visual gap.
+      const last = liftHistory[liftHistory.length - 1]
+      rows.push({
+        days: last.days_from_first,
+        projected: last.kg,
+        piBand: [last.kg, last.kg],
+      })
+    } else if (lift.current_level != null && lift.last_meet_day != null) {
+      // Fallback for responses that predate the history field.
       rows.push({
         days: lift.last_meet_day,
         history: lift.current_level,

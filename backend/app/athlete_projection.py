@@ -95,6 +95,11 @@ class LiftProjection:
     t_mean_days: float | None
     last_meet_day: float | None         # days from first meet for last contest
     projected_points: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    # Actual historical meets that contested this lift. Each entry is
+    # {"date": "YYYY-MM-DD", "days_from_first": float, "kg": float}. Origin
+    # is the lifter's first meet that contested this lift, matching the
+    # days_from_first scale used by projected_points.
+    history: tuple[dict[str, Any], ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -842,6 +847,17 @@ def _project_single_lift(
     days = ((dates - first_date) / np.timedelta64(1, "D")).astype(float)
     last_meet_day = float(days[-1])
 
+    # Build the per-lift history series. Origin is this lift's first meet,
+    # matching the days_from_first scale used by projected_points so the
+    # frontend can plot both on the same x-axis without further offset.
+    history_rows: list[dict[str, Any]] = []
+    for idx in range(len(sub)):
+        history_rows.append({
+            "date": str(sub["Date"].iloc[idx])[:10],
+            "days_from_first": round(float(days[idx]), 1),
+            "kg": round(float(values[idx]), 1),
+        })
+
     # Personal slope (Huber, with polyfit fallback).
     slope_personal: float | None = None
     sigma_personal: float | None = None
@@ -981,6 +997,7 @@ def _project_single_lift(
         t_mean_days=t_mean_days,
         last_meet_day=last_meet_day,
         projected_points=tuple(projected),
+        history=tuple(history_rows),
     )
 
 
@@ -1165,6 +1182,7 @@ def to_response_dict(result: AthleteProjectionResult) -> dict[str, Any]:
                 "sigma_resid_kg": lp.sigma_resid,
                 "last_meet_day": lp.last_meet_day,
                 "projected_points": list(lp.projected_points),
+                "history": list(lp.history),
             }
             for key, lp in result.lifts.items()
         },
