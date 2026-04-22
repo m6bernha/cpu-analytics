@@ -67,6 +67,14 @@ export default function QTSqueeze({ isActive: _isActive }: { isActive: boolean }
               parquet preprocessing step. This site is not affiliated with
               the CPU or IPF.
             </p>
+            <p>
+              <a
+                href="?tab=about"
+                className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200"
+              >
+                See the About tab for full methodology, references, and disclaimers.
+              </a>
+            </p>
           </div>
         </details>
       </div>
