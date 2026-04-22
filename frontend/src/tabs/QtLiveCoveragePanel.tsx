@@ -36,12 +36,50 @@ function fmtFetchedAt(iso: string | null | undefined): string {
 type SexT = 'M' | 'F'
 type LevelT = 'Nationals' | 'Regionals' | 'Provincials'
 
-// Provinces that publish their own provincial QTs distinct from CPU
-// regionals. Enabled in the Province dropdown when Level=Provincials.
-// Other provinces are served via the CPU Regional view (not this
-// panel); this list grows as we confirm more provincial federations
-// publish separate numbers.
-const PROVINCES_WITH_OWN_QT = ['Ontario'] as const
+type ProvinceMode =
+  // Federation publishes its own provincial QTs; scraper emits rows
+  // under qt_current with level=Provincials and province=<name>.
+  | 'scraped'
+  // Federation explicitly defers to CPU Regional standards. Panel
+  // shows the CPU Regional Western/Eastern table with a banner.
+  | 'cpu_regional'
+  // Federation has no published QT. Panel shows an open-entry notice
+  // and makes no backend call.
+  | 'open_entry'
+
+type ProvinceConfig = {
+  name: string
+  mode: ProvinceMode
+  // For mode='cpu_regional', which CPU region to surface.
+  cpuRegion?: 'Western/Central' | 'Eastern'
+  // Short human-readable hint for the notice/banner.
+  note?: string
+}
+
+// Authoritative catalogue of all 10 Canadian provinces + how their
+// Provincials view resolves. Rolls forward as provincial federations
+// start publishing separate QTs -- flip a province from cpu_regional
+// to scraped and add the scraper module.
+const PROVINCE_CATALOGUE: ProvinceConfig[] = [
+  { name: 'British Columbia', mode: 'cpu_regional', cpuRegion: 'Western/Central',
+    note: 'BCPA defers to CPU Regional Western standards.' },
+  { name: 'Alberta', mode: 'scraped' },
+  { name: 'Saskatchewan', mode: 'cpu_regional', cpuRegion: 'Western/Central',
+    note: 'SPA does not impose a provincial QT; uses CPU Regional Western.' },
+  { name: 'Manitoba', mode: 'scraped' },
+  { name: 'Ontario', mode: 'scraped' },
+  { name: 'Quebec', mode: 'scraped' },
+  { name: 'New Brunswick', mode: 'open_entry',
+    note: 'NBPL provincial meets are open-entry. No qualifying total is required.' },
+  { name: 'Nova Scotia', mode: 'scraped' },
+  { name: 'Prince Edward Island', mode: 'open_entry',
+    note: 'PEIPLA does not publish a provincial qualifying total.' },
+  { name: 'Newfoundland and Labrador', mode: 'scraped' },
+]
+
+const PROVINCE_BY_NAME = Object.fromEntries(
+  PROVINCE_CATALOGUE.map((p) => [p.name, p]),
+) as Record<string, ProvinceConfig>
 
 export default function QtLiveCoveragePanel() {
   const [sex, setSex] = useState<SexT>('M')
@@ -61,17 +99,39 @@ export default function QtLiveCoveragePanel() {
   const regionApplies = level === 'Regionals' && effectiveYear === 2027
   const provinceApplies = level === 'Provincials'
 
-  const coverageParams = useMemo(
-    () => ({
+  // Resolve the selected province through the routing catalogue. For
+  // 'cpu_regional' provinces we actually call the Regionals endpoint
+  // under the hood and keep the user-visible Level display as
+  // Provincials. For 'open_entry' we skip the backend call.
+  const provinceConfig: ProvinceConfig | undefined =
+    provinceApplies && province ? PROVINCE_BY_NAME[province] : undefined
+  const routeViaCpuRegional =
+    provinceConfig?.mode === 'cpu_regional'
+  const routeIsOpenEntry = provinceConfig?.mode === 'open_entry'
+
+  const coverageParams = useMemo(() => {
+    if (provinceApplies && routeViaCpuRegional && provinceConfig?.cpuRegion) {
+      return {
+        sex,
+        level: 'Regionals' as LevelT,
+        effective_year: effectiveYear,
+        division,
+        region: provinceConfig.cpuRegion,
+        province: null,
+      }
+    }
+    return {
       sex,
       level,
       effective_year: effectiveYear,
       division,
       region: regionApplies && region ? region : null,
       province: provinceApplies && province ? province : null,
-    }),
-    [sex, level, effectiveYear, division, region, province, regionApplies, provinceApplies],
-  )
+    }
+  }, [
+    sex, level, effectiveYear, division, region, province,
+    regionApplies, provinceApplies, routeViaCpuRegional, provinceConfig,
+  ])
 
   const coverageQuery = useQuery<QtLiveCoverageResponse>({
     queryKey: ['qt-live-coverage', coverageParams],
@@ -81,7 +141,8 @@ export default function QtLiveCoveragePanel() {
     enabled:
       filtersQuery.data?.live_data_available === true &&
       (!regionApplies || Boolean(region)) &&
-      (!provinceApplies || Boolean(province)),
+      (!provinceApplies || Boolean(province)) &&
+      !routeIsOpenEntry,
   })
 
   if (filtersQuery.isLoading) return <LoadingSkeleton lines={2} />
@@ -203,10 +264,8 @@ export default function QtLiveCoveragePanel() {
               value={province}
               onChange={(e) => setProvince(e.target.value)}
             >
-              {(filters.provinces && filters.provinces.length > 0
-                ? filters.provinces
-                : PROVINCES_WITH_OWN_QT).map((p) => (
-                <option key={p} value={p}>{p}</option>
+              {PROVINCE_CATALOGUE.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
               ))}
             </select>
           </label>
@@ -214,14 +273,32 @@ export default function QtLiveCoveragePanel() {
       </div>
 
       <div className="mt-4">
-        {coverageQuery.isLoading && <LoadingSkeleton lines={3} />}
-        {coverageQuery.isError && (
+        {routeIsOpenEntry && provinceConfig && (
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 text-sm">
+            <p className="text-zinc-300 font-medium mb-1">
+              {provinceConfig.name} provincials are open entry
+            </p>
+            <p className="text-zinc-500 text-xs leading-relaxed">
+              {provinceConfig.note}
+            </p>
+          </div>
+        )}
+        {routeViaCpuRegional && provinceConfig && (
+          <p className="text-xs text-amber-400/80 mb-2">
+            {provinceConfig.note} Showing CPU Regional {provinceConfig.cpuRegion}
+            {' '}coverage below.
+          </p>
+        )}
+        {!routeIsOpenEntry && coverageQuery.isLoading && (
+          <LoadingSkeleton lines={3} />
+        )}
+        {!routeIsOpenEntry && coverageQuery.isError && (
           <QueryErrorCard
             error={coverageQuery.error}
             onRetry={() => coverageQuery.refetch()}
           />
         )}
-        {!coverageQuery.isLoading && !coverageQuery.isError && (
+        {!routeIsOpenEntry && !coverageQuery.isLoading && !coverageQuery.isError && (
           <>
             {regionApplies && !region && (
               <p className="text-xs text-amber-400/80 mb-2">
@@ -233,12 +310,12 @@ export default function QtLiveCoveragePanel() {
                 Pick a province to see Provincial coverage.
               </p>
             )}
-            {provinceApplies && province && rows.length === 0 && (
+            {provinceApplies && province && !routeViaCpuRegional
+              && rows.length === 0 && (
               <p className="text-xs text-amber-400/80 mb-2">
-                No provincial QT data yet for {province}. Only Ontario (OPA)
-                publishes separate provincial numbers so far; other provinces
-                reuse the CPU Regional standards (switch Level to Regionals
-                to see those).
+                No provincial QT data yet for {province}. Check the weekly
+                qt_refresh workflow status; this province may still be in
+                the scraper backlog.
               </p>
             )}
             {rows.length === 0 && !provinceApplies ? (
