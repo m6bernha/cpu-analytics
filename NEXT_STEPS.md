@@ -739,6 +739,130 @@ Candidate additions:
 
 ---
 
+## P7 -- Back burner / big-bet ideas (park until Matthias is present)
+
+These are multi-session features with significant scope and design
+decisions that should only be picked up when Matthias is present to
+steer. Captured here so they are not lost.
+
+### ML-based projection engine (replaces or augments Engine C/D)
+
+Pitch: approach projections as a supervised ML problem instead of a
+statistical shrinkage model. Train on the full historical parquet with
+an 80/20 split where the most recent competitions are the held-out
+validation set. Features would be the same variables Engine C uses
+(personal slope, cohort slope, GLP bracket, age division, KM survival,
+meets-contested) plus a larger feature set the ML model can exploit
+(recent-form windows, rest intervals, bodyweight trajectory, event
+participation pattern).
+
+Decisions needed before starting:
+- Model family: gradient-boosted trees (XGBoost/LightGBM) vs deep
+  learning vs simple regularised regression. GBTs are the natural
+  default -- tabular data, non-linear, explainable via SHAP, trains
+  fast enough to rerun per data refresh.
+- Target variable: does the model predict Total at horizon, or the
+  delta from current level? Delta is usually easier to fit and reads
+  like Engine C's output.
+- Validation strategy: most-recent-competitions as holdout is a
+  time-aware split. Must confirm there is no leakage (a lifter's Dec
+  2024 meet cannot be used to predict their Jun 2024 meet).
+- Serving: bake the model artifact into the backend at preprocess
+  time (like the cohort cells), or move inference to a separate
+  service. The 27 s precompute cost is already on the edge; a
+  fitted model loaded from disk is cheap.
+- How to communicate uncertainty. MAPE is the current metric;
+  ML-model PIs typically come from quantile regression or conformal
+  prediction.
+
+Data scope for this to meaningfully beat Engine C: must expand beyond
+Canada+IPF to North America plus Europe (same expansion as the Wrapped
+feature below). The Canadian pool alone is too small for a model that
+can learn subtle plateau patterns.
+
+Ship criterion: ML engine beats Engine C by >2 pp MAPE at the 12 mo
+horizon on held-out competitions. Otherwise stay on Engine C.
+
+### Spotify-Wrapped-for-lifters (viral career retrospective)
+
+Pitch: a shareable year-end (or career-end) summary card for each
+lifter, designed to promote organic sharing among the powerlifting
+community. Does not add analytical functionality -- it is a
+presentation layer on data the site already has. Goal is laymen-level
+virality, the kind that gets posted to Instagram stories.
+
+Card contents (stacked slides, single-page layout):
+- Total kilos lifted across a career (sum of every meet's Total).
+- Meet count and competition cadence.
+- Best-ever lift at S, B, D with the meet + date.
+- Weight-class migrations with a timeline chip for each transition.
+- Career milestones: first 300, first 400, first Nationals-qualifying
+  total, first Regionals, first meet, PR streaks.
+- Year-over-year progression curve.
+- Age-division transitions (Sub-Jr -> Jr -> Open -> M1 ...).
+- A top-of-cohort percentile summary for their most recent year.
+- Shareable image export (PNG) for Instagram-story aspect ratios.
+
+Decisions needed before starting:
+- Does the share export render server-side (Playwright screenshot of
+  a dedicated `/wrapped/<name>` route) or client-side (html2canvas
+  over the visible slide)? Server-side is more robust but adds a
+  build dependency; client-side is faster to ship.
+- Is this a standalone tab or a drawer/modal inside Lifter Lookup?
+  Probably a standalone tab so the share URL is short.
+- Privacy: the parquet already contains names; no PII beyond what
+  OpenPowerlifting publishes. Still worth a note that anyone can
+  generate a card for any public lifter.
+- Evergreen vs yearly cadence. Spotify Wrapped is annual; a lifter
+  retrospective is probably more useful on-demand (anyone can view
+  their own card any time) with optional "year in review" framing
+  in December/January.
+
+Data scope: must expand beyond Canada+IPF. A wrapped card only has
+shareable value if North American and European lifters are covered.
+The current `scope.py` hardcode to `Country=Canada AND
+ParentFederation=IPF` would need to become a soft filter that the
+Wrapped feature bypasses (or the preprocess pipeline adds a second
+parquet with the wider scope). This expansion is itself a multi-session
+decision -- 5.4k Canada+IPF lifters vs ~500k global lifters changes
+memory, cold-start, and the feel of every other tab.
+
+Decisions needed before starting:
+- Which federations to include. IPF globally, or wider (USAPL, USPA,
+  GPC, WPC, federation-neutral)? Probably IPF globally for Wrapped v1,
+  expand later.
+- Storage cost. 500k lifters x average 3 meets is ~1.5M rows; still
+  fits comfortably in parquet but push Render's 512 MB harder than
+  the current 5.4k.
+- Scope toggle semantics. Does `Progression` tab stay Canada-only by
+  default, or does the expansion become the new default? Affects every
+  cohort computation.
+
+### Scope expansion to North America + Europe
+
+Prerequisite for both ideas above. Currently
+`backend/app/scope.py` locks the parquet view to
+`Country=Canada AND ParentFederation=IPF`. The expansion options:
+
+1. Widen the preprocess filter to include all IPF-sanctioned meets
+   globally (keeps a single parquet + single scope assumption).
+2. Keep the Canada+IPF default for the existing tabs and publish a
+   second `openipf_global.parquet` for Wrapped + ML-projection
+   features. Per-tab scope toggle.
+3. Make scope a first-class runtime filter on every query, with a
+   user-facing toggle. Most flexible, highest refactor cost.
+
+Decisions needed before starting:
+- How many lifters / rows are acceptable at the Render 512 MB ceiling.
+  Global IPF is ~500k lifters, which is ~100x current.
+- Which tabs see the wider data by default. CPU / Canadian scope is
+  the current branding ("cpu-analytics"); widening the default changes
+  the product identity.
+- Whether to rename the product. "cpu-analytics" ties the project to
+  CPU specifically; a wider scope probably needs a different name.
+
+---
+
 ## Chrome audit 2026-04-17 -- backlog
 
 External exploration of the live site + Vercel + Render + GitHub surfaced 15
