@@ -42,6 +42,7 @@ from data.scrapers import opa as opa_scraper
 from data.scrapers import mpa as mpa_scraper
 from data.scrapers import nspl as nspl_scraper
 from data.scrapers import nlpa as nlpa_scraper
+from data.scrapers import apu as apu_scraper
 
 log = logging.getLogger(__name__)
 
@@ -251,6 +252,26 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     except Exception as e:
         log.warning(
             "NLPA scrape failed (%s); continuing without NL", e,
+        )
+
+    # APU provincial scrape (Alberta). Hash-matched manual transcription;
+    # UntranscribedJpgError means APU republished and a human needs to
+    # re-transcribe. Either way, other provinces still publish.
+    try:
+        apu_rows = apu_scraper.scrape_with_download(tmpdir)
+        for r in apu_rows:
+            r["source_pdf"] = apu_scraper.APU_LANDING_URL
+            r["fetched_at"] = fetched_at
+        all_rows.extend(apu_rows)
+        log.info("APU: %d provincial rows", len(apu_rows))
+    except apu_scraper.UntranscribedJpgError as e:
+        log.warning(
+            "APU published new JPGs; re-transcribe data/scrapers/"
+            "apu_transcribed/ to unblock Alberta (%s)", e,
+        )
+    except Exception as e:
+        log.warning(
+            "APU scrape failed (%s); continuing without Alberta", e,
         )
 
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))

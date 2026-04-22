@@ -577,6 +577,76 @@ def test_nlpa_staleness_warning_is_logged(caplog) -> None:
     )
 
 
+# -------------------------------------------------------------------------
+# APU provincial scraper tests (JPG images + hash-matched transcription)
+# -------------------------------------------------------------------------
+
+from data.scrapers import apu as apu_scraper  # noqa: E402
+
+
+def test_apu_transcribed_directory_present() -> None:
+    assert apu_scraper.TRANSCRIBED_DIR.exists(), (
+        "data/scrapers/apu_transcribed missing"
+    )
+    releases = [
+        d for d in apu_scraper.TRANSCRIBED_DIR.iterdir()
+        if d.is_dir() and d.name.isdigit()
+    ]
+    assert releases, "no release subdirs under apu_transcribed"
+
+
+def test_apu_latest_transcribed_rows_match_audit_values() -> None:
+    rows = apu_scraper.load_latest_transcribed()
+    assert rows, "load_latest_transcribed() returned no rows"
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in rows
+    }
+    assert by_key[("M", "Open", "83")] == 525.0
+    assert by_key[("F", "Open", "63")] == 297.5
+    assert by_key[("M", "Master 1", "83")] == 450.0
+    assert by_key[("F", "Sub-Junior", "63")] == 185.0
+
+
+def test_apu_rows_pass_row_validation() -> None:
+    for row in apu_scraper.load_latest_transcribed():
+        base.validate_row(row)
+
+
+def test_apu_province_and_level_locked() -> None:
+    rows = apu_scraper.load_latest_transcribed()
+    assert rows, "expected non-empty APU rows"
+    for r in rows:
+        assert r["province"] == "Alberta"
+        assert r["level"] == "Provincials"
+        assert r["region"] is None
+        assert r["equipment"] == "Classic"
+        assert r["event"] == "SBD"
+
+
+def test_apu_rows_include_expected_cardinality() -> None:
+    """Men table has 58 non-blank cells (9 classes x 7 divisions minus
+    the 4 blank Master cells at 53kg plus 1 blank Open at 53 kg = 58).
+    Women table is the same shape. Total: 116 rows expected."""
+    rows = apu_scraper.load_latest_transcribed()
+    assert len(rows) == 116, f"expected 116 Classic SBD rows, got {len(rows)}"
+
+
+def test_apu_source_hashes_line_up_with_live_sample_format() -> None:
+    """Sanity check on the committed source_hashes.csv format so a later
+    hand edit that drops a row fails loudly instead of silently skipping
+    the hash check."""
+    for release_dir in apu_scraper.TRANSCRIBED_DIR.iterdir():
+        if not release_dir.is_dir() or not release_dir.name.isdigit():
+            continue
+        hashes = apu_scraper._load_source_hashes(release_dir)
+        assert hashes, f"{release_dir} has empty source_hashes.csv"
+        # Every hash must be a 64-char hex string.
+        for name, h in hashes.items():
+            assert len(h) == 64 and all(c in "0123456789abcdef" for c in h), (
+                f"bad hash for {name} in {release_dir}: {h!r}"
+            )
+
+
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:
     fixture_sources = [
         {"url": f"fixture://{p.name}", "label": p.stem, "landing": "fixture"}
