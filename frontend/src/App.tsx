@@ -4,6 +4,7 @@
 // links are shareable. Tabs are kept mounted (display: none for inactive
 // ones) so local state survives switches.
 
+import About from './tabs/About'
 import AthleteProjection from './tabs/AthleteProjection'
 import Progression from './tabs/Progression'
 import QTSqueeze from './tabs/QTSqueeze'
@@ -11,19 +12,20 @@ import LifterLookup from './tabs/LifterLookup'
 import { ErrorBoundary } from './lib/ErrorBoundary'
 import { useUrlState } from './lib/useUrlState'
 
-type TabKey = 'progression' | 'projection' | 'lookup' | 'qt'
+type TabKey = 'progression' | 'projection' | 'lookup' | 'qt' | 'about'
 
 // Tab order: most-used analytics first, Projection as the new BETA feature,
-// Lifter Lookup for individual use, QT Squeeze last (it's the specialized
-// "am I qualifying" view most users visit occasionally).
+// Lifter Lookup for individual use, QT Squeeze last. About sits at the end
+// as a reference page for methodology and disclaimers.
 const TABS: { key: TabKey; label: string; beta?: boolean }[] = [
   { key: 'progression', label: 'Progression' },
   { key: 'projection', label: 'Athlete Projection', beta: true },
   { key: 'lookup', label: 'Lifter Lookup' },
   { key: 'qt', label: 'QT Squeeze' },
+  { key: 'about', label: 'About' },
 ]
 
-const VALID_TABS: TabKey[] = ['progression', 'projection', 'lookup', 'qt']
+const VALID_TABS: TabKey[] = ['progression', 'projection', 'lookup', 'qt', 'about']
 
 export default function App() {
   const [url, setUrl] = useUrlState({ tab: 'progression' as string })
@@ -93,6 +95,11 @@ export default function App() {
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
           <ErrorBoundary label="QT Squeeze">
             <QTSqueeze isActive={tab === 'qt'} />
+          </ErrorBoundary>
+        </div>
+        <div style={{ display: tab === 'about' ? undefined : 'none' }}>
+          <ErrorBoundary label="About">
+            <About isActive={tab === 'about'} />
           </ErrorBoundary>
         </div>
       </main>
