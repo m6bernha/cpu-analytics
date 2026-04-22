@@ -238,13 +238,49 @@ export default function QTSqueeze({ isActive }: { isActive: boolean }) {
         </p>
         <details className="mt-2 max-w-3xl">
           <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
-            Note on denominator
+            Methodology and caveats
           </summary>
-          <p className="text-zinc-500 text-xs mt-1">
-            Open here means Division='Open' in OpenIPF. Earlier versions of this
-            analysis mixed Juniors and Masters into the denominator and produced
-            inflated coverage. Those numbers are superseded by what you see here.
-          </p>
+          <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+            <p>
+              <span className="text-zinc-400 font-medium">Open denominator:</span> Open
+              here means Division='Open' in OpenIPF. Earlier versions of this analysis
+              mixed Juniors and Masters into the denominator and produced inflated
+              coverage numbers. Those older numbers are superseded by what you see here.
+              Use the Age division dropdown to see coverage for non-Open divisions.
+            </p>
+            <p>
+              <span className="text-zinc-400 font-medium">24-month windows:</span> For
+              the 2025 and 2027 columns, "In 24m to Nats" counts meets where the lifter
+              hit the qualifying total within the 24-month window that ends on March 1
+              of the standard's year (the CPU Nationals qualifying cutoff). A lifter who
+              hit the 2027 QT in March 2024 is in the 2027 window. A lifter who hit it
+              in February 2025 is NOT, because February 2025 is outside a window ending
+              March 2027 minus 24 months.
+            </p>
+            <p>
+              <span className="text-zinc-400 font-medium">Per-lifter, not per-meet:</span>{' '}
+              Coverage is computed on the lifter's best qualifying total inside the
+              window, not on individual meet results. One lifter who hits the standard
+              three times in a window counts once in the numerator. A lifter who has
+              never hit the standard counts once in the denominator and zero in the
+              numerator.
+            </p>
+            <p>
+              <span className="text-zinc-400 font-medium">Age division data:</span>{' '}
+              Non-Open divisions (Sub-Junior, Junior, Master 1-4) currently display using
+              the Open qualifying totals as a placeholder until the per-division CSV
+              from powerlifting.ca is transcribed into the dataset. An amber banner
+              appears at the top of the table when a non-Open division is selected.
+              Treat those numbers as directionally correct but not authoritative against
+              the published per-division standards.
+            </p>
+            <p>
+              <span className="text-zinc-400 font-medium">Scope:</span> Canadian lifters
+              in IPF-sanctioned meets only. Non-IPF federations (CPF, WPC, GPC) are
+              excluded at the parquet level. This site is not affiliated with the CPU
+              or IPF.
+            </p>
+          </div>
         </details>
       </div>
 

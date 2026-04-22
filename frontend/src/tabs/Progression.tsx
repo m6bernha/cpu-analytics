@@ -616,6 +616,28 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                   R-squared measures how well the line fits the averaged points, not
                   individual lifter trajectories.
                 </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Division filter:</span> CPU
+                  age categories use canonical labels (Open, Sub-Junior, Junior,
+                  Master 1-4). The backend accepts common historical variants via an alias
+                  map, but federation-specific spelling drift in OpenPowerlifting may miss
+                  a small number of lifters whose division label does not normalize
+                  cleanly.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Age column vs Division:</span>{' '}
+                  The numeric Age column from OpenIPF is roughly 70% NULL on Canadian
+                  meets, so filtering by Age directly would silently exclude most of the
+                  dataset. Division (CPU age category) is the primary age mechanism here
+                  because it is populated for every meet. Division is also what the CPU
+                  qualifying totals are defined against.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Scope:</span> Canadian lifters
+                  in IPF-sanctioned meets only. Non-Canadian meets a lifter has competed
+                  in, and non-IPF federations (CPF, WPC, GPC, etc.), are excluded at the
+                  parquet level. This site is not affiliated with the CPU or IPF.
+                </p>
               </div>
             </details>
           </>

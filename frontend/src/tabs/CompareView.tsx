@@ -722,6 +722,51 @@ export default function CompareView({
               )}
             </div>
 
+            <details className="mb-2 max-w-2xl">
+              <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+                Methodology and caveats
+              </summary>
+              <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+                <p>
+                  <span className="text-zinc-400 font-medium">X-axis anchoring:</span>{' '}
+                  Each lifter's curve starts at month 0, defined as their own first
+                  full-power (SBD) meet in the dataset. This means you are comparing
+                  progression rates, not calendar dates. A lifter who debuted in 2018 and
+                  a lifter who debuted in 2024 will overlap on the same x-axis if their
+                  careers are the same length.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Career length mismatch:</span>{' '}
+                  Comparing a 10-year career against a 1-year career on a shared x-axis
+                  compresses the shorter career near the origin and is visually
+                  misleading. The x-axis range selector above (6mo / 1y / 2y / 5y / All)
+                  lets you zoom to a common window. An amber hint appears when career
+                  lengths differ by 4x or more.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Tooltip resolution:</span>{' '}
+                  Hover values show each lifter's closest actual meet within +/- 3 months
+                  of the hover position. Lifters without a meet near that position drop
+                  out of the tooltip rather than showing an interpolated value. Nothing
+                  between two meets is made up.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">QT reference lines:</span>{' '}
+                  The optional QT lines use a single weight class picked from the
+                  dropdown above. Lifters in the comparison who compete in a different
+                  class will read those lines as informational only, not as their own
+                  qualifying threshold.
+                </p>
+                <p>
+                  <span className="text-zinc-400 font-medium">Summary cards:</span>{' '}
+                  Best total, rate kg/month, meet count, first-meet date, class migration
+                  count, and QT status above the chart are computed per lifter across
+                  their full SBD history in the dataset, not restricted to the x-axis
+                  range. They reflect the lifter's actual shape, not the chart window.
+                </p>
+              </div>
+            </details>
+
             <div className="h-80 md:h-[480px] bg-zinc-900 rounded border border-zinc-800 p-2">
               {isActive && (
               <ResponsiveContainer width="100%" height="100%">

@@ -129,10 +129,43 @@ function ManualEntryForm({
         Enter your meets below if you're not in the OpenIPF dataset, or to project a
         hypothetical trajectory.
       </p>
-      <p className="text-zinc-500 text-xs mb-4">
+      <p className="text-zinc-500 text-xs mb-2">
         Enter a total on its own, or fill all three lifts (squat, bench, deadlift)
         to populate the per-lift chart. If you enter both, they must match.
       </p>
+
+      <details className="mb-4 max-w-2xl">
+        <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+          Methodology and caveats
+        </summary>
+        <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+          <p>
+            <span className="text-zinc-400 font-medium">Personal-only projection:</span>{' '}
+            The trajectory and projection shown below come solely from the meets you
+            enter in this form. They do NOT blend in any cohort average. If you enter
+            fewer than 5 meets, the projection will be very noisy and should not be
+            trusted as a forecast.
+          </p>
+          <p>
+            <span className="text-zinc-400 font-medium">Linear fit only:</span> The
+            extrapolation line is ordinary linear regression through your SBD meets.
+            Breakthroughs, plateaus, injuries, and comeback arcs all flatten into a
+            single slope. Use the output as a rough baseline, not a prediction.
+          </p>
+          <p>
+            <span className="text-zinc-400 font-medium">Not persisted:</span> Manually
+            entered meets stay in your browser session only. Nothing is saved server
+            side, nothing is shared with other users, nothing is merged into the
+            OpenPowerlifting dataset. Close the tab and the entries are gone.
+          </p>
+          <p>
+            <span className="text-zinc-400 font-medium">QT reference lines:</span>{' '}
+            The dashed horizontal lines on the chart use CPU qualifying totals for the
+            weight class of your most recent entry. Switching your entered weight class
+            across meets will redraw them against the latest one.
+          </p>
+        </div>
+      </details>
 
       <div className="mb-3">
         <label className="text-zinc-300 text-xs uppercase tracking-wide block mb-1">Sex</label>
@@ -522,13 +555,57 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
   return (
     <div>
       <div className="mb-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
-        <div>
+        <div className="max-w-2xl">
           <h2 className="text-zinc-100 text-lg font-semibold">Lifter lookup</h2>
           <p className="text-zinc-500 text-sm">
             Search any Canadian lifter in the CPU/IPF dataset, or enter your meets manually
             to project a trajectory. Lifters who share the same name in the OpenPowerlifting
             database may show merged histories.
           </p>
+          <details className="mt-2">
+            <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+              Methodology and caveats
+            </summary>
+            <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+              <p>
+                <span className="text-zinc-400 font-medium">Scope:</span> All trends,
+                projections, and percentile ranks on this page are computed against Canadian
+                IPF-affiliated meet data only. Meets a lifter has competed in outside Canada
+                or outside IPF-sanctioned federations are NOT reflected. If a lifter looks
+                weaker here than you expect, check whether most of their meets were
+                non-IPF.
+              </p>
+              <p>
+                <span className="text-zinc-400 font-medium">QT reference lines:</span> The
+                dashed horizontal lines on the trajectory chart are CPU qualifying totals
+                specifically (Regionals and Nationals, 2025 and 2027 standards). Other
+                federations use different standards. The line set shown depends on the
+                lifter's most recent weight class.
+              </p>
+              <p>
+                <span className="text-zinc-400 font-medium">Name collisions:</span> Lifters
+                sharing the same name in OpenPowerlifting may appear as a single merged
+                history. The dataset has no unique person identifier, so disambiguation is
+                not possible here. If results look off, cross-reference meet locations and
+                dates against your own records.
+              </p>
+              <p>
+                <span className="text-zinc-400 font-medium">Projection math:</span> The
+                dashed extrapolation line is ordinary linear regression through the
+                lifter's SBD meets. It does NOT blend in the cohort average. Lifters with
+                plateaus, breakthroughs, injury breaks, or comeback arcs will see an
+                oversimplified straight line. Treat the projection as a baseline, not a
+                forecast.
+              </p>
+              <p>
+                <span className="text-zinc-400 font-medium">Partial-lift meets:</span> The
+                trajectory chart filters to full-power (SBD) meets so the y-axis is a
+                single comparable total. Bench-only and push-pull meets still appear in
+                the meet table below the chart, muted, with the event type chip and a
+                delta column computed against the first SBD meet.
+              </p>
+            </div>
+          </details>
         </div>
         <div
           className="flex gap-2 shrink-0 -mx-1 px-1 overflow-x-auto"
