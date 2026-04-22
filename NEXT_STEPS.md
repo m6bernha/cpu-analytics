@@ -90,14 +90,24 @@ python data/backtest_projection.py \
 - **Backtest on global OpenIPF** -- populate About page MAPE table
   from a real run on the full global export (~5400 Canada + 500,000+
   global lifters), not the 50-lifter Canadian smoke sample.
-- **About page consumes artifact** -- currently the backtest section
-  says "TBD" and the numbers live in data/backtest_results.json. Wire
-  About.tsx to import that JSON and render a real table.
-- **Per-lift history in response** -- the frontend's per-lift chart
-  currently only shows the current_level marker + projection. Adding
-  per-lift history arrays (squat, bench, deadlift over time) to the
-  API response would let the Scatter render actual meet values per
-  lift. Small backend change.
+- ~~**About page consumes artifact**~~ -- SHIPPED 2026-04-22 in commit
+  `9348a00` (PR #2). About.tsx imports
+  `frontend/src/data/backtest_results.json` (mirrored from
+  `data/backtest_results.json` by `data/backtest_projection.py` on every
+  run) and renders the MAPE table + ship-gate status block in place of
+  the TBD placeholder. When the global OpenIPF backtest lands, re-run
+  the script and the numbers update on next build.
+- ~~**Per-lift history in response**~~ -- SHIPPED 2026-04-22 in commit
+  `98b57d8` (PR #3). `/api/athlete/{name}/projection` now includes a
+  `history` array on each LiftProjection. The frontend plots actual
+  squat/bench/deadlift meets as blue scatter dots on the per-lift chart,
+  with the projection line joining seamlessly from the last historical
+  point.
+- ~~**QT reference lines on projection chart**~~ -- SHIPPED 2026-04-22
+  in commit `8452835` (PR #4). Optional "Show CPU QT reference lines"
+  toggle on the Total view with an era picker (Pre-2025 / 2025 / 2027,
+  default 2027). Uses the historical QT standards feed for consistency
+  with Lifter Lookup. Migration to the live QT feed is a follow-up.
 - **Cold-start cost of precompute** -- MEASURED 2026-04-22. Local
   instrumentation around `precompute_tables` in `backend/app/main.py`
   lifespan reports `elapsed_ms=27000` (~27 s) on the Canada+IPF parquet
