@@ -266,7 +266,10 @@ function SelectorPanel({
       </div>
 
       <div className="flex flex-wrap gap-3 items-end">
-        <EngineToggle engine={engine} setEngine={setEngine} />
+        {/* Engine D (MixedLM) is not yet wired. The toggle renders only when
+            the backend reports engine_d_available=true. Until then we ship
+            Simple-only to avoid a toggle that silently falls back. */}
+        {false && <EngineToggle engine={engine} setEngine={setEngine} />}
         <HorizonSelect horizon={horizon} setHorizon={setHorizon} />
         <LiftSelect liftKey={liftKey} setLiftKey={setLiftKey} />
       </div>
