@@ -98,11 +98,22 @@ python data/backtest_projection.py \
   per-lift history arrays (squat, bench, deadlift over time) to the
   API response would let the Scatter render actual meet values per
   lift. Small backend change.
-- **Cold-start cost of precompute** -- the 231-cell cohort fit and
-  K-M survival runs inside the FastAPI lifespan. Measure the extra
-  ms on Render's free tier. If it pushes cold start materially past
-  50s, move precompute to a serialized artifact written at
-  preprocess time (option b from the planner's precompute-strategy).
+- **Cold-start cost of precompute** -- MEASURED 2026-04-22. Local
+  instrumentation around `precompute_tables` in `backend/app/main.py`
+  lifespan reports `elapsed_ms=27000` (~27 s) on the Canada+IPF parquet
+  (~5.4 k lifters, 69 k rows, 231 cohort cells + 7 K-M tables). Render
+  free tier cold start was previously ~20-50 s for parquet download +
+  DuckDB warmup; the precompute pushes this to ~45-75 s user-visible
+  cold start for any request that wakes the dyno. The UptimeRobot
+  keepalive cron keeps the backend warm between 5 min pings, so in
+  practice real users almost always hit a warm backend.
+  Follow-up options if keepalive ever misses or the user base grows:
+  (a) serialize cohort cells at preprocess time and ship them alongside
+  openipf.parquet in the `data-latest` release, loading from disk on
+  boot (~ms); (b) make precompute lazy -- first projection request
+  triggers the fit, subsequent projections read the cache. (a) is the
+  cleaner fix; (b) risks a 27 s response on the unlucky first-projection
+  user after every cold start.
 
 ### Athlete Projection / P3 weighting methodology -- SUPERSEDED
 

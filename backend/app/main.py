@@ -72,11 +72,22 @@ async def lifespan(_app: FastAPI):
         # module-level tables so per-request projection endpoints never run
         # a cohort fit. Non-raising on failure (falls back to global-mean
         # cohort slope and neutral K-M multiplier).
+        #
+        # Local measurement 2026-04-22: 231-cell cohort fit + 7 K-M tables
+        # takes ~27 s on the Canada+IPF parquet (~5.4 k lifters, ~69 k rows).
+        # On Render free tier this adds to the ~20-50 s baseline cold start.
+        # If the precompute duration materially exceeds the parquet warmup
+        # duration for weeks in a row, consider serializing cohort cells at
+        # preprocess time so the backend can load them from disk on boot.
         if n_meets > 0:
+            import time
+            t_precompute = time.perf_counter()
             stats = athlete_proj_mod.precompute_tables(conn)
+            precompute_ms = 1000.0 * (time.perf_counter() - t_precompute)
             print(
                 f"[startup] athlete_projection tables: "
-                f"cohort_cells={stats['cohort_cells']} km={stats['km_tables']}"
+                f"cohort_cells={stats['cohort_cells']} km={stats['km_tables']} "
+                f"elapsed_ms={precompute_ms:.0f}"
             )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
