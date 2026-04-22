@@ -229,6 +229,7 @@ export type QtLiveFilters = {
   sexes?: string[]
   levels?: string[]
   regions?: string[]
+  provinces?: string[]
   divisions?: string[]
   effective_years?: number[]
   fetched_at?: string | null
@@ -256,6 +257,7 @@ export type QtLiveCoverageResponse = {
       effective_year: number
       division: string
       region: string | null
+      province: string | null
       equipment: string
       event: string
     }
@@ -265,10 +267,11 @@ export type QtLiveCoverageResponse = {
 
 export type QtLiveCoverageParams = {
   sex: 'M' | 'F'
-  level: 'Nationals' | 'Regionals'
+  level: 'Nationals' | 'Regionals' | 'Provincials'
   effective_year: number
   division?: string
   region?: string | null
+  province?: string | null
   equipment?: string
   event?: string
 }
@@ -285,6 +288,7 @@ export function fetchQtLiveCoverage(
     event: p.event ?? 'SBD',
   })
   if (p.region) params.set('region', p.region)
+  if (p.province) params.set('province', p.province)
   return getJson<QtLiveCoverageResponse>(
     `${API_BASE}/api/qt/live/coverage?${params}`,
   )
