@@ -40,6 +40,7 @@ from data.scrapers import base
 from data.scrapers.cpu import discover_pdf_urls, download_pdf, parse_pdf
 from data.scrapers import opa as opa_scraper
 from data.scrapers import mpa as mpa_scraper
+from data.scrapers import nspl as nspl_scraper
 
 log = logging.getLogger(__name__)
 
@@ -211,6 +212,29 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     except Exception as e:
         log.warning(
             "MPA scrape failed (%s); continuing without Manitoba", e,
+        )
+
+    # NSPL provincial scrape (Nova Scotia). Same graceful-degrade.
+    try:
+        nspl_results = nspl_scraper.download_sheets(tmpdir)
+        source_url = (
+            f"https://docs.google.com/spreadsheets/d/"
+            f"{nspl_scraper.NSPL_SHEET_ID}/edit"
+        )
+        for y, csv_path in nspl_results:
+            nspl_rows = nspl_scraper.parse_csv(csv_path, effective_year=y)
+            for r in nspl_rows:
+                r["source_pdf"] = source_url
+                r["fetched_at"] = fetched_at
+            all_rows.extend(nspl_rows)
+        log.info(
+            "NSPL: %d provincial rows across %d years",
+            sum(1 for r in all_rows if r.get("province") == "Nova Scotia"),
+            len(nspl_results),
+        )
+    except Exception as e:
+        log.warning(
+            "NSPL scrape failed (%s); continuing without Nova Scotia", e,
         )
 
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))

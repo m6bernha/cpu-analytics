@@ -395,6 +395,102 @@ def test_mpa_province_is_set_and_level_is_provincials() -> None:
             assert r["region"] is None
 
 
+# -------------------------------------------------------------------------
+# NSPL provincial scraper tests (Google Sheet gviz CSV export)
+# -------------------------------------------------------------------------
+
+from data.scrapers import nspl as nspl_scraper  # noqa: E402
+
+
+NSPL_FIXTURES = sorted(
+    (FIXTURE_DIR / f"nspl_{y}_provincial.source.csv", y)
+    for y in (2026, 2027)
+    if (FIXTURE_DIR / f"nspl_{y}_provincial.source.csv").exists()
+)
+
+
+def test_nspl_source_fixtures_present() -> None:
+    assert NSPL_FIXTURES, "no nspl_*.source.csv fixtures found"
+
+
+@pytest.mark.parametrize(
+    "src_csv,year",
+    NSPL_FIXTURES,
+    ids=lambda v: v if isinstance(v, int) else v.stem,
+)
+def test_nspl_parse_matches_expected_csv(src_csv: Path, year: int) -> None:
+    expected_csv = (
+        src_csv.parent / f"nspl_{year}_provincial.expected.csv"
+    )
+    assert expected_csv.exists(), (
+        f"missing {expected_csv.name}; regenerate with the scraper CLI"
+    )
+    actual = nspl_scraper.parse_csv(src_csv, effective_year=year)
+    expected = _load_expected(expected_csv)
+    assert len(actual) == len(expected), (
+        f"row count drift: parser={len(actual)} fixture={len(expected)}"
+    )
+    for i, (a, e) in enumerate(zip(actual, expected)):
+        assert a == e, f"row {i} differs:\n  got:      {a}\n  expected: {e}"
+
+
+@pytest.mark.parametrize("src_csv,year", NSPL_FIXTURES, ids=lambda v: v)
+def test_nspl_open_rows_match_audit_values(src_csv: Path, year: int) -> None:
+    rows = nspl_scraper.parse_csv(src_csv, effective_year=year)
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in rows
+    }
+    if year == 2026:
+        assert by_key[("M", "Open", "83")] == 482.5
+        assert by_key[("F", "Open", "63")] == 272.5
+
+
+def test_nspl_drops_zero_cells() -> None:
+    """Men 53 Open and Women 43 Open are encoded as 0 (no QT); the parser
+    must not emit rows for them."""
+    src, year = NSPL_FIXTURES[0]
+    rows = nspl_scraper.parse_csv(src, effective_year=year)
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in rows
+    }
+    assert ("M", "Open", "53") not in by_key
+    assert ("F", "Open", "43") not in by_key
+    # Sub-Junior / Junior at those classes DO exist.
+    assert ("M", "Sub-Junior", "53") in by_key
+    assert ("F", "Sub-Junior", "43") in by_key
+
+
+def test_nspl_values_deviate_from_simple_cpu_derivation() -> None:
+    """Audit invariant: NSPL rounds up to 2.5 kg after 0.9 x CPU Regional,
+    which makes derivation from CPU insufficient. Spot-check one known
+    divergence: M 59 Open 2026 is 372.5 on the NSPL sheet, not 371.25
+    (which is the raw 0.9 x 412.5)."""
+    src, _ = NSPL_FIXTURES[0]
+    rows = nspl_scraper.parse_csv(src, effective_year=2026)
+    m59_open = next(
+        r for r in rows
+        if r["sex"] == "M" and r["division"] == "Open"
+        and r["weight_class"] == "59"
+    )
+    assert m59_open["qt"] == 372.5
+
+
+def test_nspl_rows_pass_validation() -> None:
+    for src, year in NSPL_FIXTURES:
+        for r in nspl_scraper.parse_csv(src, effective_year=year):
+            base.validate_row(r)
+
+
+def test_nspl_province_and_level_locked() -> None:
+    for src, year in NSPL_FIXTURES:
+        for r in nspl_scraper.parse_csv(src, effective_year=year):
+            assert r["province"] == "Nova Scotia"
+            assert r["level"] == "Provincials"
+            assert r["region"] is None
+            assert r["equipment"] == "Classic"
+            assert r["event"] == "SBD"
+
+
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:
     fixture_sources = [
         {"url": f"fixture://{p.name}", "label": p.stem, "landing": "fixture"}
