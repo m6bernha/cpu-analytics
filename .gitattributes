@@ -1,0 +1,10 @@
+# Force LF line endings for files that need them regardless of the
+# author's platform. GitHub Actions records a startup_failure on
+# every push for any workflow committed with CRLF terminators, so the
+# whole .github/ tree is pinned to LF. Shell scripts and Unix config
+# files match for the same reason. Everything else falls back to Git's
+# auto-detection.
+
+.github/workflows/*.yml text eol=lf
+.github/workflows/*.yaml text eol=lf
+*.sh text eol=lf

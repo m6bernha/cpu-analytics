@@ -104,12 +104,10 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new snapshot to commit (already up-to-date)"
           else
-            git commit -m "chore(qt): snapshot $(date -u +%Y-%m-%d) after CPU standards update
-
-Added: ${{ steps.scrape.outputs.added_count }}
-Removed: ${{ steps.scrape.outputs.removed_count }}
-Changed: ${{ steps.scrape.outputs.changed_count }}
-
-See GitHub Actions run ${{ github.run_id }} for details."
+            git commit -m "chore(qt): snapshot $(date -u +%Y-%m-%d) after CPU standards update" \
+              -m "Added: ${{ steps.scrape.outputs.added_count }}" \
+              -m "Removed: ${{ steps.scrape.outputs.removed_count }}" \
+              -m "Changed: ${{ steps.scrape.outputs.changed_count }}" \
+              -m "See GitHub Actions run ${{ github.run_id }} for details."
             git push
           fi
