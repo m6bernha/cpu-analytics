@@ -367,6 +367,17 @@ def run_backtest(
         json.dump(artifact, f, indent=2)
     logger.info("Wrote backtest artifact: %s (lifters=%d)", output_path, processed)
 
+    # Mirror the artifact into the frontend bundle so the About tab picks
+    # up the fresh numbers on next build. The mirror is only written when
+    # the frontend source tree exists; running the backtest against a
+    # different repo layout (e.g. a CI smoke harness) skips this step.
+    frontend_mirror = ROOT / "frontend" / "src" / "data" / "backtest_results.json"
+    if frontend_mirror.parent.parent.exists():
+        frontend_mirror.parent.mkdir(parents=True, exist_ok=True)
+        with frontend_mirror.open("w", encoding="utf-8") as f:
+            json.dump(artifact, f, indent=2)
+        logger.info("Mirrored artifact into frontend bundle: %s", frontend_mirror)
+
     # Terminal summary.
     print("\nMAPE by engine and horizon (lower = better):")
     header = f"{'engine':<12} " + " ".join(f"{h}mo" for h in HORIZONS_MONTHS)

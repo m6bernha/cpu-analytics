@@ -1,8 +1,44 @@
 // About page -- global methodology and disclaimers.
 //
-// Linked from the methodology <details> block on every other tab. Content
-// is static for now; if the backtest artifact lands (C7), its MAPE numbers
-// will render in place of the TBD markers in the plateau-model comparison.
+// Linked from the methodology <details> block on every other tab. The
+// plateau-model comparison section renders the live MAPE numbers from
+// data/backtest_results.json (mirrored into frontend/src/data/ by
+// data/backtest_projection.py on every --output write).
+
+import backtestResults from '../data/backtest_results.json'
+
+type EngineKey = 'engine_c' | 'log_linear' | 'gompertz'
+
+interface EngineSummary {
+  engine: EngineKey
+  lifter_count: number
+  mape_by_horizon: Record<string, number>
+  sample_sizes_by_horizon: Record<string, number>
+}
+
+interface BacktestArtifact {
+  inputs: {
+    parquet: string
+    min_meets: number
+    holdout: number
+    horizons_months: number[]
+  }
+  summary: {
+    engines: EngineSummary[]
+    processed_lifters: number
+  }
+  ship_gate: {
+    engine_c_mape_6mo_limit: number
+    engine_c_mape_12mo_limit: number
+    log_linear_margin_12mo_limit_pp: number
+  }
+}
+
+const ENGINE_LABEL: Record<EngineKey, string> = {
+  engine_c: 'Engine C (GLP-bracket shrinkage)',
+  log_linear: 'Log-linear in time',
+  gompertz: 'Gompertz',
+}
 
 export default function About({ isActive: _isActive }: { isActive: boolean }) {
   return (
@@ -170,18 +206,15 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
       <Section title="Plateau-model comparison (backtest)">
         <p>
           The GLP-bracket approach is benchmarked against log-linear-in-time
-          and Gompertz fits on the global OpenIPF dataset using a
-          walk-forward backtest on lifters with 15+ career meets. Mean
-          absolute percentage error at 3, 6, 12, and 18 months is the
-          comparison metric. Ship thresholds: if GLP-bracket loses by more
-          than 2 percentage points at the 12-month horizon, swap to the
-          winner. If MAPE exceeds 6 percent at 6 months or 12 percent at
-          12 months for Engine C, escalate.
+          and Gompertz fits using a walk-forward backtest on lifters with
+          15+ career meets. Mean absolute percentage error at 3, 6, 12, and
+          18 months is the comparison metric. Ship thresholds: if GLP-bracket
+          loses by more than 2 percentage points at the 12-month horizon,
+          swap to the winner. If MAPE exceeds 6 percent at 6 months or 12
+          percent at 12 months for Engine C, escalate.
         </p>
-        <p className="text-zinc-500 mt-2">
-          Backtest artifact TBD: numbers will populate once the offline
-          backtest script lands. See C7 in the commit log.
-        </p>
+
+        <BacktestTable artifact={backtestResults as BacktestArtifact} />
       </Section>
 
       <Section title="Kaplan-Meier dropout correction">
@@ -337,5 +370,192 @@ function Section({
       <h3 className="text-zinc-100 text-base font-semibold mb-2">{title}</h3>
       <div className="space-y-2">{children}</div>
     </section>
+  )
+}
+
+function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
+  const horizons = artifact.inputs.horizons_months
+  const engines = artifact.summary.engines
+  const engineC = engines.find((e) => e.engine === 'engine_c')
+  const logLinear = engines.find((e) => e.engine === 'log_linear')
+  const gompertz = engines.find((e) => e.engine === 'gompertz')
+  const gates = artifact.ship_gate
+
+  const engineCMape6 = engineC?.mape_by_horizon['6']
+  const engineCMape12 = engineC?.mape_by_horizon['12']
+  const logLinearMape12 = logLinear?.mape_by_horizon['12']
+  const gompertzMape12 = gompertz?.mape_by_horizon['12']
+
+  const gate6mo =
+    engineCMape6 == null
+      ? null
+      : engineCMape6 <= gates.engine_c_mape_6mo_limit
+  const gate12mo =
+    engineCMape12 == null
+      ? null
+      : engineCMape12 <= gates.engine_c_mape_12mo_limit
+  const bestAlt12mo = (() => {
+    const alts: number[] = []
+    if (logLinearMape12 != null) alts.push(logLinearMape12)
+    if (gompertzMape12 != null) alts.push(gompertzMape12)
+    return alts.length ? Math.min(...alts) : null
+  })()
+  const gateMargin =
+    engineCMape12 == null || bestAlt12mo == null
+      ? null
+      : engineCMape12 - bestAlt12mo <= gates.log_linear_margin_12mo_limit_pp
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="overflow-x-auto">
+        <table className="text-xs w-full border-collapse">
+          <thead>
+            <tr className="border-b border-zinc-700 text-zinc-400">
+              <th className="text-left font-medium py-1.5 pr-3">Engine</th>
+              {horizons.map((h) => (
+                <th key={h} className="text-right font-medium py-1.5 px-2">
+                  {h} mo
+                </th>
+              ))}
+              <th className="text-right font-medium py-1.5 pl-2">Lifters</th>
+            </tr>
+          </thead>
+          <tbody>
+            {engines.map((e) => (
+              <tr
+                key={e.engine}
+                className="border-b border-zinc-800 text-zinc-300"
+              >
+                <td className="py-1.5 pr-3">
+                  <span
+                    className={
+                      e.engine === 'engine_c' ? 'text-zinc-100 font-medium' : ''
+                    }
+                  >
+                    {ENGINE_LABEL[e.engine]}
+                  </span>
+                </td>
+                {horizons.map((h) => {
+                  const key = String(h)
+                  const mape = e.mape_by_horizon[key]
+                  const n = e.sample_sizes_by_horizon[key]
+                  return (
+                    <td
+                      key={h}
+                      className="text-right py-1.5 px-2 tabular-nums"
+                    >
+                      {mape != null ? `${mape.toFixed(2)}%` : '\u2014'}
+                      {n != null && (
+                        <span className="text-zinc-500 ml-1">
+                          (n={n})
+                        </span>
+                      )}
+                    </td>
+                  )
+                })}
+                <td className="text-right py-1.5 pl-2 text-zinc-400 tabular-nums">
+                  {e.lifter_count}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="text-zinc-500 text-xs space-y-1">
+        <p>
+          {artifact.summary.processed_lifters} lifters, holdout last{' '}
+          {artifact.inputs.holdout} meets, minimum{' '}
+          {artifact.inputs.min_meets} career meets. Per-horizon{' '}
+          <code className="text-zinc-400">n</code> is the subset of lifters
+          whose held-out meets include one at that horizon (within a
+          tolerance window).
+        </p>
+        <p>
+          Baseline is a 50-lifter Canada+IPF smoke sample. A full-OpenIPF
+          run is a one-off manual step once the 285 MB bulk CSV is available
+          locally (see{' '}
+          <code className="text-zinc-400">data/backtest_projection.py</code>{' '}
+          docstring).
+        </p>
+      </div>
+
+      <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
+        <h4 className="text-zinc-200 text-xs font-medium mb-2">
+          Ship gates
+        </h4>
+        <ul className="space-y-1 text-xs">
+          <Gate
+            pass={gate6mo}
+            label={
+              <>
+                Engine C MAPE at 6 months &le;{' '}
+                {gates.engine_c_mape_6mo_limit.toFixed(1)}%
+              </>
+            }
+            value={
+              engineCMape6 != null
+                ? `${engineCMape6.toFixed(2)}%`
+                : 'unavailable'
+            }
+          />
+          <Gate
+            pass={gate12mo}
+            label={
+              <>
+                Engine C MAPE at 12 months &le;{' '}
+                {gates.engine_c_mape_12mo_limit.toFixed(1)}%
+              </>
+            }
+            value={
+              engineCMape12 != null
+                ? `${engineCMape12.toFixed(2)}%`
+                : 'unavailable'
+            }
+          />
+          <Gate
+            pass={gateMargin}
+            label={
+              <>
+                Engine C does not lose by more than{' '}
+                {gates.log_linear_margin_12mo_limit_pp.toFixed(1)} pp to
+                best alternative at 12 months
+              </>
+            }
+            value={
+              engineCMape12 != null && bestAlt12mo != null
+                ? `${(engineCMape12 - bestAlt12mo >= 0 ? '+' : '') + (engineCMape12 - bestAlt12mo).toFixed(2)} pp`
+                : 'unavailable'
+            }
+          />
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function Gate({
+  pass,
+  label,
+  value,
+}: {
+  pass: boolean | null
+  label: React.ReactNode
+  value: string
+}) {
+  const icon =
+    pass === null ? (
+      <span className="text-zinc-500" aria-label="unavailable">&#x25CB;</span>
+    ) : pass ? (
+      <span className="text-emerald-400" aria-label="pass">&#x2713;</span>
+    ) : (
+      <span className="text-rose-400" aria-label="fail">&#x2717;</span>
+    )
+  return (
+    <li className="flex items-start gap-2 text-zinc-400">
+      <span className="flex-shrink-0 mt-0.5 w-4 text-center">{icon}</span>
+      <span className="flex-1">{label}</span>
+      <span className="text-zinc-300 tabular-nums">{value}</span>
+    </li>
   )
 }
