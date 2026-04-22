@@ -155,25 +155,151 @@ went from 11.18 KB to 16.00 KB as expected.
 
 ## P2 -- Feature work still outstanding
 
-### QT Squeeze overhaul (big redesign)
+### QT Squeeze overhaul (live-scrape pipeline)
 
-User explicitly asked for this. Current layout has 4 fixed blocks
-(F_Regionals, F_Nationals, M_Regionals, M_Nationals) that only show
-Open coverage. Replace with a filter panel (Sex, Age division, Weight
-class, Equipment) driving a single configurable view.
+Replacing the manual CSV curation with a scheduled scraper that pulls
+current Canadian qualifying totals from powerlifting.ca (and eventually
+provincial federations) and auto-refreshes the site when CPU revises
+standards every ~2 years. Scope decision 2026-04-21:
 
-Data prerequisite: powerlifting.ca/qualifying-standards has the full
-per-age-division QT table. Scrape or hand-transcribe into an expanded
-`data/qualifying_totals_canpl.csv` with columns for Sex, Level,
-Division, WeightClass, QT_pre2025, QT_2025, QT_2027.
+* Federal (powerlifting.ca) now, provinces later — one province per
+  session as a phased rollout starting with OPA.
+* Classic / SBD only. Equipped and Bench Only PDFs are parsed but
+  filtered out by the orchestrator. Not negotiable for this project.
+* Historical pre-2025 / 2025 values stay in the vendored
+  `data/qualifying_totals_canpl.csv` for the "standards tightening
+  over time" narrative. The live feed only covers 2026+.
+* On detected diff: auto-upload to `data-latest` release, open a
+  GitHub issue with the diff, no code commit.
+* Weekly cadence, same GHA cron as the OpenIPF refresh.
 
-Backend: `qt.compute_coverage` and `qt.compute_blocks` need to accept
-Division + Equipment parameters. The CASE-WHEN era logic stays.
+**Phase 1a -- SHIPPED**
 
-Frontend: new filter-panel layout matching Progression's visual style.
-Retire the 4-block layout.
+* Parser prototype at `data/scrapers/cpu.py` (`parse_pdf(path)`).
+* Shared schema + validation at `data/scrapers/base.py`.
+* Orchestrator stub at `data/scrape_qt.py` with CLI: `--once`,
+  `--dry-run`, `--regenerate-fixtures`.
+* Fixture tests at `backend/tests/test_scrape_qt.py` (11 new tests,
+  all passing; total suite 185).
+* Committed fixtures: 4 PDFs + 4 `.expected.csv` at
+  `backend/tests/fixtures/qt_pdfs/`.
+* Dependencies added: `pdfplumber>=0.11`, `requests>=2.32`.
 
-Estimated effort: 1-2 sessions once the new CSV is in place.
+**Phase 1b -- SHIPPED**
+
+* `discover_pdf_urls()` + `download_pdf()` at `data/scrapers/cpu.py`
+  rediscover current PDF hrefs from powerlifting.ca landing pages and
+  download each to a temp dir. Polite user-agent, retries, 30s timeout.
+* `run_once()` at `data/scrape_qt.py` orchestrates scrape → scope-filter
+  → validate → sort → diff (against `--existing` CSV) → emit GHA
+  outputs. Snapshot written to `data/qt_history/YYYY-MM-DD.csv` on
+  detected change.
+* `.github/workflows/qt_refresh.yml`: Sundays 06:43 UTC + manual
+  dispatch. Downloads existing `qt_current.csv` from `data-latest`
+  release, runs scraper, and on change: uploads new CSV, opens an
+  issue with the row-level diff, commits the history snapshot. Uses
+  the default `GITHUB_TOKEN`, no new secrets.
+* 9 new orchestrator tests at `backend/tests/test_scrape_qt.py`
+  covering `filter_in_scope`, `sort_rows`, `diff_rows` (no-change / QT
+  change / add / remove), `format_diff_summary`, full `run_once` flow
+  with monkey-patched fetch (first publish, no-change subsequent run,
+  GitHub outputs emission). Total suite: 204 pytest.
+* `data/qt_history/.gitkeep` added so the audit-trail directory exists
+  in git. `.gitignore` updated to exclude `data/qt_current.csv` and
+  `scraper_out/`.
+
+**Phase 1c -- backend SHIPPED, frontend MVP SHIPPED (UX rebuild pending)**
+
+Backend (SHIPPED):
+
+* `backend/app/qt_data_loader.py`: `ensure_qt_current_csv(path)` uses
+  local file if present, else downloads from `QT_CURRENT_CSV_URL` env
+  var. Validates CSV header against `REQUIRED_QT_CURRENT_COLUMNS` and
+  drops the file on mismatch so the next cold start retries.
+* `backend/app/data.py`: registers a DuckDB view `qt_current` over the
+  CSV when present. Exposes `is_qt_current_available()` so the rest of
+  the app can degrade gracefully when the scraper hasn't published yet.
+* `backend/app/qt.py`: new `load_live_qt()`, `get_live_qt_filters()`,
+  and `compute_live_coverage(sex, level, effective_year, division,
+  region, equipment, event)`. Region is tri-state via a `_UNSET`
+  sentinel so callers can ask for "null region rows" vs "all regions"
+  vs "specific region". Cohort: 24-month window ending March 1 of
+  `effective_year`.
+* `backend/app/main.py`: new endpoints `/api/qt/live/filters` and
+  `/api/qt/live/coverage`. Both return `live_data_available: false`
+  gracefully when the view isn't registered. Lifespan warmup logs
+  `qt_current=<N> rows` or `qt_current=UNAVAILABLE`.
+* 10 new qt.py tests under `TestLoadLiveQt`, `TestGetLiveQtFilters`,
+  `TestComputeLiveCoverage`. Total suite: 214 pytest.
+* Historical 4-block view (`/api/qt/coverage`, `/api/qt/blocks`, the
+  vendored `qualifying_totals_canpl.csv`) is **untouched**. Both data
+  paths coexist.
+
+Frontend MVP (SHIPPED):
+
+* `frontend/src/lib/api.ts`: new `fetchQtLiveFilters()` and
+  `fetchQtLiveCoverage(params)` with typed request/response shapes.
+* `frontend/src/tabs/QtLiveCoveragePanel.tsx` (new): filter panel
+  (Sex, Level, Division, Effective Year, Region-conditional-on-2027-
+  Regionals) driving a single coverage table (weight class x pct,
+  QT kg, N lifters, N meeting). Degrades to a one-line banner when
+  `live_data_available: false`.
+* `frontend/src/tabs/QTSqueeze.tsx`: imports the new panel and renders
+  it above the existing four-block view. The 4-block view is kept
+  intact for the historical (pre-2025 / 2025 / 2027-hypothetical)
+  narrative.
+
+Frontend UX rebuild (PENDING -- next session):
+
+* Retire the 4-block layout entirely. The historical narrative can
+  become a small "standards tightening over time" callout rather than
+  the main view.
+* Unify the live panel + historical callout into the single
+  filter-panel-driven design originally specced in the plan.
+* Add "data last refreshed YYYY-MM-DD" metadata to the page footer.
+
+**Phase 2 -- Ontario (OPA) scraper as pilot**
+
+* New module `data/scrapers/opa.py`.
+* Share `base.py` schema and validation. Whatever format OPA publishes
+  (HTML, DOCX, PDF) gets translated to the same row shape.
+* Orchestrator combines federal + provincial rows, deduping by the full
+  key tuple.
+* Frontend Region selector gains "Ontario" option when provincial rows
+  are present.
+
+**Phase 3+ -- remaining provinces**
+
+* BCPA, APU, SPU, MPA, QPU, NBPU, NSPU, PEIPA, NLPA. One per session.
+* Each adds a `data/scrapers/<federation>.py` module following the OPA
+  pattern. Provincial federations publish inconsistently (Facebook
+  posts, Word docs, occasional full redesigns), so each scraper is a
+  tuning job.
+* Dispatch as their own sessions so a single provincial site redesign
+  doesn't block the whole pipeline.
+
+**Estimated effort**
+
+* Phase 1b: 1 session (GHA workflow + run_once + release upload path).
+* Phase 1c: 1 session (backend loader + qt.py params + frontend
+  filter panel).
+* Phase 2: 1 session for OPA pilot.
+* Phase 3+: ~9 sessions for the remaining provinces.
+
+**Operational notes**
+
+* powerlifting.ca uses Wix CMS. PDF URLs rotate on every revision
+  (`_files/ugd/<segment>/<hash>.pdf`), so the scraper must rediscover
+  URLs from the landing page every run. Do not hardcode PDF URLs.
+* CPU landing pages to crawl: `/qualifying-standards/` (2026 current)
+  and `/2027qualifications` (2027 effective Jan 1, 2027).
+* Parser uses pdfplumber `extract_tables()` not text heuristics. Table
+  grid is 8 columns (weight class + 7 age divisions).
+* Fixture tests lock parser output row-for-row. If CPU restructures the
+  PDFs, tests fail before a bad CSV reaches production. To refresh
+  fixtures after an intentional parser change, run
+  `.venv/Scripts/python -m data.scrape_qt --regenerate-fixtures` and
+  review the diff before committing.
 
 ### Manual entry: individual lift inputs — SHIPPED
 
