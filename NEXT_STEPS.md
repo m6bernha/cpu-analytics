@@ -40,15 +40,80 @@ the same day:
 - Branch protection for backend pytest: CLOSED 2026-04-21 via Chrome.
 - P0 data-refresh Run #7: VERIFIED green 2026-04-21.
 
-### Athlete Projection / P3 weighting methodology -- BACKBURNER
+### Athlete Projection (BETA) -- SHIPPED 2026-04-22
 
-Matthias parked this on 2026-04-21 pending direct consultation with
-statistics professors to ensure the methodology is academically sound
-before any projection numbers ship to production. The four candidate
-methodologies (A pure personal / B pure cohort / C Bayesian shrinkage /
-D mixed-effects) remain documented in the P3 section below, but no
-implementation work should happen on the Athlete Projection tab until
-he returns with an academic-grounded decision.
+Full implementation landed on branch `athlete-projection` in 8 commits:
+
+- **C1** `3713396` add statsmodels + scipy deps.
+- **C2** `1a1ac38` Engine C (Huber personal, shrinkage, Kaplan-Meier) + 47 tests.
+- **C3** `7bae98f` API endpoint + lifespan precompute + api.ts fetcher.
+- **CA1** `fec5a04` ipf_gl_points helper + 23 tests (pivot to GLP-bracket).
+- **CA2** `045caed` GLP-bracket cohort stratification + merge fallback +
+  two-pass bracket-transition logic (Sean Yen pivot).
+- **C4** `651ced6` MVP frontend + resilient division assignment for
+  Age-null lifters (~70% of the Canadian parquet).
+- **C6** `1d41708` About page + per-tab methodology About links.
+- **C5** `d7157a5` gate Engine D toggle until MixedLM wiring ships.
+- **C7** `32918ad` offline backtest harness + baseline MAPE artifact.
+
+**Baseline backtest (50-lifter Canada+IPF sample, all ship gates pass):**
+
+| engine       | 3mo  | 6mo  | 12mo | 18mo |
+|---|---|---|---|---|
+| engine_c     | 3.95 | 3.89 | 7.00 | 5.16 |
+| log_linear   | 4.71 | 5.64 | 9.66 | 7.28 |
+| gompertz     | 3.17 | 2.80 | 6.27 | 3.61 |
+
+Engine C 6mo < 6% limit. Engine C 12mo < 12% limit. Engine C loses by
+<2pp to alternatives at 12mo (Gompertz wins by 0.73pp; log-linear loses
+by 2.66pp). No swap required per the plateau-model comparison gate.
+
+Full OpenIPF global run is a separate one-off manual step once the
+bulk CSV is available locally. Run with:
+```
+python data/backtest_projection.py \
+  --input data/processed/openipf_global.parquet \
+  --output data/backtest_results.json
+```
+
+### Athlete Projection follow-ups (post-BETA)
+
+- **Engine D MixedLM wiring** -- the toggle is gated off until the
+  real MixedLM precompute + convergence probe lands. Spec in
+  backend/app/athlete_projection.py `mixed_effects_projection`
+  docstring. Ship criterion: MixedLM converges on >=90% of the
+  backtest sample when the probe runs; otherwise keep gated.
+- **QT Squeeze About-link** -- the methodology block in QTSqueeze.tsx
+  did not get the `?tab=about` link in C6 because that file is owned
+  by the parallel QT live-scrape chat per
+  `~/.claude/rules/common/parallel-chat-isolation.md`. Append the link
+  in a tiny follow-up commit once the QT branch merges to main.
+- **Backtest on global OpenIPF** -- populate About page MAPE table
+  from a real run on the full global export (~5400 Canada + 500,000+
+  global lifters), not the 50-lifter Canadian smoke sample.
+- **About page consumes artifact** -- currently the backtest section
+  says "TBD" and the numbers live in data/backtest_results.json. Wire
+  About.tsx to import that JSON and render a real table.
+- **Per-lift history in response** -- the frontend's per-lift chart
+  currently only shows the current_level marker + projection. Adding
+  per-lift history arrays (squat, bench, deadlift over time) to the
+  API response would let the Scatter render actual meet values per
+  lift. Small backend change.
+- **Cold-start cost of precompute** -- the 231-cell cohort fit and
+  K-M survival runs inside the FastAPI lifespan. Measure the extra
+  ms on Render's free tier. If it pushes cold start materially past
+  50s, move precompute to a serialized artifact written at
+  preprocess time (option b from the planner's precompute-strategy).
+
+### Athlete Projection / P3 weighting methodology -- SUPERSEDED
+
+Matthias parked this on 2026-04-21 pending academic consultation. On
+2026-04-22, coach Sean Yen supplied the GLP-bracket cohort approach
+which superseded the original "level-conditioned continuous slope"
+plan. Engine C (Bayesian shrinkage) with GLP-bracket cohorts shipped
+per the pivot. The original P3 four-methodology menu (A/B/C/D) is
+preserved below for reference. Engine D remains deferred (see
+follow-ups above).
 
 The Coach "on pace for Nationals 2027" widget (P2) does NOT require the
 P3 decision and can ship independently using the existing linear
