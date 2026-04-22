@@ -393,6 +393,85 @@ export type ManualRequest = {
   entries: ManualEntry[]
 }
 
+// ---------- Athlete Projection (BETA) ----------
+
+export type AthleteProjectionEngine = 'shrinkage' | 'mixed_effects'
+
+export type AthleteProjectionPoint = {
+  days_from_first: number
+  months_from_last: number
+  projected_kg: number
+  lower_kg: number
+  upper_kg: number
+}
+
+export type AthleteProjectionLift = {
+  lift: 'squat' | 'bench' | 'deadlift'
+  n_meets: number
+  current_level: number | null
+  slope_personal_kg_per_day: number | null
+  slope_cohort_kg_per_day: number | null
+  slope_combined_kg_per_day: number | null
+  slope_combined_kg_per_month: number | null
+  w_personal: number
+  sigma_resid_kg: number
+  last_meet_day: number | null
+  projected_points: AthleteProjectionPoint[]
+}
+
+export type AthleteProjectionHistoryPoint = {
+  date: string
+  days_from_first: number
+  total_kg: number
+}
+
+export type AthleteProjectionMeta = {
+  cohort_tables_available: number
+  km_multiplier: number
+  km_sample_size: number
+  precomputed: boolean
+  small_n_warning: boolean
+  long_horizon_warning: boolean
+  engine_d_available?: boolean
+  engine_d_note?: string
+}
+
+export type AthleteProjectionResponse = {
+  found: boolean
+  lifter_name: string
+  engine?: AthleteProjectionEngine
+  horizon_months?: number
+  horizon_capped?: boolean
+  as_of_date?: string
+  age_division?: string
+  lifts?: {
+    squat: AthleteProjectionLift
+    bench: AthleteProjectionLift
+    deadlift: AthleteProjectionLift
+  }
+  total_history?: AthleteProjectionHistoryPoint[]
+  total_projected_points?: AthleteProjectionPoint[]
+  outlier_lifts?: Array<'squat' | 'bench' | 'deadlift'>
+  meta?: AthleteProjectionMeta
+  reason?: string
+}
+
+export function fetchAthleteProjection(
+  name: string,
+  engine: AthleteProjectionEngine = 'shrinkage',
+  horizon: number = 12,
+  n_points: number = 6,
+): Promise<AthleteProjectionResponse> {
+  const params = new URLSearchParams({
+    engine,
+    horizon: String(horizon),
+    n_points: String(n_points),
+  })
+  return getJson<AthleteProjectionResponse>(
+    `${API_BASE}/api/athlete/${encodeURIComponent(name)}/projection?${params}`,
+  )
+}
+
 export async function postManualTrajectory(req: ManualRequest): Promise<LifterHistory> {
   const res = await fetch(`${API_BASE}/api/manual/trajectory`, {
     method: 'POST',
