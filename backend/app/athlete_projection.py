@@ -706,7 +706,7 @@ def _compute_brackets_per_point(
 
 def _load_lifter_history(cursor, name: str) -> pd.DataFrame | None:
     sql = f"""
-        SELECT Name, Sex, Age, BodyweightKg, Date, Event,
+        SELECT Name, Sex, Age, BodyweightKg, Date, Event, Division,
                Best3SquatKg, Best3BenchKg, Best3DeadliftKg, TotalKg,
                CanonicalWeightClass, Equipment
         FROM openipf
@@ -722,15 +722,54 @@ def _load_lifter_history(cursor, name: str) -> pd.DataFrame | None:
     return df
 
 
+_DIVISION_TEXT_MAP: dict[str, str] = {
+    "Open": "Open",
+    "Sub-Junior": "Sub-Jr",
+    "Sub-Juniors": "Sub-Jr",
+    "SJ": "Sub-Jr",
+    "Junior": "Jr",
+    "Juniors": "Jr",
+    "Jr": "Jr",
+    "Master 1": "M1",
+    "Masters 1": "M1",
+    "M1": "M1",
+    "Master 2": "M2",
+    "Masters 2": "M2",
+    "M2": "M2",
+    "Master 3": "M3",
+    "Masters 3": "M3",
+    "M3": "M3",
+    "Master 4": "M4",
+    "Masters 4": "M4",
+    "M4": "M4",
+}
+
+
 def _assign_division(lifter_df: pd.DataFrame) -> str | None:
-    """Pick age division from the most recent meet's Age. None if unknown."""
-    last_age = lifter_df.iloc[-1].get("Age")
-    if last_age is None or pd.isna(last_age):
-        return None
-    div = age_to_category(float(last_age))
-    if isinstance(div, str) and div in AGE_DIVISIONS:
-        return div
-    return None
+    """Derive the lifter's age division.
+
+    Priority:
+      1. Age column on the most recent meet that has a non-null Age.
+      2. Free-text Division column on the most recent meet (CPU canonical
+         labels or common OpenIPF spellings mapped to AGE_DIVISIONS keys).
+      3. Fall back to 'Open' so a lifter with no Age and a missing/exotic
+         Division still gets a projection (rather than a found=false stub).
+    """
+    age_rows = lifter_df[lifter_df["Age"].notna()]
+    if not age_rows.empty:
+        last_age = float(age_rows.iloc[-1]["Age"])
+        div = age_to_category(last_age)
+        if isinstance(div, str) and div in AGE_DIVISIONS:
+            return div
+
+    for raw in reversed(lifter_df["Division"].tolist() if "Division" in lifter_df.columns else []):
+        if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+            continue
+        mapped = _DIVISION_TEXT_MAP.get(str(raw).strip())
+        if mapped in AGE_DIVISIONS:
+            return mapped
+
+    return "Open"
 
 
 def _clamp_horizon(horizon: int, n_meets: int) -> tuple[int, bool]:
