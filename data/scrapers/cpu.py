@@ -289,6 +289,7 @@ def parse_pdf(pdf_path: Path) -> list[dict]:
                     "sex": ctx.sex,
                     "level": ctx.level,
                     "region": ctx.region,
+                    "province": None,  # federal CPU rows are never provincial
                     "division": div,
                     "equipment": ctx.equipment,
                     "event": ctx.event,

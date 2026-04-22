@@ -22,6 +22,7 @@ CSV_FIELDS = (
     "sex",
     "level",
     "region",
+    "province",
     "division",
     "equipment",
     "event",
@@ -35,8 +36,18 @@ CSV_FIELDS = (
 # Enum-like allowed values. Used for validation and as the frontend's
 # filter-panel source of truth.
 VALID_SEX = ("M", "F")
-VALID_LEVEL = ("Nationals", "Regionals")
+VALID_LEVEL = ("Nationals", "Regionals", "Provincials")
 VALID_REGION = (None, "Western/Central", "Eastern")
+# Canadian provinces that have their own powerlifting federation.
+# ``province`` is only populated when Level=Provincials. For federal
+# (Nationals / Regionals) rows the field stays None.
+VALID_PROVINCE = (
+    None,
+    "British Columbia", "Alberta", "Saskatchewan", "Manitoba",
+    "Ontario", "Quebec",
+    "New Brunswick", "Nova Scotia", "Prince Edward Island",
+    "Newfoundland and Labrador",
+)
 VALID_DIVISION = (
     "Open", "Sub-Junior", "Junior",
     "Master 1", "Master 2", "Master 3", "Master 4",
@@ -70,6 +81,16 @@ def validate_row(row: dict) -> None:
         raise ValidationError(f"bad level {row['level']!r} in row {row!r}")
     if row["region"] not in VALID_REGION:
         raise ValidationError(f"bad region {row['region']!r} in row {row!r}")
+    if row.get("province") not in VALID_PROVINCE:
+        raise ValidationError(f"bad province {row.get('province')!r} in row {row!r}")
+    # Level=Provincials must be paired with a province; Nationals /
+    # Regionals must have province=None.
+    if row["level"] == "Provincials" and row.get("province") is None:
+        raise ValidationError(f"Provincials row must have province set: {row!r}")
+    if row["level"] != "Provincials" and row.get("province") is not None:
+        raise ValidationError(
+            f"non-Provincials row must not have province: {row!r}"
+        )
     if row["division"] not in VALID_DIVISION:
         raise ValidationError(f"bad division {row['division']!r} in row {row!r}")
     if row["equipment"] not in VALID_EQUIPMENT:
@@ -107,9 +128,9 @@ def validate_batch(rows: Sequence[dict]) -> None:
     for row in rows:
         validate_row(row)
         key = (
-            row["sex"], row["level"], row["region"], row["division"],
-            row["equipment"], row["event"], row["weight_class"],
-            row["effective_year"],
+            row["sex"], row["level"], row["region"], row.get("province"),
+            row["division"], row["equipment"], row["event"],
+            row["weight_class"], row["effective_year"],
         )
         if key in seen:
             raise ValidationError(f"duplicate row key {key}")

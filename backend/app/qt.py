@@ -424,16 +424,18 @@ def load_live_qt(
     effective_year: int | None = None,
     division: str | None = None,
     region=_UNSET,
+    province=_UNSET,
     equipment: str | None = "Classic",
     event: str | None = "SBD",
 ) -> pd.DataFrame:
     """
     Read a slice of ``qt_current``. Scalar filters: arg is ``None`` -> skip.
-    ``region`` is tri-state via the _UNSET sentinel:
-      * not passed          -> no region filter (all regions)
-      * region=None         -> filter to ``region IS NULL`` (2026 Regionals
-                                 and any pre-split row)
-      * region="Eastern"    -> equality filter
+    ``region`` and ``province`` are tri-state via the _UNSET sentinel:
+      * not passed     -> no filter on that column (both geographic
+                           variants pass through)
+      * =None          -> filter to ``<col> IS NULL`` (federal rows for
+                           province, pre-split 2026 rows for region)
+      * =<string>      -> equality filter (e.g. "Eastern", "Ontario")
     """
     if not is_qt_current_available():
         return pd.DataFrame()
@@ -463,6 +465,11 @@ def load_live_qt(
     elif region is not _UNSET:
         clauses.append("region = ?")
         params.append(region)
+    if province is None:
+        clauses.append("(province IS NULL OR province = '')")
+    elif province is not _UNSET:
+        clauses.append("province = ?")
+        params.append(province)
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     return conn.execute(f"SELECT * FROM qt_current{where}", params).df()
 
@@ -487,8 +494,8 @@ def get_live_qt_filters() -> dict:
         return {"live_data_available": False}
     conn = get_cursor()
     df = conn.execute(
-        "SELECT DISTINCT sex, level, region, division, effective_year, "
-        "fetched_at FROM qt_current"
+        "SELECT DISTINCT sex, level, region, province, division, "
+        "effective_year, fetched_at FROM qt_current"
     ).df()
     # fetched_at should be identical across rows in a single publish, but
     # take the max to be safe.
@@ -508,11 +515,18 @@ def get_live_qt_filters() -> dict:
     ]
     divisions = [d for d in division_order if d in set(_uniq_sorted("division"))]
 
+    # Level order matches the user-facing pipeline: federal first, then
+    # provincial.
+    level_order = ["Nationals", "Regionals", "Provincials"]
+    available_levels = set(_uniq_sorted("level"))
+    levels = [l for l in level_order if l in available_levels]
+
     return {
         "live_data_available": True,
         "sexes": _uniq_sorted("sex"),
-        "levels": _uniq_sorted("level"),
+        "levels": levels,
         "regions": _uniq_sorted("region"),
+        "provinces": _uniq_sorted("province"),
         "divisions": divisions,
         "effective_years": [int(y) for y in _uniq_sorted("effective_year")],
         "fetched_at": fetched_at,
@@ -539,6 +553,7 @@ def compute_live_coverage(
     effective_year: int,
     division: str = "Open",
     region: str | None = None,
+    province: str | None = None,
     equipment: str = "Classic",
     country: str = DEFAULT_COUNTRY,
     federation: str = "CPU",
@@ -554,17 +569,31 @@ def compute_live_coverage(
     of the ``effective_year``. E.g. ``effective_year=2026`` -> the
     qualifying window is ``[2024-03-01, 2026-03-01)``.
 
+    ``region`` is only meaningful for federal Regionals (Western/Central
+    or Eastern for 2027). ``province`` is required when level is
+    ``Provincials`` and must be None otherwise -- the backend validates
+    this by filtering qt_current where ``level=Provincials`` AND
+    ``province=<province>``.
+
     Returns a DataFrame with columns: ``weight_class, qt, n_lifters,
     n_meeting_qt, pct_meeting_qt``. Empty if no QT rows match the
     filter.
     """
     conn = get_cursor()
-    qt_df = load_live_qt(
-        conn,
+    # Build filter kwargs so provincials use ``province`` and federal
+    # levels use ``region``. Both default to None so the sentinel lets
+    # load_live_qt pass through the column when the caller doesn't care.
+    load_kwargs: dict = dict(
         sex=sex, level=level, effective_year=effective_year,
         division=division, equipment=equipment, event=event,
-        region=region,  # None -> NULL, string -> equality, see _UNSET sentinel
     )
+    if level == "Provincials":
+        load_kwargs["province"] = province
+        load_kwargs["region"] = None  # provincial rows have region IS NULL
+    else:
+        load_kwargs["region"] = region
+        load_kwargs["province"] = None  # federal rows have province IS NULL
+    qt_df = load_live_qt(conn, **load_kwargs)
     if qt_df.empty:
         return pd.DataFrame(columns=[
             "weight_class", "qt", "n_lifters", "n_meeting_qt", "pct_meeting_qt",

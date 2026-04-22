@@ -50,6 +50,7 @@ def _load_expected(path: Path) -> list[dict]:
                 "sex": r["sex"],
                 "level": r["level"],
                 "region": r["region"] or None,
+                "province": r.get("province") or None,
                 "division": r["division"],
                 "equipment": r["equipment"],
                 "event": r["event"],
@@ -284,6 +285,47 @@ def test_run_once_no_change_skips_snapshot(tmp_path, monkeypatch) -> None:
     second_snap_count = len(list(history.glob("*.csv")))
     # Identical scrape -> no new snapshot even though run succeeded.
     assert first_snap_count == second_snap_count
+
+
+# -------------------------------------------------------------------------
+# OPA provincial scraper tests (Excel from Dropbox)
+# -------------------------------------------------------------------------
+
+from data.scrapers import opa as opa_scraper  # noqa: E402
+
+OPA_FIXTURE = FIXTURE_DIR / "opa_provincial_classic.xlsx"
+
+
+def test_opa_parse_xlsx_expected_shape() -> None:
+    rows = opa_scraper.parse_xlsx(OPA_FIXTURE)
+    # OPA Classic: 7 divisions x 2 sexes, 9 weight classes each, minus
+    # "-" entries. Observed total: 116 rows.
+    assert 100 <= len(rows) <= 130, f"unexpected row count {len(rows)}"
+    for r in rows:
+        assert r["level"] == "Provincials"
+        assert r["province"] == "Ontario"
+        assert r["equipment"] == "Classic"
+        assert r["event"] == "SBD"
+        assert r["region"] is None
+
+
+def test_opa_open_rows_match_known_values() -> None:
+    """Spot-check well-known QTs from the OPA Classic Open 2026 table."""
+    rows = opa_scraper.parse_xlsx(OPA_FIXTURE)
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"]
+        for r in rows
+    }
+    # From the Excel: Men Open 83kg = 570.0, Women Open 63kg = 302.5.
+    assert by_key[("M", "Open", "83")] == 570.0
+    assert by_key[("F", "Open", "63")] == 302.5
+    # Men 53kg Open is "-" (no QT); should not be emitted.
+    assert ("M", "Open", "53") not in by_key
+
+
+def test_opa_rows_pass_validation() -> None:
+    for row in opa_scraper.parse_xlsx(OPA_FIXTURE):
+        base.validate_row(row)
 
 
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:

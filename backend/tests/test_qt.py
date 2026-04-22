@@ -334,8 +334,8 @@ from backend.app.qt import (  # noqa: E402
 class TestLoadLiveQt:
     def test_no_filter_returns_all_rows(self, test_conn):
         df = load_live_qt(test_conn)
-        # Conftest fixture has 7 qt_current rows.
-        assert len(df) == 7
+        # Conftest fixture has 9 qt_current rows (7 federal + 2 OPA).
+        assert len(df) == 9
 
     def test_filter_by_sex_and_year(self, test_conn):
         df = load_live_qt(test_conn, sex="M", effective_year=2026)

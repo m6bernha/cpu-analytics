@@ -169,40 +169,49 @@ _QT_ROWS = [
 # ---------------------------------------------------------------------------
 
 _QT_CURRENT_ROWS = [
-    # 2026 Nationals (pre regional split -> region NULL)
-    dict(sex="M", level="Nationals", region=None, division="Open",
-         equipment="Classic", event="SBD", weight_class="83",
-         qt=500.0, effective_year=2026,
+    # 2026 Nationals (pre regional split -> region NULL, federal -> province NULL)
+    dict(sex="M", level="Nationals", region=None, province=None,
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=500.0, effective_year=2026,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
-    dict(sex="F", level="Nationals", region=None, division="Open",
-         equipment="Classic", event="SBD", weight_class="63",
-         qt=320.0, effective_year=2026,
+    dict(sex="F", level="Nationals", region=None, province=None,
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="63", qt=320.0, effective_year=2026,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
-    # 2026 Regionals (no split)
-    dict(sex="M", level="Regionals", region=None, division="Open",
-         equipment="Classic", event="SBD", weight_class="83",
-         qt=450.0, effective_year=2026,
+    # 2026 Regionals (no geographic split, federal -> province NULL)
+    dict(sex="M", level="Regionals", region=None, province=None,
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=450.0, effective_year=2026,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
     # 2027 Nationals (region still NULL -- no regional split at Nationals
     # level).
-    dict(sex="M", level="Nationals", region=None, division="Open",
-         equipment="Classic", event="SBD", weight_class="83",
-         qt=525.0, effective_year=2027,
+    dict(sex="M", level="Nationals", region=None, province=None,
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=525.0, effective_year=2027,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
     # 2027 Regionals -- Western/Central
     dict(sex="M", level="Regionals", region="Western/Central",
-         division="Open", equipment="Classic", event="SBD",
+         province=None, division="Open", equipment="Classic", event="SBD",
          weight_class="83", qt=475.0, effective_year=2027,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
     # 2027 Regionals -- Eastern
-    dict(sex="M", level="Regionals", region="Eastern",
+    dict(sex="M", level="Regionals", region="Eastern", province=None,
          division="Open", equipment="Classic", event="SBD",
          weight_class="83", qt=460.0, effective_year=2027,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
     # Age division other than Open (Junior) to exercise division filter.
-    dict(sex="F", level="Nationals", region=None, division="Junior",
-         equipment="Classic", event="SBD", weight_class="63",
-         qt=280.0, effective_year=2026,
+    dict(sex="F", level="Nationals", region=None, province=None,
+         division="Junior", equipment="Classic", event="SBD",
+         weight_class="63", qt=280.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # OPA provincial rows (Ontario).
+    dict(sex="M", level="Provincials", region=None, province="Ontario",
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=570.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    dict(sex="F", level="Provincials", region=None, province="Ontario",
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="63", qt=302.5, effective_year=2026,
          source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
 ]
 

@@ -1,233 +1,233 @@
-sex,level,region,division,equipment,event,weight_class,qt,effective_year
-M,Nationals,,Sub-Junior,Classic,SBD,53,312.5,2026
-M,Nationals,,Junior,Classic,SBD,53,410.0,2026
-M,Nationals,,Open,Classic,SBD,59,505.0,2026
-M,Nationals,,Sub-Junior,Classic,SBD,59,347.5,2026
-M,Nationals,,Junior,Classic,SBD,59,460.0,2026
-M,Nationals,,Master 1,Classic,SBD,59,375.0,2026
-M,Nationals,,Master 2,Classic,SBD,59,347.5,2026
-M,Nationals,,Master 3,Classic,SBD,59,317.5,2026
-M,Nationals,,Master 4,Classic,SBD,59,282.5,2026
-M,Nationals,,Open,Classic,SBD,66,560.0,2026
-M,Nationals,,Sub-Junior,Classic,SBD,66,385.0,2026
-M,Nationals,,Junior,Classic,SBD,66,512.5,2026
-M,Nationals,,Master 1,Classic,SBD,66,415.0,2026
-M,Nationals,,Master 2,Classic,SBD,66,382.5,2026
-M,Nationals,,Master 3,Classic,SBD,66,350.0,2026
-M,Nationals,,Master 4,Classic,SBD,66,312.5,2026
-M,Nationals,,Open,Classic,SBD,74,632.5,2026
-M,Nationals,,Sub-Junior,Classic,SBD,74,420.0,2026
-M,Nationals,,Junior,Classic,SBD,74,575.0,2026
-M,Nationals,,Master 1,Classic,SBD,74,452.5,2026
-M,Nationals,,Master 2,Classic,SBD,74,417.5,2026
-M,Nationals,,Master 3,Classic,SBD,74,382.5,2026
-M,Nationals,,Master 4,Classic,SBD,74,340.0,2026
-M,Nationals,,Open,Classic,SBD,83,687.5,2026
-M,Nationals,,Sub-Junior,Classic,SBD,83,452.5,2026
-M,Nationals,,Junior,Classic,SBD,83,640.0,2026
-M,Nationals,,Master 1,Classic,SBD,83,487.5,2026
-M,Nationals,,Master 2,Classic,SBD,83,450.0,2026
-M,Nationals,,Master 3,Classic,SBD,83,412.5,2026
-M,Nationals,,Master 4,Classic,SBD,83,367.5,2026
-M,Nationals,,Open,Classic,SBD,93,710.0,2026
-M,Nationals,,Sub-Junior,Classic,SBD,93,480.0,2026
-M,Nationals,,Junior,Classic,SBD,93,675.0,2026
-M,Nationals,,Master 1,Classic,SBD,93,517.5,2026
-M,Nationals,,Master 2,Classic,SBD,93,477.5,2026
-M,Nationals,,Master 3,Classic,SBD,93,437.5,2026
-M,Nationals,,Master 4,Classic,SBD,93,390.0,2026
-M,Nationals,,Open,Classic,SBD,105,740.0,2026
-M,Nationals,,Sub-Junior,Classic,SBD,105,505.0,2026
-M,Nationals,,Junior,Classic,SBD,105,685.0,2026
-M,Nationals,,Master 1,Classic,SBD,105,545.0,2026
-M,Nationals,,Master 2,Classic,SBD,105,502.5,2026
-M,Nationals,,Master 3,Classic,SBD,105,460.0,2026
-M,Nationals,,Master 4,Classic,SBD,105,410.0,2026
-M,Nationals,,Open,Classic,SBD,120,762.5,2026
-M,Nationals,,Sub-Junior,Classic,SBD,120,527.5,2026
-M,Nationals,,Junior,Classic,SBD,120,690.0,2026
-M,Nationals,,Master 1,Classic,SBD,120,565.0,2026
-M,Nationals,,Master 2,Classic,SBD,120,522.5,2026
-M,Nationals,,Master 3,Classic,SBD,120,480.0,2026
-M,Nationals,,Master 4,Classic,SBD,120,427.5,2026
-M,Nationals,,Open,Classic,SBD,120+,775.0,2026
-M,Nationals,,Sub-Junior,Classic,SBD,120+,537.5,2026
-M,Nationals,,Junior,Classic,SBD,120+,707.5,2026
-M,Nationals,,Master 1,Classic,SBD,120+,580.0,2026
-M,Nationals,,Master 2,Classic,SBD,120+,535.0,2026
-M,Nationals,,Master 3,Classic,SBD,120+,490.0,2026
-M,Nationals,,Master 4,Classic,SBD,120+,432.5,2026
-F,Nationals,,Sub-Junior,Classic,SBD,43,155.0,2026
-F,Nationals,,Junior,Classic,SBD,43,235.0,2026
-F,Nationals,,Open,Classic,SBD,47,280.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,47,167.5,2026
-F,Nationals,,Junior,Classic,SBD,47,255.0,2026
-F,Nationals,,Master 1,Classic,SBD,47,210.0,2026
-F,Nationals,,Master 2,Classic,SBD,47,182.5,2026
-F,Nationals,,Master 3,Classic,SBD,47,152.5,2026
-F,Nationals,,Master 4,Classic,SBD,47,137.5,2026
-F,Nationals,,Open,Classic,SBD,52,302.5,2026
-F,Nationals,,Sub-Junior,Classic,SBD,52,180.0,2026
-F,Nationals,,Junior,Classic,SBD,52,280.0,2026
-F,Nationals,,Master 1,Classic,SBD,52,227.5,2026
-F,Nationals,,Master 2,Classic,SBD,52,195.0,2026
-F,Nationals,,Master 3,Classic,SBD,52,165.0,2026
-F,Nationals,,Master 4,Classic,SBD,52,147.5,2026
-F,Nationals,,Open,Classic,SBD,57,340.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,57,195.0,2026
-F,Nationals,,Junior,Classic,SBD,57,305.0,2026
-F,Nationals,,Master 1,Classic,SBD,57,245.0,2026
-F,Nationals,,Master 2,Classic,SBD,57,210.0,2026
-F,Nationals,,Master 3,Classic,SBD,57,177.5,2026
-F,Nationals,,Master 4,Classic,SBD,57,160.0,2026
-F,Nationals,,Open,Classic,SBD,63,375.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,63,207.5,2026
-F,Nationals,,Junior,Classic,SBD,63,327.5,2026
-F,Nationals,,Master 1,Classic,SBD,63,265.0,2026
-F,Nationals,,Master 2,Classic,SBD,63,227.5,2026
-F,Nationals,,Master 3,Classic,SBD,63,190.0,2026
-F,Nationals,,Master 4,Classic,SBD,63,172.5,2026
-F,Nationals,,Open,Classic,SBD,69,385.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,69,222.5,2026
-F,Nationals,,Junior,Classic,SBD,69,350.0,2026
-F,Nationals,,Master 1,Classic,SBD,69,282.5,2026
-F,Nationals,,Master 2,Classic,SBD,69,242.5,2026
-F,Nationals,,Master 3,Classic,SBD,69,205.0,2026
-F,Nationals,,Master 4,Classic,SBD,69,185.0,2026
-F,Nationals,,Open,Classic,SBD,76,400.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,76,237.5,2026
-F,Nationals,,Junior,Classic,SBD,76,367.5,2026
-F,Nationals,,Master 1,Classic,SBD,76,300.0,2026
-F,Nationals,,Master 2,Classic,SBD,76,257.5,2026
-F,Nationals,,Master 3,Classic,SBD,76,217.5,2026
-F,Nationals,,Master 4,Classic,SBD,76,197.5,2026
-F,Nationals,,Open,Classic,SBD,84,425.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,84,252.5,2026
-F,Nationals,,Junior,Classic,SBD,84,385.0,2026
-F,Nationals,,Master 1,Classic,SBD,84,320.0,2026
-F,Nationals,,Master 2,Classic,SBD,84,275.0,2026
-F,Nationals,,Master 3,Classic,SBD,84,230.0,2026
-F,Nationals,,Master 4,Classic,SBD,84,207.5,2026
-F,Nationals,,Open,Classic,SBD,84+,440.0,2026
-F,Nationals,,Sub-Junior,Classic,SBD,84+,265.0,2026
-F,Nationals,,Junior,Classic,SBD,84+,410.0,2026
-F,Nationals,,Master 1,Classic,SBD,84+,337.5,2026
-F,Nationals,,Master 2,Classic,SBD,84+,290.0,2026
-F,Nationals,,Master 3,Classic,SBD,84+,242.5,2026
-F,Nationals,,Master 4,Classic,SBD,84+,220.0,2026
-M,Regionals,,Sub-Junior,Classic,SBD,53,280.0,2026
-M,Regionals,,Junior,Classic,SBD,53,357.5,2026
-M,Regionals,,Open,Classic,SBD,59,412.5,2026
-M,Regionals,,Sub-Junior,Classic,SBD,59,310.0,2026
-M,Regionals,,Junior,Classic,SBD,59,397.5,2026
-M,Regionals,,Master 1,Classic,SBD,59,347.5,2026
-M,Regionals,,Master 2,Classic,SBD,59,317.5,2026
-M,Regionals,,Master 3,Classic,SBD,59,282.5,2026
-M,Regionals,,Master 4,Classic,SBD,59,255.0,2026
-M,Regionals,,Open,Classic,SBD,66,455.0,2026
-M,Regionals,,Sub-Junior,Classic,SBD,66,342.5,2026
-M,Regionals,,Junior,Classic,SBD,66,437.5,2026
-M,Regionals,,Master 1,Classic,SBD,66,382.5,2026
-M,Regionals,,Master 2,Classic,SBD,66,350.0,2026
-M,Regionals,,Master 3,Classic,SBD,66,312.5,2026
-M,Regionals,,Master 4,Classic,SBD,66,280.0,2026
-M,Regionals,,Open,Classic,SBD,74,497.5,2026
-M,Regionals,,Sub-Junior,Classic,SBD,74,372.5,2026
-M,Regionals,,Junior,Classic,SBD,74,480.0,2026
-M,Regionals,,Master 1,Classic,SBD,74,417.5,2026
-M,Regionals,,Master 2,Classic,SBD,74,382.5,2026
-M,Regionals,,Master 3,Classic,SBD,74,340.0,2026
-M,Regionals,,Master 4,Classic,SBD,74,305.0,2026
-M,Regionals,,Open,Classic,SBD,83,535.0,2026
-M,Regionals,,Sub-Junior,Classic,SBD,83,402.5,2026
-M,Regionals,,Junior,Classic,SBD,83,517.5,2026
-M,Regionals,,Master 1,Classic,SBD,83,450.0,2026
-M,Regionals,,Master 2,Classic,SBD,83,412.5,2026
-M,Regionals,,Master 3,Classic,SBD,83,367.5,2026
-M,Regionals,,Master 4,Classic,SBD,83,330.0,2026
-M,Regionals,,Open,Classic,SBD,93,567.5,2026
-M,Regionals,,Sub-Junior,Classic,SBD,93,427.5,2026
-M,Regionals,,Junior,Classic,SBD,93,547.5,2026
-M,Regionals,,Master 1,Classic,SBD,93,477.5,2026
-M,Regionals,,Master 2,Classic,SBD,93,437.5,2026
-M,Regionals,,Master 3,Classic,SBD,93,390.0,2026
-M,Regionals,,Master 4,Classic,SBD,93,350.0,2026
-M,Regionals,,Open,Classic,SBD,105,597.5,2026
-M,Regionals,,Sub-Junior,Classic,SBD,105,450.0,2026
-M,Regionals,,Junior,Classic,SBD,105,577.5,2026
-M,Regionals,,Master 1,Classic,SBD,105,502.5,2026
-M,Regionals,,Master 2,Classic,SBD,105,460.0,2026
-M,Regionals,,Master 3,Classic,SBD,105,410.0,2026
-M,Regionals,,Master 4,Classic,SBD,105,367.5,2026
-M,Regionals,,Open,Classic,SBD,120,620.0,2026
-M,Regionals,,Sub-Junior,Classic,SBD,120,470.0,2026
-M,Regionals,,Junior,Classic,SBD,120,600.0,2026
-M,Regionals,,Master 1,Classic,SBD,120,522.5,2026
-M,Regionals,,Master 2,Classic,SBD,120,480.0,2026
-M,Regionals,,Master 3,Classic,SBD,120,427.5,2026
-M,Regionals,,Master 4,Classic,SBD,120,382.5,2026
-M,Regionals,,Open,Classic,SBD,120+,637.5,2026
-M,Regionals,,Sub-Junior,Classic,SBD,120+,475.0,2026
-M,Regionals,,Junior,Classic,SBD,120+,615.0,2026
-M,Regionals,,Master 1,Classic,SBD,120+,535.0,2026
-M,Regionals,,Master 2,Classic,SBD,120+,490.0,2026
-M,Regionals,,Master 3,Classic,SBD,120+,432.5,2026
-M,Regionals,,Master 4,Classic,SBD,120+,390.0,2026
-F,Regionals,,Sub-Junior,Classic,SBD,43,142.5,2026
-F,Regionals,,Junior,Classic,SBD,43,195.0,2026
-F,Regionals,,Open,Classic,SBD,47,240.0,2026
-F,Regionals,,Sub-Junior,Classic,SBD,47,150.0,2026
-F,Regionals,,Junior,Classic,SBD,47,207.5,2026
-F,Regionals,,Master 1,Classic,SBD,47,182.5,2026
-F,Regionals,,Master 2,Classic,SBD,47,152.5,2026
-F,Regionals,,Master 3,Classic,SBD,47,137.5,2026
-F,Regionals,,Master 4,Classic,SBD,47,127.5,2026
-F,Regionals,,Open,Classic,SBD,52,260.0,2026
-F,Regionals,,Sub-Junior,Classic,SBD,52,160.0,2026
-F,Regionals,,Junior,Classic,SBD,52,222.5,2026
-F,Regionals,,Master 1,Classic,SBD,52,195.0,2026
-F,Regionals,,Master 2,Classic,SBD,52,165.0,2026
-F,Regionals,,Master 3,Classic,SBD,52,147.5,2026
-F,Regionals,,Master 4,Classic,SBD,52,137.5,2026
-F,Regionals,,Open,Classic,SBD,57,280.0,2026
-F,Regionals,,Sub-Junior,Classic,SBD,57,175.0,2026
-F,Regionals,,Junior,Classic,SBD,57,240.0,2026
-F,Regionals,,Master 1,Classic,SBD,57,210.0,2026
-F,Regionals,,Master 2,Classic,SBD,57,177.5,2026
-F,Regionals,,Master 3,Classic,SBD,57,160.0,2026
-F,Regionals,,Master 4,Classic,SBD,57,147.5,2026
-F,Regionals,,Open,Classic,SBD,63,302.5,2026
-F,Regionals,,Sub-Junior,Classic,SBD,63,187.5,2026
-F,Regionals,,Junior,Classic,SBD,63,260.0,2026
-F,Regionals,,Master 1,Classic,SBD,63,227.5,2026
-F,Regionals,,Master 2,Classic,SBD,63,190.0,2026
-F,Regionals,,Master 3,Classic,SBD,63,172.5,2026
-F,Regionals,,Master 4,Classic,SBD,63,157.5,2026
-F,Regionals,,Open,Classic,SBD,69,322.5,2026
-F,Regionals,,Sub-Junior,Classic,SBD,69,200.0,2026
-F,Regionals,,Junior,Classic,SBD,69,292.5,2026
-F,Regionals,,Master 1,Classic,SBD,69,242.5,2026
-F,Regionals,,Master 2,Classic,SBD,69,205.0,2026
-F,Regionals,,Master 3,Classic,SBD,69,185.0,2026
-F,Regionals,,Master 4,Classic,SBD,69,170.0,2026
-F,Regionals,,Open,Classic,SBD,76,345.0,2026
-F,Regionals,,Sub-Junior,Classic,SBD,76,212.5,2026
-F,Regionals,,Junior,Classic,SBD,76,310.0,2026
-F,Regionals,,Master 1,Classic,SBD,76,260.0,2026
-F,Regionals,,Master 2,Classic,SBD,76,217.5,2026
-F,Regionals,,Master 3,Classic,SBD,76,197.5,2026
-F,Regionals,,Master 4,Classic,SBD,76,180.0,2026
-F,Regionals,,Open,Classic,SBD,84,367.5,2026
-F,Regionals,,Sub-Junior,Classic,SBD,84,227.5,2026
-F,Regionals,,Junior,Classic,SBD,84,315.0,2026
-F,Regionals,,Master 1,Classic,SBD,84,275.0,2026
-F,Regionals,,Master 2,Classic,SBD,84,230.0,2026
-F,Regionals,,Master 3,Classic,SBD,84,207.5,2026
-F,Regionals,,Master 4,Classic,SBD,84,190.0,2026
-F,Regionals,,Open,Classic,SBD,84+,387.5,2026
-F,Regionals,,Sub-Junior,Classic,SBD,84+,240.0,2026
-F,Regionals,,Junior,Classic,SBD,84+,332.5,2026
-F,Regionals,,Master 1,Classic,SBD,84+,290.0,2026
-F,Regionals,,Master 2,Classic,SBD,84+,242.5,2026
-F,Regionals,,Master 3,Classic,SBD,84+,220.0,2026
-F,Regionals,,Master 4,Classic,SBD,84+,200.0,2026
+sex,level,region,province,division,equipment,event,weight_class,qt,effective_year
+M,Nationals,,,Sub-Junior,Classic,SBD,53,312.5,2026
+M,Nationals,,,Junior,Classic,SBD,53,410.0,2026
+M,Nationals,,,Open,Classic,SBD,59,505.0,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,59,347.5,2026
+M,Nationals,,,Junior,Classic,SBD,59,460.0,2026
+M,Nationals,,,Master 1,Classic,SBD,59,375.0,2026
+M,Nationals,,,Master 2,Classic,SBD,59,347.5,2026
+M,Nationals,,,Master 3,Classic,SBD,59,317.5,2026
+M,Nationals,,,Master 4,Classic,SBD,59,282.5,2026
+M,Nationals,,,Open,Classic,SBD,66,560.0,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,66,385.0,2026
+M,Nationals,,,Junior,Classic,SBD,66,512.5,2026
+M,Nationals,,,Master 1,Classic,SBD,66,415.0,2026
+M,Nationals,,,Master 2,Classic,SBD,66,382.5,2026
+M,Nationals,,,Master 3,Classic,SBD,66,350.0,2026
+M,Nationals,,,Master 4,Classic,SBD,66,312.5,2026
+M,Nationals,,,Open,Classic,SBD,74,632.5,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,74,420.0,2026
+M,Nationals,,,Junior,Classic,SBD,74,575.0,2026
+M,Nationals,,,Master 1,Classic,SBD,74,452.5,2026
+M,Nationals,,,Master 2,Classic,SBD,74,417.5,2026
+M,Nationals,,,Master 3,Classic,SBD,74,382.5,2026
+M,Nationals,,,Master 4,Classic,SBD,74,340.0,2026
+M,Nationals,,,Open,Classic,SBD,83,687.5,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,83,452.5,2026
+M,Nationals,,,Junior,Classic,SBD,83,640.0,2026
+M,Nationals,,,Master 1,Classic,SBD,83,487.5,2026
+M,Nationals,,,Master 2,Classic,SBD,83,450.0,2026
+M,Nationals,,,Master 3,Classic,SBD,83,412.5,2026
+M,Nationals,,,Master 4,Classic,SBD,83,367.5,2026
+M,Nationals,,,Open,Classic,SBD,93,710.0,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,93,480.0,2026
+M,Nationals,,,Junior,Classic,SBD,93,675.0,2026
+M,Nationals,,,Master 1,Classic,SBD,93,517.5,2026
+M,Nationals,,,Master 2,Classic,SBD,93,477.5,2026
+M,Nationals,,,Master 3,Classic,SBD,93,437.5,2026
+M,Nationals,,,Master 4,Classic,SBD,93,390.0,2026
+M,Nationals,,,Open,Classic,SBD,105,740.0,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,105,505.0,2026
+M,Nationals,,,Junior,Classic,SBD,105,685.0,2026
+M,Nationals,,,Master 1,Classic,SBD,105,545.0,2026
+M,Nationals,,,Master 2,Classic,SBD,105,502.5,2026
+M,Nationals,,,Master 3,Classic,SBD,105,460.0,2026
+M,Nationals,,,Master 4,Classic,SBD,105,410.0,2026
+M,Nationals,,,Open,Classic,SBD,120,762.5,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,120,527.5,2026
+M,Nationals,,,Junior,Classic,SBD,120,690.0,2026
+M,Nationals,,,Master 1,Classic,SBD,120,565.0,2026
+M,Nationals,,,Master 2,Classic,SBD,120,522.5,2026
+M,Nationals,,,Master 3,Classic,SBD,120,480.0,2026
+M,Nationals,,,Master 4,Classic,SBD,120,427.5,2026
+M,Nationals,,,Open,Classic,SBD,120+,775.0,2026
+M,Nationals,,,Sub-Junior,Classic,SBD,120+,537.5,2026
+M,Nationals,,,Junior,Classic,SBD,120+,707.5,2026
+M,Nationals,,,Master 1,Classic,SBD,120+,580.0,2026
+M,Nationals,,,Master 2,Classic,SBD,120+,535.0,2026
+M,Nationals,,,Master 3,Classic,SBD,120+,490.0,2026
+M,Nationals,,,Master 4,Classic,SBD,120+,432.5,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,43,155.0,2026
+F,Nationals,,,Junior,Classic,SBD,43,235.0,2026
+F,Nationals,,,Open,Classic,SBD,47,280.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,47,167.5,2026
+F,Nationals,,,Junior,Classic,SBD,47,255.0,2026
+F,Nationals,,,Master 1,Classic,SBD,47,210.0,2026
+F,Nationals,,,Master 2,Classic,SBD,47,182.5,2026
+F,Nationals,,,Master 3,Classic,SBD,47,152.5,2026
+F,Nationals,,,Master 4,Classic,SBD,47,137.5,2026
+F,Nationals,,,Open,Classic,SBD,52,302.5,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,52,180.0,2026
+F,Nationals,,,Junior,Classic,SBD,52,280.0,2026
+F,Nationals,,,Master 1,Classic,SBD,52,227.5,2026
+F,Nationals,,,Master 2,Classic,SBD,52,195.0,2026
+F,Nationals,,,Master 3,Classic,SBD,52,165.0,2026
+F,Nationals,,,Master 4,Classic,SBD,52,147.5,2026
+F,Nationals,,,Open,Classic,SBD,57,340.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,57,195.0,2026
+F,Nationals,,,Junior,Classic,SBD,57,305.0,2026
+F,Nationals,,,Master 1,Classic,SBD,57,245.0,2026
+F,Nationals,,,Master 2,Classic,SBD,57,210.0,2026
+F,Nationals,,,Master 3,Classic,SBD,57,177.5,2026
+F,Nationals,,,Master 4,Classic,SBD,57,160.0,2026
+F,Nationals,,,Open,Classic,SBD,63,375.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,63,207.5,2026
+F,Nationals,,,Junior,Classic,SBD,63,327.5,2026
+F,Nationals,,,Master 1,Classic,SBD,63,265.0,2026
+F,Nationals,,,Master 2,Classic,SBD,63,227.5,2026
+F,Nationals,,,Master 3,Classic,SBD,63,190.0,2026
+F,Nationals,,,Master 4,Classic,SBD,63,172.5,2026
+F,Nationals,,,Open,Classic,SBD,69,385.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,69,222.5,2026
+F,Nationals,,,Junior,Classic,SBD,69,350.0,2026
+F,Nationals,,,Master 1,Classic,SBD,69,282.5,2026
+F,Nationals,,,Master 2,Classic,SBD,69,242.5,2026
+F,Nationals,,,Master 3,Classic,SBD,69,205.0,2026
+F,Nationals,,,Master 4,Classic,SBD,69,185.0,2026
+F,Nationals,,,Open,Classic,SBD,76,400.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,76,237.5,2026
+F,Nationals,,,Junior,Classic,SBD,76,367.5,2026
+F,Nationals,,,Master 1,Classic,SBD,76,300.0,2026
+F,Nationals,,,Master 2,Classic,SBD,76,257.5,2026
+F,Nationals,,,Master 3,Classic,SBD,76,217.5,2026
+F,Nationals,,,Master 4,Classic,SBD,76,197.5,2026
+F,Nationals,,,Open,Classic,SBD,84,425.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,84,252.5,2026
+F,Nationals,,,Junior,Classic,SBD,84,385.0,2026
+F,Nationals,,,Master 1,Classic,SBD,84,320.0,2026
+F,Nationals,,,Master 2,Classic,SBD,84,275.0,2026
+F,Nationals,,,Master 3,Classic,SBD,84,230.0,2026
+F,Nationals,,,Master 4,Classic,SBD,84,207.5,2026
+F,Nationals,,,Open,Classic,SBD,84+,440.0,2026
+F,Nationals,,,Sub-Junior,Classic,SBD,84+,265.0,2026
+F,Nationals,,,Junior,Classic,SBD,84+,410.0,2026
+F,Nationals,,,Master 1,Classic,SBD,84+,337.5,2026
+F,Nationals,,,Master 2,Classic,SBD,84+,290.0,2026
+F,Nationals,,,Master 3,Classic,SBD,84+,242.5,2026
+F,Nationals,,,Master 4,Classic,SBD,84+,220.0,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,53,280.0,2026
+M,Regionals,,,Junior,Classic,SBD,53,357.5,2026
+M,Regionals,,,Open,Classic,SBD,59,412.5,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,59,310.0,2026
+M,Regionals,,,Junior,Classic,SBD,59,397.5,2026
+M,Regionals,,,Master 1,Classic,SBD,59,347.5,2026
+M,Regionals,,,Master 2,Classic,SBD,59,317.5,2026
+M,Regionals,,,Master 3,Classic,SBD,59,282.5,2026
+M,Regionals,,,Master 4,Classic,SBD,59,255.0,2026
+M,Regionals,,,Open,Classic,SBD,66,455.0,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,66,342.5,2026
+M,Regionals,,,Junior,Classic,SBD,66,437.5,2026
+M,Regionals,,,Master 1,Classic,SBD,66,382.5,2026
+M,Regionals,,,Master 2,Classic,SBD,66,350.0,2026
+M,Regionals,,,Master 3,Classic,SBD,66,312.5,2026
+M,Regionals,,,Master 4,Classic,SBD,66,280.0,2026
+M,Regionals,,,Open,Classic,SBD,74,497.5,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,74,372.5,2026
+M,Regionals,,,Junior,Classic,SBD,74,480.0,2026
+M,Regionals,,,Master 1,Classic,SBD,74,417.5,2026
+M,Regionals,,,Master 2,Classic,SBD,74,382.5,2026
+M,Regionals,,,Master 3,Classic,SBD,74,340.0,2026
+M,Regionals,,,Master 4,Classic,SBD,74,305.0,2026
+M,Regionals,,,Open,Classic,SBD,83,535.0,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,83,402.5,2026
+M,Regionals,,,Junior,Classic,SBD,83,517.5,2026
+M,Regionals,,,Master 1,Classic,SBD,83,450.0,2026
+M,Regionals,,,Master 2,Classic,SBD,83,412.5,2026
+M,Regionals,,,Master 3,Classic,SBD,83,367.5,2026
+M,Regionals,,,Master 4,Classic,SBD,83,330.0,2026
+M,Regionals,,,Open,Classic,SBD,93,567.5,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,93,427.5,2026
+M,Regionals,,,Junior,Classic,SBD,93,547.5,2026
+M,Regionals,,,Master 1,Classic,SBD,93,477.5,2026
+M,Regionals,,,Master 2,Classic,SBD,93,437.5,2026
+M,Regionals,,,Master 3,Classic,SBD,93,390.0,2026
+M,Regionals,,,Master 4,Classic,SBD,93,350.0,2026
+M,Regionals,,,Open,Classic,SBD,105,597.5,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,105,450.0,2026
+M,Regionals,,,Junior,Classic,SBD,105,577.5,2026
+M,Regionals,,,Master 1,Classic,SBD,105,502.5,2026
+M,Regionals,,,Master 2,Classic,SBD,105,460.0,2026
+M,Regionals,,,Master 3,Classic,SBD,105,410.0,2026
+M,Regionals,,,Master 4,Classic,SBD,105,367.5,2026
+M,Regionals,,,Open,Classic,SBD,120,620.0,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,120,470.0,2026
+M,Regionals,,,Junior,Classic,SBD,120,600.0,2026
+M,Regionals,,,Master 1,Classic,SBD,120,522.5,2026
+M,Regionals,,,Master 2,Classic,SBD,120,480.0,2026
+M,Regionals,,,Master 3,Classic,SBD,120,427.5,2026
+M,Regionals,,,Master 4,Classic,SBD,120,382.5,2026
+M,Regionals,,,Open,Classic,SBD,120+,637.5,2026
+M,Regionals,,,Sub-Junior,Classic,SBD,120+,475.0,2026
+M,Regionals,,,Junior,Classic,SBD,120+,615.0,2026
+M,Regionals,,,Master 1,Classic,SBD,120+,535.0,2026
+M,Regionals,,,Master 2,Classic,SBD,120+,490.0,2026
+M,Regionals,,,Master 3,Classic,SBD,120+,432.5,2026
+M,Regionals,,,Master 4,Classic,SBD,120+,390.0,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,43,142.5,2026
+F,Regionals,,,Junior,Classic,SBD,43,195.0,2026
+F,Regionals,,,Open,Classic,SBD,47,240.0,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,47,150.0,2026
+F,Regionals,,,Junior,Classic,SBD,47,207.5,2026
+F,Regionals,,,Master 1,Classic,SBD,47,182.5,2026
+F,Regionals,,,Master 2,Classic,SBD,47,152.5,2026
+F,Regionals,,,Master 3,Classic,SBD,47,137.5,2026
+F,Regionals,,,Master 4,Classic,SBD,47,127.5,2026
+F,Regionals,,,Open,Classic,SBD,52,260.0,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,52,160.0,2026
+F,Regionals,,,Junior,Classic,SBD,52,222.5,2026
+F,Regionals,,,Master 1,Classic,SBD,52,195.0,2026
+F,Regionals,,,Master 2,Classic,SBD,52,165.0,2026
+F,Regionals,,,Master 3,Classic,SBD,52,147.5,2026
+F,Regionals,,,Master 4,Classic,SBD,52,137.5,2026
+F,Regionals,,,Open,Classic,SBD,57,280.0,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,57,175.0,2026
+F,Regionals,,,Junior,Classic,SBD,57,240.0,2026
+F,Regionals,,,Master 1,Classic,SBD,57,210.0,2026
+F,Regionals,,,Master 2,Classic,SBD,57,177.5,2026
+F,Regionals,,,Master 3,Classic,SBD,57,160.0,2026
+F,Regionals,,,Master 4,Classic,SBD,57,147.5,2026
+F,Regionals,,,Open,Classic,SBD,63,302.5,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,63,187.5,2026
+F,Regionals,,,Junior,Classic,SBD,63,260.0,2026
+F,Regionals,,,Master 1,Classic,SBD,63,227.5,2026
+F,Regionals,,,Master 2,Classic,SBD,63,190.0,2026
+F,Regionals,,,Master 3,Classic,SBD,63,172.5,2026
+F,Regionals,,,Master 4,Classic,SBD,63,157.5,2026
+F,Regionals,,,Open,Classic,SBD,69,322.5,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,69,200.0,2026
+F,Regionals,,,Junior,Classic,SBD,69,292.5,2026
+F,Regionals,,,Master 1,Classic,SBD,69,242.5,2026
+F,Regionals,,,Master 2,Classic,SBD,69,205.0,2026
+F,Regionals,,,Master 3,Classic,SBD,69,185.0,2026
+F,Regionals,,,Master 4,Classic,SBD,69,170.0,2026
+F,Regionals,,,Open,Classic,SBD,76,345.0,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,76,212.5,2026
+F,Regionals,,,Junior,Classic,SBD,76,310.0,2026
+F,Regionals,,,Master 1,Classic,SBD,76,260.0,2026
+F,Regionals,,,Master 2,Classic,SBD,76,217.5,2026
+F,Regionals,,,Master 3,Classic,SBD,76,197.5,2026
+F,Regionals,,,Master 4,Classic,SBD,76,180.0,2026
+F,Regionals,,,Open,Classic,SBD,84,367.5,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,84,227.5,2026
+F,Regionals,,,Junior,Classic,SBD,84,315.0,2026
+F,Regionals,,,Master 1,Classic,SBD,84,275.0,2026
+F,Regionals,,,Master 2,Classic,SBD,84,230.0,2026
+F,Regionals,,,Master 3,Classic,SBD,84,207.5,2026
+F,Regionals,,,Master 4,Classic,SBD,84,190.0,2026
+F,Regionals,,,Open,Classic,SBD,84+,387.5,2026
+F,Regionals,,,Sub-Junior,Classic,SBD,84+,240.0,2026
+F,Regionals,,,Junior,Classic,SBD,84+,332.5,2026
+F,Regionals,,,Master 1,Classic,SBD,84+,290.0,2026
+F,Regionals,,,Master 2,Classic,SBD,84+,242.5,2026
+F,Regionals,,,Master 3,Classic,SBD,84+,220.0,2026
+F,Regionals,,,Master 4,Classic,SBD,84+,200.0,2026

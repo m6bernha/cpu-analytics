@@ -38,6 +38,7 @@ from pathlib import Path
 
 from data.scrapers import base
 from data.scrapers.cpu import discover_pdf_urls, download_pdf, parse_pdf
+from data.scrapers import opa as opa_scraper
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ QT_HISTORY_DIR = REPO_ROOT / "data" / "qt_history"
 # Primary-key tuple used for deduping, sorting, and diffing. Every row
 # must be unique on this tuple.
 _KEY_FIELDS = (
-    "effective_year", "sex", "level", "region",
+    "effective_year", "sex", "level", "region", "province",
     "division", "equipment", "event", "weight_class",
 )
 
@@ -162,12 +163,15 @@ def _write_github_outputs(values: dict[str, str]) -> None:
 
 
 def _scrape_to_rows(tmpdir: Path) -> list[dict]:
-    """Discover, download, parse, decorate, scope-filter, sort."""
+    """Discover, download, parse (CPU federal + OPA provincial),
+    decorate, scope-filter, sort."""
+    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    all_rows: list[dict] = []
+
+    # CPU federal scrape (Nationals + Regionals).
     sources = discover_pdf_urls()
     if not sources:
         raise RuntimeError("no in-scope PDFs discovered on CPU landing pages")
-    fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    all_rows: list[dict] = []
     for s in sources:
         pdf_path = download_pdf(s["url"], tmpdir)
         rows = parse_pdf(pdf_path)
@@ -175,6 +179,24 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
             r["source_pdf"] = s["url"]
             r["fetched_at"] = fetched_at
         all_rows.extend(rows)
+
+    # OPA provincial scrape (Ontario). Graceful degrade -- a scraper
+    # failure here must not take the whole pipeline down, since the CPU
+    # federal side already has a fresh CSV to publish.
+    try:
+        opa_url = opa_scraper.discover_xlsx_url()
+        opa_path = opa_scraper.download_xlsx(opa_url, tmpdir)
+        opa_rows = opa_scraper.parse_xlsx(opa_path)
+        for r in opa_rows:
+            r["source_pdf"] = opa_url
+            r["fetched_at"] = fetched_at
+        all_rows.extend(opa_rows)
+        log.info("OPA: %d provincial rows", len(opa_rows))
+    except Exception as e:
+        log.warning(
+            "OPA scrape failed (%s); continuing with federal rows only", e,
+        )
+
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))
     scoped = filter_in_scope(all_rows)
     log.info("%d rows in scope (Classic + SBD)", len(scoped))

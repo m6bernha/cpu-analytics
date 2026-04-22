@@ -453,12 +453,16 @@ def api_qt_live_coverage(
     request: Request,
     response: Response,
     sex: str = Query(..., description="M or F"),
-    level: str = Query(..., description="Nationals or Regionals"),
+    level: str = Query(..., description="Nationals, Regionals, or Provincials"),
     effective_year: int = Query(..., description="e.g. 2026 or 2027"),
     division: str = Query("Open"),
     region: str | None = Query(
         None,
         description="Western/Central, Eastern, or omit for pre-2027 Regionals",
+    ),
+    province: str | None = Query(
+        None,
+        description="required when level=Provincials (e.g. Ontario)",
     ),
     equipment: str = Query("Classic"),
     event: str = Query("SBD"),
@@ -486,16 +490,18 @@ def api_qt_live_coverage(
     if cached is not None:
         return cached
 
+    filters_echo = {
+        "sex": sex, "level": level, "effective_year": effective_year,
+        "division": division, "region": region, "province": province,
+        "equipment": equipment, "event": event,
+    }
+
     if not qt_mod.is_qt_current_available():
         return _clean({
             "rows": [],
             "meta": {
                 "live_data_available": False,
-                "filters": {
-                    "sex": sex, "level": level, "effective_year": effective_year,
-                    "division": division, "region": region,
-                    "equipment": equipment, "event": event,
-                },
+                "filters": filters_echo,
                 "fetched_at": None,
             },
         })
@@ -506,23 +512,18 @@ def api_qt_live_coverage(
         effective_year=effective_year,
         division=division,
         region=region,
+        province=province,
         equipment=equipment,
         event=event,
     )
     rows = df.to_dict(orient="records") if not df.empty else []
 
-    # Pull fetched_at from any matching qt_current row so the UI can
-    # display "data last updated YYYY-MM-DD".
     filters_meta = qt_mod.get_live_qt_filters()
     return _clean({
         "rows": rows,
         "meta": {
             "live_data_available": True,
-            "filters": {
-                "sex": sex, "level": level, "effective_year": effective_year,
-                "division": division, "region": region,
-                "equipment": equipment, "event": event,
-            },
+            "filters": filters_echo,
             "fetched_at": filters_meta.get("fetched_at"),
         },
     })
