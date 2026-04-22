@@ -1,0 +1,465 @@
+sex,level,region,province,division,equipment,event,weight_class,qt,effective_year
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,53,310.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,53,408.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,59,437.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,59,347.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,59,450.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,59,355.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,59,330.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,59,302.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,59,267.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,66,482.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,66,382.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,66,494.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,66,395.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,66,362.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,66,332.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,66,297.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,74,525.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,74,415.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,74,532.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,74,430.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,74,397.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,74,362.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,74,322.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,83,567.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,83,450.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,83,565.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,83,462.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,83,427.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,83,392.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,83,350.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,93,602.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,93,477.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,93,590.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,93,492.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,93,455.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,93,415.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,93,370.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,105,630.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,105,500.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,105,615.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,105,517.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,105,477.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,105,437.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,105,390.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,120,660.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,120,522.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,120,630.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,120,537.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,120,497.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,120,455.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,120,405.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,120+,675.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,120+,535.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,120+,630.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,120+,550.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,120+,510.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,120+,465.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,120+,410.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,43,155.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,43,212.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,47,237.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,47,167.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,47,227.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,47,200.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,47,172.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,47,145.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,47,130.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,52,272.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,52,177.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,52,247.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,52,215.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,52,185.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,52,157.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,52,140.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,57,292.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,57,192.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,57,265.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,57,232.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,57,200.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,57,167.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,57,152.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,63,317.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,63,207.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,63,287.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,63,252.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,63,215.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,63,180.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,63,165.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,69,337.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,69,220.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,69,307.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,69,267.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,69,230.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,69,195.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,69,175.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,76,360.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,76,235.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,76,327.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,76,285.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,76,245.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,76,207.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,76,185.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,84,382.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,84,250.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,84,350.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,84,305.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,84,260.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,84,217.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,84,197.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,SBD,84+,395.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,SBD,84+,265.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,SBD,84+,367.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,SBD,84+,320.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,SBD,84+,275.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,SBD,84+,230.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,SBD,84+,210.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,43,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,43,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,47,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,47,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,47,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,47,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,47,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,47,22.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,47,20.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,52,47.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,52,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,52,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,52,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,52,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,52,25.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,52,22.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,57,55.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,57,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,57,47.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,57,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,57,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,57,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,57,25.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,63,60.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,63,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,63,55.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,63,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,63,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,63,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,63,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,69,65.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,69,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,69,60.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,69,50.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,69,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,69,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,69,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,76,65.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,76,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,76,65.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,76,52.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,76,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,76,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,76,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,84,70.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,84,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,84,65.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,84,55.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,84,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,84,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,84,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Equipped,B,84+,75.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,84+,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,84+,67.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,84+,57.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,84+,47.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,84+,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,84+,35.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,53,57.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,53,77.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,59,97.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,59,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,59,92.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,59,77.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,59,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,59,60.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,59,55.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,66,110.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,66,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,66,105.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,66,87.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,66,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,66,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,66,60.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,74,120.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,74,80.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,74,117.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,74,97.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,74,82.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,74,70.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,74,65.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,83,130.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,83,92.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,83,125.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,83,107.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,83,92.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,83,80.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,83,70.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,93,137.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,93,95.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,93,130.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,93,112.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,93,97.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,93,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,93,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,105,145.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,105,100.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,105,140.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,105,117.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,105,102.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,105,87.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,105,80.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,120,152.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,120,107.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,120,145.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,120,120.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,120,107.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,120,92.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,120,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Equipped,B,120+,160.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Equipped,B,120+,112.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Equipped,B,120+,152.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Equipped,B,120+,125.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Equipped,B,120+,112.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Equipped,B,120+,97.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Equipped,B,120+,90.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,43,135.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,43,195.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,47,227.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,47,142.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,47,210.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,47,175.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,47,145.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,47,130.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,47,120.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,52,247.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,52,152.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,52,222.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,52,185.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,52,157.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,52,140.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,52,130.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,57,265.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,57,165.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,57,240.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,57,200.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,57,170.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,57,152.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,57,140.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,63,287.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,63,177.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,63,260.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,63,215.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,63,180.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,63,165.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,63,150.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,69,307.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,69,190.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,69,277.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,69,230.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,69,195.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,69,175.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,69,162.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,76,327.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,76,202.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,76,295.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,76,247.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,76,207.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,76,187.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,76,172.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,84,350.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,84,217.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,84,315.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,84,262.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,84,217.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,84,197.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,84,180.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,84+,367.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,84+,227.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,84+,330.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,84+,275.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,84+,230.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,84+,210.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,84+,190.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,53,265.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,53,340.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,59,392.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,59,295.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,59,377.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,59,330.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,59,302.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,59,267.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,59,242.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,66,432.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,66,325.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,66,415.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,66,365.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,66,332.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,66,297.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,66,265.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,74,472.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,74,355.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,74,455.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,74,397.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,74,365.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,74,322.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,74,290.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,83,507.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,83,382.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,83,492.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,83,427.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,83,329.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,83,350.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,83,312.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,93,540.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,93,407.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,93,520.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,93,455.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,93,415.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,93,370.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,93,332.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,105,567.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,105,427.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,105,547.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,105,477.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,105,437.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,105,390.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,105,350.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,120,590.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,120,447.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,120,570.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,120,497.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,120,455.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,120,407.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,120,365.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,SBD,120+,605.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,SBD,120+,552.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,SBD,120+,585.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,SBD,120+,510.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,SBD,120+,465.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,SBD,120+,410.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,SBD,120+,370.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,53,60.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,53,72.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,59,87.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,59,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,59,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,59,72.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,59,62.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,59,57.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,59,52.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,66,100.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,66,70.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,66,95.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,66,77.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,66,70.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,66,62.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,66,57.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,74,110.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,74,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,74,102.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,74,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,74,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,74,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,74,62.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,83,122.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,83,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,83,115.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,83,95.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,83,82.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,83,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,83,67.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,93,125.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,93,90.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,93,117.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,93,100.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,93,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,93,77.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,93,72.5,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,105,132.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,105,95.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,105,125.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,105,105.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,105,90.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,105,82.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,105,75.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,120,137.5,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,120,97.5,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,120,130.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,120,110.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,120,95.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,120,85.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,120,80.0,2022
+M,Provincials,,Newfoundland and Labrador,Open,Classic,B,120+,145.0,2022
+M,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,120+,105.0,2022
+M,Provincials,,Newfoundland and Labrador,Junior,Classic,B,120+,137.5,2022
+M,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,120+,115.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,120+,100.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,120+,90.0,2022
+M,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,120+,85.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,43,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,43,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,47,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,47,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,47,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,47,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,47,25.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,47,22.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,47,22.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,52,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,52,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,52,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,52,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,52,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,52,25.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,52,25.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,57,50.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,57,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,57,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,57,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,57,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,57,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,57,27.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,63,55.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,63,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,63,47.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,63,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,63,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,63,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,63,30.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,69,57.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,69,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,69,50.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,69,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,69,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,69,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,69,32.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,76,62.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,76,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,76,52.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,76,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,76,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,76,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,76,35.0,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,84,67.5,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,84,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,84,57.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,84,47.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,84,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,84,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,84,37.5,2022
+F,Provincials,,Newfoundland and Labrador,Open,Classic,B,84+,70.0,2022
+F,Provincials,,Newfoundland and Labrador,Sub-Junior,Classic,B,84+,45.0,2022
+F,Provincials,,Newfoundland and Labrador,Junior,Classic,B,84+,60.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 1,Classic,B,84+,50.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 2,Classic,B,84+,42.5,2022
+F,Provincials,,Newfoundland and Labrador,Master 3,Classic,B,84+,40.0,2022
+F,Provincials,,Newfoundland and Labrador,Master 4,Classic,B,84+,40.0,2022

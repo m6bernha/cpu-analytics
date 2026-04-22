@@ -41,6 +41,7 @@ from data.scrapers.cpu import discover_pdf_urls, download_pdf, parse_pdf
 from data.scrapers import opa as opa_scraper
 from data.scrapers import mpa as mpa_scraper
 from data.scrapers import nspl as nspl_scraper
+from data.scrapers import nlpa as nlpa_scraper
 
 log = logging.getLogger(__name__)
 
@@ -235,6 +236,21 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     except Exception as e:
         log.warning(
             "NSPL scrape failed (%s); continuing without Nova Scotia", e,
+        )
+
+    # NLPA provincial scrape (Newfoundland & Labrador). Graceful degrade.
+    try:
+        nlpa_path = nlpa_scraper.download_docx(tmpdir)
+        nlpa_rows = nlpa_scraper.parse_docx(nlpa_path)
+        nlpa_url = nlpa_scraper._export_url()
+        for r in nlpa_rows:
+            r["source_pdf"] = nlpa_url
+            r["fetched_at"] = fetched_at
+        all_rows.extend(nlpa_rows)
+        log.info("NLPA: %d provincial rows", len(nlpa_rows))
+    except Exception as e:
+        log.warning(
+            "NLPA scrape failed (%s); continuing without NL", e,
         )
 
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))

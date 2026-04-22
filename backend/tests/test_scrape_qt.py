@@ -491,6 +491,92 @@ def test_nspl_province_and_level_locked() -> None:
             assert r["event"] == "SBD"
 
 
+# -------------------------------------------------------------------------
+# NLPA provincial scraper tests (.docx via Google Docs export)
+# -------------------------------------------------------------------------
+
+from data.scrapers import nlpa as nlpa_scraper  # noqa: E402
+
+
+NLPA_DOCX_FIXTURES = sorted(FIXTURE_DIR.glob("nlpa_*.docx"))
+
+
+def test_nlpa_fixture_present() -> None:
+    assert NLPA_DOCX_FIXTURES, "no nlpa_*.docx fixture found"
+
+
+@pytest.mark.parametrize(
+    "docx_path", NLPA_DOCX_FIXTURES, ids=lambda p: p.stem,
+)
+def test_nlpa_parse_matches_expected_csv(docx_path: Path) -> None:
+    expected_csv = docx_path.with_suffix(".expected.csv")
+    assert expected_csv.exists(), f"missing {expected_csv.name}"
+    actual = nlpa_scraper.parse_docx(docx_path)
+    expected = _load_expected(expected_csv)
+    assert len(actual) == len(expected), (
+        f"row count drift: parser={len(actual)} fixture={len(expected)}"
+    )
+    for i, (a, e) in enumerate(zip(actual, expected)):
+        assert a == e, f"row {i} differs:\n  got:      {a}\n  expected: {e}"
+
+
+@pytest.mark.parametrize(
+    "docx_path", NLPA_DOCX_FIXTURES, ids=lambda p: p.stem,
+)
+def test_nlpa_classic_sbd_open_rows_match_audit_values(docx_path: Path) -> None:
+    """Audit spot checks for Classic + SBD section only."""
+    rows = nlpa_scraper.parse_docx(docx_path)
+    scope = [
+        r for r in rows if r["equipment"] == "Classic" and r["event"] == "SBD"
+    ]
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in scope
+    }
+    assert by_key[("M", "Open", "83")] == 507.5
+    assert by_key[("F", "Open", "63")] == 287.5
+    assert by_key[("M", "Master 1", "83")] == 427.5
+    assert by_key[("F", "Master 2", "63")] == 180.0
+
+
+@pytest.mark.parametrize(
+    "docx_path", NLPA_DOCX_FIXTURES, ids=lambda p: p.stem,
+)
+def test_nlpa_rows_pass_row_validation(docx_path: Path) -> None:
+    for row in nlpa_scraper.parse_docx(docx_path):
+        base.validate_row(row)
+
+
+def test_nlpa_province_and_level_locked() -> None:
+    for docx_path in NLPA_DOCX_FIXTURES:
+        for r in nlpa_scraper.parse_docx(docx_path):
+            assert r["province"] == "Newfoundland and Labrador"
+            assert r["level"] == "Provincials"
+            assert r["region"] is None
+
+
+def test_nlpa_effective_year_from_creation_date() -> None:
+    """The 2022 NLPA doc has no year in its title text; parser falls
+    back to the file's creation year (2022)."""
+    for docx_path in NLPA_DOCX_FIXTURES:
+        rows = nlpa_scraper.parse_docx(docx_path)
+        years = {r["effective_year"] for r in rows}
+        assert years == {2022}, (
+            f"expected all rows at effective_year=2022, got {years}"
+        )
+
+
+def test_nlpa_staleness_warning_is_logged(caplog) -> None:
+    """The committed fixture is from 2022 so it MUST trigger the
+    staleness warning. When NLPA refreshes the doc, the test will fail
+    and the fixture needs re-committing."""
+    import logging as _logging
+    caplog.set_level(_logging.WARNING, logger="data.scrapers.nlpa")
+    nlpa_scraper.parse_docx(NLPA_DOCX_FIXTURES[0])
+    assert any("stale" in rec.message for rec in caplog.records), (
+        f"no staleness warning emitted; records: {caplog.records}"
+    )
+
+
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:
     fixture_sources = [
         {"url": f"fixture://{p.name}", "label": p.stem, "landing": "fixture"}
