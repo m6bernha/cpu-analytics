@@ -647,6 +647,85 @@ def test_apu_source_hashes_line_up_with_live_sample_format() -> None:
             )
 
 
+# -------------------------------------------------------------------------
+# FQD provincial scraper tests (JSON API via Heroku backend)
+# -------------------------------------------------------------------------
+
+from data.scrapers import fqd as fqd_scraper  # noqa: E402
+
+
+FQD_SNAPSHOT = FIXTURE_DIR / "fqd_standards.json"
+
+
+def test_fqd_snapshot_fixture_present() -> None:
+    assert FQD_SNAPSHOT.exists(), "missing fqd_standards.json fixture"
+
+
+def test_fqd_parse_matches_expected_csv() -> None:
+    expected_csv = FQD_SNAPSHOT.with_suffix(".expected.csv")
+    assert expected_csv.exists(), f"missing {expected_csv.name}"
+    actual = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    expected = _load_expected(expected_csv)
+    assert len(actual) == len(expected), (
+        f"row count drift: parser={len(actual)} fixture={len(expected)}"
+    )
+    for i, (a, e) in enumerate(zip(actual, expected)):
+        assert a == e, f"row {i} differs:\n  got:      {a}\n  expected: {e}"
+
+
+def test_fqd_classic_sbd_open_rows_match_audit_values() -> None:
+    """Audit spot checks (Provincial Classic + SBD only)."""
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    scope = [
+        r for r in rows if r["equipment"] == "Classic" and r["event"] == "SBD"
+    ]
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in scope
+    }
+    assert by_key[("M", "Open", "83")] == 625.0
+    assert by_key[("F", "Open", "63")] == 345.0
+    assert by_key[("M", "Master 1", "83")] == 450.0
+    assert by_key[("F", "Master 1", "63")] == 227.5
+
+
+def test_fqd_drops_nationals_rows() -> None:
+    """The FQD API returns both Nationals and Provincials; only
+    Provincials rows should reach our output because CPU already owns
+    Nationals globally."""
+    import json
+    raw = json.loads(FQD_SNAPSHOT.read_text(encoding="utf-8"))
+    nats_count = sum(1 for d in raw if d.get("level") == "nats")
+    assert nats_count > 0, (
+        "fixture should contain nationals records to prove the filter"
+    )
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    assert all(r["level"] == "Provincials" for r in rows)
+
+
+def test_fqd_rows_pass_row_validation() -> None:
+    for row in fqd_scraper.parse_json_file(FQD_SNAPSHOT):
+        base.validate_row(row)
+
+
+def test_fqd_province_locked() -> None:
+    for r in fqd_scraper.parse_json_file(FQD_SNAPSHOT):
+        assert r["province"] == "Quebec"
+        assert r["level"] == "Provincials"
+        assert r["region"] is None
+
+
+def test_fqd_weight_class_normalisation() -> None:
+    """The API returns '-83 kg' / '120+ kg' / '84+ kg'. The parser must
+    normalise to '83' / '120+' / '84+' to match base.VALID_WEIGHT_CLASSES."""
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    wcs = {r["weight_class"] for r in rows if r["sex"] == "M"}
+    assert "83" in wcs
+    assert "120+" in wcs
+    # Never leaves the raw API format in the output.
+    assert not any(w.startswith("-") for w in wcs)
+    assert not any(w.endswith(" kg") for w in wcs)
+
+
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:
     fixture_sources = [
         {"url": f"fixture://{p.name}", "label": p.stem, "landing": "fixture"}

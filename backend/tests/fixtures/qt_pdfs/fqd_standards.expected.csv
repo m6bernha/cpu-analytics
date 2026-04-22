@@ -1,0 +1,465 @@
+sex,level,region,province,division,equipment,event,weight_class,qt,effective_year
+M,Provincials,,Quebec,Open,Classic,SBD,59,467.5,2026
+M,Provincials,,Quebec,Open,Classic,SBD,66,520.0,2026
+M,Provincials,,Quebec,Open,Classic,SBD,74,577.5,2026
+M,Provincials,,Quebec,Open,Classic,SBD,83,625.0,2026
+M,Provincials,,Quebec,Open,Classic,SBD,93,652.5,2026
+M,Provincials,,Quebec,Open,Classic,SBD,105,685.0,2026
+M,Provincials,,Quebec,Open,Classic,SBD,120,707.5,2026
+M,Provincials,,Quebec,Open,Classic,SBD,120+,722.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,53,310.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,59,342.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,66,380.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,74,415.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,83,447.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,93,475.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,105,500.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,120,522.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,SBD,120+,530.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,53,392.5,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,59,437.5,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,66,485.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,74,540.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,83,590.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,93,625.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,105,645.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,120,660.0,2026
+M,Provincials,,Quebec,Junior,Classic,SBD,120+,677.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,59,347.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,66,382.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,74,417.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,83,450.0,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,93,477.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,105,502.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,120,522.5,2026
+M,Provincials,,Quebec,Master 1,Classic,SBD,120+,535.0,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,59,317.5,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,66,350.0,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,74,382.5,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,83,412.5,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,93,437.5,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,105,460.0,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,120,480.0,2026
+M,Provincials,,Quebec,Master 2,Classic,SBD,120+,490.0,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,59,282.5,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,66,312.5,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,74,340.0,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,83,367.5,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,93,390.0,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,105,410.0,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,120,427.5,2026
+M,Provincials,,Quebec,Master 3,Classic,SBD,120+,432.5,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,59,255.0,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,66,280.0,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,74,305.0,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,83,330.0,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,93,350.0,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,105,367.5,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,120,382.5,2026
+M,Provincials,,Quebec,Master 4,Classic,SBD,120+,390.0,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,59,460.0,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,66,507.5,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,74,552.5,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,83,597.5,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,93,635.0,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,105,665.0,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,120,695.0,2026
+M,Provincials,,Quebec,Open,Equipped,SBD,120+,710.0,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,53,327.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,59,365.0,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,66,402.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,74,437.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,83,472.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,93,502.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,105,527.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,120,550.0,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,SBD,120+,562.5,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,53,387.5,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,59,430.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,66,475.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,74,520.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,83,560.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,93,595.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,105,625.0,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,120,647.5,2026
+M,Provincials,,Quebec,Junior,Equipped,SBD,120+,665.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,59,375.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,66,415.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,74,452.5,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,83,487.5,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,93,517.5,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,105,545.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,120,565.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,SBD,120+,580.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,59,347.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,66,382.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,74,417.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,83,450.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,93,477.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,105,502.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,120,522.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,SBD,120+,535.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,59,317.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,66,350.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,74,382.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,83,412.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,93,437.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,105,460.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,120,480.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,SBD,120+,490.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,59,282.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,66,312.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,74,340.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,83,367.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,93,390.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,105,410.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,120,427.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,SBD,120+,432.5,2026
+M,Provincials,,Quebec,Open,Classic,B,59,92.5,2026
+M,Provincials,,Quebec,Open,Classic,B,66,105.0,2026
+M,Provincials,,Quebec,Open,Classic,B,74,115.0,2026
+M,Provincials,,Quebec,Open,Classic,B,83,127.5,2026
+M,Provincials,,Quebec,Open,Classic,B,93,132.5,2026
+M,Provincials,,Quebec,Open,Classic,B,105,140.0,2026
+M,Provincials,,Quebec,Open,Classic,B,120,145.0,2026
+M,Provincials,,Quebec,Open,Classic,B,120+,152.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,53,62.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,59,70.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,66,75.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,74,80.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,83,90.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,93,95.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,105,100.0,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,120,102.5,2026
+M,Provincials,,Quebec,Sub-Junior,Classic,B,120+,110.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,53,75.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,59,90.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,66,100.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,74,107.5,2026
+M,Provincials,,Quebec,Junior,Classic,B,83,120.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,93,125.0,2026
+M,Provincials,,Quebec,Junior,Classic,B,105,132.5,2026
+M,Provincials,,Quebec,Junior,Classic,B,120,137.5,2026
+M,Provincials,,Quebec,Junior,Classic,B,120+,145.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,59,75.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,66,82.5,2026
+M,Provincials,,Quebec,Master 1,Classic,B,74,90.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,83,100.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,93,105.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,105,110.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,120,115.0,2026
+M,Provincials,,Quebec,Master 1,Classic,B,120+,120.0,2026
+M,Provincials,,Quebec,Master 2,Classic,B,59,65.0,2026
+M,Provincials,,Quebec,Master 2,Classic,B,66,72.5,2026
+M,Provincials,,Quebec,Master 2,Classic,B,74,77.5,2026
+M,Provincials,,Quebec,Master 2,Classic,B,83,87.5,2026
+M,Provincials,,Quebec,Master 2,Classic,B,93,90.0,2026
+M,Provincials,,Quebec,Master 2,Classic,B,105,95.0,2026
+M,Provincials,,Quebec,Master 2,Classic,B,120,100.0,2026
+M,Provincials,,Quebec,Master 2,Classic,B,120+,105.0,2026
+M,Provincials,,Quebec,Master 3,Classic,B,59,60.0,2026
+M,Provincials,,Quebec,Master 3,Classic,B,66,65.0,2026
+M,Provincials,,Quebec,Master 3,Classic,B,74,70.0,2026
+M,Provincials,,Quebec,Master 3,Classic,B,83,77.5,2026
+M,Provincials,,Quebec,Master 3,Classic,B,93,82.5,2026
+M,Provincials,,Quebec,Master 3,Classic,B,105,87.5,2026
+M,Provincials,,Quebec,Master 3,Classic,B,120,90.0,2026
+M,Provincials,,Quebec,Master 3,Classic,B,120+,95.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,59,55.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,66,60.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,74,65.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,83,70.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,93,75.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,105,80.0,2026
+M,Provincials,,Quebec,Master 4,Classic,B,120,82.5,2026
+M,Provincials,,Quebec,Master 4,Classic,B,120+,87.5,2026
+M,Provincials,,Quebec,Open,Equipped,B,59,105.0,2026
+M,Provincials,,Quebec,Open,Equipped,B,66,117.5,2026
+M,Provincials,,Quebec,Open,Equipped,B,74,130.0,2026
+M,Provincials,,Quebec,Open,Equipped,B,83,142.5,2026
+M,Provincials,,Quebec,Open,Equipped,B,93,150.0,2026
+M,Provincials,,Quebec,Open,Equipped,B,105,157.5,2026
+M,Provincials,,Quebec,Open,Equipped,B,120,165.0,2026
+M,Provincials,,Quebec,Open,Equipped,B,120+,172.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,53,62.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,59,72.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,66,82.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,74,87.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,83,100.0,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,93,102.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,105,107.5,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,120,115.0,2026
+M,Provincials,,Quebec,Sub-Junior,Equipped,B,120+,120.0,2026
+M,Provincials,,Quebec,Junior,Equipped,B,53,87.5,2026
+M,Provincials,,Quebec,Junior,Equipped,B,59,102.5,2026
+M,Provincials,,Quebec,Junior,Equipped,B,66,115.0,2026
+M,Provincials,,Quebec,Junior,Equipped,B,74,125.0,2026
+M,Provincials,,Quebec,Junior,Equipped,B,83,137.5,2026
+M,Provincials,,Quebec,Junior,Equipped,B,93,145.0,2026
+M,Provincials,,Quebec,Junior,Equipped,B,105,152.5,2026
+M,Provincials,,Quebec,Junior,Equipped,B,120,160.0,2026
+M,Provincials,,Quebec,Junior,Equipped,B,120+,165.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,59,85.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,66,95.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,74,105.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,83,115.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,93,120.0,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,105,127.5,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,120,132.5,2026
+M,Provincials,,Quebec,Master 1,Equipped,B,120+,137.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,59,75.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,66,82.5,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,74,90.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,83,100.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,93,105.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,105,110.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,120,115.0,2026
+M,Provincials,,Quebec,Master 2,Equipped,B,120+,120.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,59,65.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,66,72.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,74,77.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,83,87.5,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,93,90.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,105,95.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,120,100.0,2026
+M,Provincials,,Quebec,Master 3,Equipped,B,120+,105.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,59,60.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,66,65.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,74,70.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,83,77.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,93,82.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,105,87.5,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,120,90.0,2026
+M,Provincials,,Quebec,Master 4,Equipped,B,120+,95.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,47,265.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,52,287.5,2026
+F,Provincials,,Quebec,Open,Classic,SBD,57,317.5,2026
+F,Provincials,,Quebec,Open,Classic,SBD,63,345.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,69,360.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,76,380.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,84,405.0,2026
+F,Provincials,,Quebec,Open,Classic,SBD,84+,422.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,43,155.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,47,165.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,52,177.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,57,195.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,63,207.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,69,220.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,76,235.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,84,252.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,SBD,84+,265.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,43,225.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,47,240.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,52,262.5,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,57,285.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,63,307.5,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,69,335.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,76,355.0,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,84,367.5,2026
+F,Provincials,,Quebec,Junior,Classic,SBD,84+,387.5,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,47,182.5,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,52,195.0,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,57,210.0,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,63,227.5,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,69,242.5,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,76,260.0,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,84,275.0,2026
+F,Provincials,,Quebec,Master 1,Classic,SBD,84+,290.0,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,47,152.5,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,52,165.0,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,57,177.5,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,63,190.0,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,69,205.0,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,76,217.5,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,84,230.0,2026
+F,Provincials,,Quebec,Master 2,Classic,SBD,84+,242.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,47,137.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,52,147.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,57,160.0,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,63,172.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,69,185.0,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,76,197.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,84,207.5,2026
+F,Provincials,,Quebec,Master 3,Classic,SBD,84+,220.0,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,47,127.5,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,52,137.5,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,57,147.5,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,63,157.5,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,69,170.0,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,76,180.0,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,84,190.0,2026
+F,Provincials,,Quebec,Master 4,Classic,SBD,84+,200.0,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,47,250.0,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,52,272.5,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,57,292.5,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,63,317.5,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,69,337.5,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,76,360.0,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,84,382.5,2026
+F,Provincials,,Quebec,Open,Equipped,SBD,84+,395.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,43,162.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,47,175.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,52,187.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,57,202.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,63,217.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,69,232.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,76,247.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,84,262.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,SBD,84+,277.5,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,43,222.5,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,47,240.0,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,52,260.0,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,57,280.0,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,63,302.5,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,69,322.5,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,76,345.0,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,84,367.5,2026
+F,Provincials,,Quebec,Junior,Equipped,SBD,84+,387.5,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,47,210.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,52,227.5,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,57,245.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,63,265.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,69,282.5,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,76,300.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,84,320.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,SBD,84+,337.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,47,182.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,52,195.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,57,210.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,63,227.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,69,242.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,76,257.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,84,275.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,SBD,84+,290.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,47,152.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,52,165.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,57,177.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,63,190.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,69,205.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,76,217.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,84,230.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,SBD,84+,242.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,47,137.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,52,147.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,57,160.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,63,172.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,69,185.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,76,195.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,84,207.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,SBD,84+,220.0,2026
+F,Provincials,,Quebec,Open,Classic,B,47,45.0,2026
+F,Provincials,,Quebec,Open,Classic,B,52,45.0,2026
+F,Provincials,,Quebec,Open,Classic,B,57,52.5,2026
+F,Provincials,,Quebec,Open,Classic,B,63,57.5,2026
+F,Provincials,,Quebec,Open,Classic,B,69,60.0,2026
+F,Provincials,,Quebec,Open,Classic,B,76,65.0,2026
+F,Provincials,,Quebec,Open,Classic,B,84,70.0,2026
+F,Provincials,,Quebec,Open,Classic,B,84+,72.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,43,30.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,47,30.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,52,32.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,57,35.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,63,37.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,69,40.0,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,76,42.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,84,42.5,2026
+F,Provincials,,Quebec,Sub-Junior,Classic,B,84+,45.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,43,35.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,47,40.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,52,42.5,2026
+F,Provincials,,Quebec,Junior,Classic,B,57,45.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,63,50.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,69,52.5,2026
+F,Provincials,,Quebec,Junior,Classic,B,76,55.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,84,60.0,2026
+F,Provincials,,Quebec,Junior,Classic,B,84+,62.5,2026
+F,Provincials,,Quebec,Master 1,Classic,B,47,32.5,2026
+F,Provincials,,Quebec,Master 1,Classic,B,52,35.0,2026
+F,Provincials,,Quebec,Master 1,Classic,B,57,37.5,2026
+F,Provincials,,Quebec,Master 1,Classic,B,63,42.5,2026
+F,Provincials,,Quebec,Master 1,Classic,B,69,45.0,2026
+F,Provincials,,Quebec,Master 1,Classic,B,76,47.5,2026
+F,Provincials,,Quebec,Master 1,Classic,B,84,50.0,2026
+F,Provincials,,Quebec,Master 1,Classic,B,84+,52.5,2026
+F,Provincials,,Quebec,Master 2,Classic,B,47,27.5,2026
+F,Provincials,,Quebec,Master 2,Classic,B,52,30.0,2026
+F,Provincials,,Quebec,Master 2,Classic,B,57,32.5,2026
+F,Provincials,,Quebec,Master 2,Classic,B,63,35.0,2026
+F,Provincials,,Quebec,Master 2,Classic,B,69,37.5,2026
+F,Provincials,,Quebec,Master 2,Classic,B,76,40.0,2026
+F,Provincials,,Quebec,Master 2,Classic,B,84,42.5,2026
+F,Provincials,,Quebec,Master 2,Classic,B,84+,45.0,2026
+F,Provincials,,Quebec,Master 3,Classic,B,47,25.0,2026
+F,Provincials,,Quebec,Master 3,Classic,B,52,27.5,2026
+F,Provincials,,Quebec,Master 3,Classic,B,57,30.0,2026
+F,Provincials,,Quebec,Master 3,Classic,B,63,32.5,2026
+F,Provincials,,Quebec,Master 3,Classic,B,69,35.0,2026
+F,Provincials,,Quebec,Master 3,Classic,B,76,37.5,2026
+F,Provincials,,Quebec,Master 3,Classic,B,84,37.5,2026
+F,Provincials,,Quebec,Master 3,Classic,B,84+,40.0,2026
+F,Provincials,,Quebec,Master 4,Classic,B,47,25.0,2026
+F,Provincials,,Quebec,Master 4,Classic,B,52,27.5,2026
+F,Provincials,,Quebec,Master 4,Classic,B,57,30.0,2026
+F,Provincials,,Quebec,Master 4,Classic,B,63,32.5,2026
+F,Provincials,,Quebec,Master 4,Classic,B,69,35.0,2026
+F,Provincials,,Quebec,Master 4,Classic,B,76,37.5,2026
+F,Provincials,,Quebec,Master 4,Classic,B,84,37.5,2026
+F,Provincials,,Quebec,Master 4,Classic,B,84+,40.0,2026
+F,Provincials,,Quebec,Open,Equipped,B,47,47.5,2026
+F,Provincials,,Quebec,Open,Equipped,B,52,52.5,2026
+F,Provincials,,Quebec,Open,Equipped,B,57,60.0,2026
+F,Provincials,,Quebec,Open,Equipped,B,63,65.0,2026
+F,Provincials,,Quebec,Open,Equipped,B,69,67.5,2026
+F,Provincials,,Quebec,Open,Equipped,B,76,70.0,2026
+F,Provincials,,Quebec,Open,Equipped,B,84,77.5,2026
+F,Provincials,,Quebec,Open,Equipped,B,84+,80.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,43,30.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,47,30.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,52,32.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,57,35.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,63,40.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,69,42.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,76,45.0,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,84,47.5,2026
+F,Provincials,,Quebec,Sub-Junior,Equipped,B,84+,50.0,2026
+F,Provincials,,Quebec,Junior,Equipped,B,43,45.0,2026
+F,Provincials,,Quebec,Junior,Equipped,B,47,47.5,2026
+F,Provincials,,Quebec,Junior,Equipped,B,52,50.0,2026
+F,Provincials,,Quebec,Junior,Equipped,B,57,52.5,2026
+F,Provincials,,Quebec,Junior,Equipped,B,63,60.0,2026
+F,Provincials,,Quebec,Junior,Equipped,B,69,62.5,2026
+F,Provincials,,Quebec,Junior,Equipped,B,76,67.5,2026
+F,Provincials,,Quebec,Junior,Equipped,B,84,70.0,2026
+F,Provincials,,Quebec,Junior,Equipped,B,84+,75.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,47,40.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,52,42.5,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,57,45.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,63,50.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,69,52.5,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,76,55.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,84,60.0,2026
+F,Provincials,,Quebec,Master 1,Equipped,B,84+,62.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,47,32.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,52,35.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,57,37.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,63,42.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,69,45.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,76,47.5,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,84,50.0,2026
+F,Provincials,,Quebec,Master 2,Equipped,B,84+,52.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,47,27.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,52,30.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,57,32.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,63,35.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,69,37.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,76,40.0,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,84,42.5,2026
+F,Provincials,,Quebec,Master 3,Equipped,B,84+,45.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,47,25.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,52,27.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,57,30.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,63,32.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,69,35.0,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,76,37.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,84,37.5,2026
+F,Provincials,,Quebec,Master 4,Equipped,B,84+,40.0,2026

@@ -43,6 +43,7 @@ from data.scrapers import mpa as mpa_scraper
 from data.scrapers import nspl as nspl_scraper
 from data.scrapers import nlpa as nlpa_scraper
 from data.scrapers import apu as apu_scraper
+from data.scrapers import fqd as fqd_scraper
 
 log = logging.getLogger(__name__)
 
@@ -272,6 +273,21 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     except Exception as e:
         log.warning(
             "APU scrape failed (%s); continuing without Alberta", e,
+        )
+
+    # FQD provincial scrape (Quebec). The React SPA exposes a JSON API
+    # backend so Playwright is not required. Same graceful-degrade.
+    try:
+        fqd_snapshot = fqd_scraper.download_api_snapshot(tmpdir)
+        fqd_rows = fqd_scraper.parse_json_file(fqd_snapshot)
+        for r in fqd_rows:
+            r["source_pdf"] = fqd_scraper.FQD_LANDING_URL
+            r["fetched_at"] = fetched_at
+        all_rows.extend(fqd_rows)
+        log.info("FQD: %d provincial rows", len(fqd_rows))
+    except Exception as e:
+        log.warning(
+            "FQD scrape failed (%s); continuing without Quebec", e,
         )
 
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))
