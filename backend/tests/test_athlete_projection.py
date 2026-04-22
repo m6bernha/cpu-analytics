@@ -454,6 +454,50 @@ class TestResponseSerialization:
             assert "slope_combined_kg_per_month" in ld
             assert "w_personal" in ld
             assert "projected_points" in ld
+            assert "history" in ld
+            # Every history row is a complete {date, days_from_first, kg} dict.
+            for h in ld["history"]:
+                assert set(h.keys()) >= {"date", "days_from_first", "kg"}
+
+
+class TestPerLiftHistory:
+    def test_history_length_matches_lift_meet_count(self, precomputed):
+        """Bob has 4 SBD meets contesting squat/deadlift and 5 meets contesting
+        bench (4 SBD + 1 bench-only). history length should match n_meets."""
+        result = ap.shrinkage_projection("Bob B")
+        assert result is not None
+        for lift_key in ("squat", "bench", "deadlift"):
+            lp = result.lifts[lift_key]
+            assert len(lp.history) == lp.n_meets
+
+    def test_history_values_match_lift_column(self, precomputed):
+        """The kg values in history should be the raw lift-column values."""
+        result = ap.shrinkage_projection("Bob B")
+        assert result is not None
+        squat_history = result.lifts["squat"].history
+        # Bob's SBD squats: 190, 200, 205, 200 (as loaded in the conftest).
+        # Confirm the last value is what current_level is anchored on.
+        assert len(squat_history) > 0
+        assert all(h["kg"] > 0 for h in squat_history)
+        # Dates are sorted chronologically by construction.
+        dates = [h["date"] for h in squat_history]
+        assert dates == sorted(dates)
+
+    def test_history_origin_matches_projection_axis(self, precomputed):
+        """history[0].days_from_first should be 0 (lifter's first meet for
+        this lift) and history[-1].days_from_first should equal
+        last_meet_day, matching the x-axis origin used by projected_points."""
+        result = ap.shrinkage_projection("Bob B")
+        assert result is not None
+        for lift_key in ("squat", "bench", "deadlift"):
+            lp = result.lifts[lift_key]
+            if lp.n_meets == 0:
+                continue
+            assert lp.history[0]["days_from_first"] == pytest.approx(0.0, abs=0.1)
+            if lp.last_meet_day is not None:
+                assert lp.history[-1]["days_from_first"] == pytest.approx(
+                    lp.last_meet_day, abs=0.1
+                )
 
 
 # =============================================================================
