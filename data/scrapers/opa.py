@@ -51,12 +51,33 @@ _DIVISION_RE = re.compile(
 _MASTER_ROMAN = {"I": "Master 1", "II": "Master 2", "III": "Master 3", "IV": "Master 4"}
 
 
+def _looks_like_decoded_html(text: str) -> bool:
+    """Sanity check that we got a decoded HTML document, not a blob
+    of compressed bytes that ``requests`` failed to decompress.
+
+    OPA is hosted on a Wix CDN that serves ``Content-Encoding: br``
+    regardless of Accept-Encoding. Without the ``Brotli`` Python
+    package installed, ``requests.text`` silently returns garbage and
+    the downstream regex misses the xlsx URL. This check turns that
+    silent failure into a loud RuntimeError pointing at the root cause.
+    """
+    if not text:
+        return False
+    # HTML must start with a recognisable prefix. Allow a small amount
+    # of leading whitespace / BOM. A real OPA page begins with
+    # ``<!DOCTYPE html>``; failure mode is binary bytes that rarely
+    # start with ``<``.
+    head = text.lstrip()[:200].lower()
+    return "<html" in head or "<!doctype" in head
+
+
 def discover_xlsx_url(landing_url: str = OPA_LANDING_URL) -> str:
     """Fetch OPA's qualifying-standards page and return the current
     Dropbox URL to the Classic QT Excel workbook.
 
     Raises RuntimeError if the landing page contains no Dropbox link
-    (OPA broke their site, or the link moved elsewhere).
+    (OPA broke their site, or the link moved elsewhere), or if the
+    response body is not decoded HTML (likely a missing decompressor).
     """
     r = requests.get(
         landing_url,
@@ -64,7 +85,18 @@ def discover_xlsx_url(landing_url: str = OPA_LANDING_URL) -> str:
         timeout=_HTTP_TIMEOUT,
     )
     r.raise_for_status()
-    m = _DROPBOX_RE.search(r.text)
+    text = r.text
+    if not _looks_like_decoded_html(text):
+        encoding = r.headers.get("Content-Encoding", "")
+        raise RuntimeError(
+            f"OPA landing page body does not look like decoded HTML "
+            f"(Content-Encoding={encoding!r}, len={len(text)}). The "
+            f"Wix CDN serves Brotli and requests needs the Brotli "
+            f"package installed to decode it. Install "
+            f"``pip install Brotli`` or ensure backend/requirements.txt "
+            f"pins it."
+        )
+    m = _DROPBOX_RE.search(text)
     if m is None:
         raise RuntimeError(
             f"no Dropbox .xlsx link found on {landing_url}; OPA likely "
@@ -73,6 +105,23 @@ def discover_xlsx_url(landing_url: str = OPA_LANDING_URL) -> str:
     # Force direct download by setting dl=1 (Dropbox's viewer mode is
     # dl=0, which serves an HTML preview instead of the file). The
     # landing page HTML-escapes ``&`` in hrefs, so unescape first.
+    url = html.unescape(m.group(0))
+    url = re.sub(r"dl=0", "dl=1", url)
+    if "dl=" not in url:
+        url = url + ("&dl=1" if "?" in url else "?dl=1")
+    return url
+
+
+def extract_xlsx_url_from_html(text: str) -> str | None:
+    """Pure-function variant of the URL discovery step. Used by tests
+    to exercise the regex against a committed HTML fixture without
+    hitting the network. Returns the post-escaping direct-download
+    URL, or None if no match."""
+    if not _looks_like_decoded_html(text):
+        return None
+    m = _DROPBOX_RE.search(text)
+    if m is None:
+        return None
     url = html.unescape(m.group(0))
     url = re.sub(r"dl=0", "dl=1", url)
     if "dl=" not in url:

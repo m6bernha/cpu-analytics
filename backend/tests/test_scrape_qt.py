@@ -335,6 +335,44 @@ def test_opa_rows_pass_validation() -> None:
         base.validate_row(row)
 
 
+OPA_LANDING_HTML_FIXTURES = sorted(FIXTURE_DIR.glob("opa_landing_*.html"))
+
+
+def test_opa_landing_fixture_present() -> None:
+    assert OPA_LANDING_HTML_FIXTURES, (
+        "no opa_landing_*.html fixture found; commit the decoded OPA "
+        "landing page so discover_xlsx_url regression is testable offline"
+    )
+
+
+@pytest.mark.parametrize(
+    "html_path", OPA_LANDING_HTML_FIXTURES, ids=lambda p: p.stem,
+)
+def test_opa_landing_html_fixture_yields_dropbox_url(html_path: Path) -> None:
+    """The xlsx URL discovery regex must match against a committed
+    copy of the real OPA landing page HTML. Regression guard: if OPA
+    moves the file or changes link shape, this fails loudly and the
+    regex is the thing to update."""
+    text = html_path.read_text(encoding="utf-8")
+    url = opa_scraper.extract_xlsx_url_from_html(text)
+    assert url is not None, (
+        f"regex missed the Dropbox URL in {html_path.name}; "
+        "update data/scrapers/opa.py:_DROPBOX_RE"
+    )
+    assert url.startswith("https://www.dropbox.com/scl/fi/")
+    assert "Qualifying-Standards.xlsx" in url
+    # discover_xlsx_url forces dl=1 so Dropbox serves the file, not a preview.
+    assert "dl=1" in url
+    assert "dl=0" not in url
+
+
+def test_opa_extract_returns_none_for_gibberish_body() -> None:
+    """The Brotli-decode guard should short-circuit the regex so a
+    bad HTTP response doesn't trigger a confusing secondary error."""
+    garbage = b"\x8b\x1f\x08\x00\x00\x00".decode("latin-1")
+    assert opa_scraper.extract_xlsx_url_from_html(garbage) is None
+
+
 # -------------------------------------------------------------------------
 # MPA provincial scraper tests (PDF from manitobapowerlifting.ca)
 # -------------------------------------------------------------------------

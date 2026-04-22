@@ -15,7 +15,11 @@ psutil>=5.9
 # the FastAPI app at runtime. pdfplumber parses CPU federal PDFs +
 # MPA Manitoba PDF; openpyxl parses OPA Ontario Excel; python-docx
 # parses NLPA Newfoundland Word docs; requests powers HTTP discovery.
+# Brotli is required so OPA's Wix-hosted landing page (Content-Encoding:
+# br, with no fallback option) decodes correctly; without it,
+# requests.text is silently gibberish and the xlsx URL regex misses.
 pdfplumber>=0.11
 openpyxl>=3.1
 python-docx>=1.2
 requests>=2.32
+Brotli>=1.1
