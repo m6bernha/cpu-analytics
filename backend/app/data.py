@@ -17,20 +17,25 @@ from typing import Iterator
 import duckdb
 
 from .data_loader import ensure_parquets
+from .qt_data_loader import ensure_qt_current_csv
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 OPENIPF_PARQUET = PROCESSED_DIR / "openipf.parquet"
 QT_PARQUET = PROCESSED_DIR / "qt_standards.parquet"
+# Live-scraped QT CSV (2026+). Published weekly by qt_refresh workflow
+# to the data-latest release. Optional: the backend boots without it.
+QT_CURRENT_CSV = REPO_ROOT / "data" / "qt_current.csv"
 
 _base_conn: duckdb.DuckDBPyConnection | None = None
+_qt_current_available: bool = False
 _lock = Lock()
 
 
 def _ensure_base_conn() -> duckdb.DuckDBPyConnection:
     """Lazy init of the single base connection. Called under lock."""
-    global _base_conn
+    global _base_conn, _qt_current_available
     if _base_conn is not None:
         return _base_conn
     with _lock:
@@ -46,8 +51,27 @@ def _ensure_base_conn() -> duckdb.DuckDBPyConnection:
         c.execute(
             f"CREATE VIEW qt_standards AS SELECT * FROM parquet_scan('{QT_PARQUET.as_posix()}')"
         )
+        # Live-scrape CSV is optional. Register the view only if the
+        # file is present and valid; otherwise the backend runs in
+        # degraded mode and /api/qt/live/* endpoints report
+        # live_data_available=false.
+        live_path = ensure_qt_current_csv(QT_CURRENT_CSV)
+        if live_path is not None:
+            c.execute(
+                "CREATE VIEW qt_current AS "
+                f"SELECT * FROM read_csv_auto('{live_path.as_posix()}', header=True)"
+            )
+            _qt_current_available = True
+        else:
+            _qt_current_available = False
         _base_conn = c
     return _base_conn
+
+
+def is_qt_current_available() -> bool:
+    """True if the live-scraped qt_current view was successfully registered."""
+    _ensure_base_conn()
+    return _qt_current_available
 
 
 def get_cursor() -> duckdb.DuckDBPyConnection:

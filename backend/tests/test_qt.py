@@ -318,3 +318,102 @@ class TestComputeBlocksEdgeCases:
         for rows in blocks.values():
             for row in rows:
                 assert set(row.keys()) == expected_keys
+
+
+# -------------------------------------------------------------------------
+# Live-scrape QT tests (2026+)
+# -------------------------------------------------------------------------
+
+from backend.app.qt import (  # noqa: E402
+    compute_live_coverage,
+    get_live_qt_filters,
+    load_live_qt,
+)
+
+
+class TestLoadLiveQt:
+    def test_no_filter_returns_all_rows(self, test_conn):
+        df = load_live_qt(test_conn)
+        # Conftest fixture has 7 qt_current rows.
+        assert len(df) == 7
+
+    def test_filter_by_sex_and_year(self, test_conn):
+        df = load_live_qt(test_conn, sex="M", effective_year=2026)
+        assert len(df) >= 1
+        assert (df["sex"] == "M").all()
+        assert (df["effective_year"] == 2026).all()
+
+    def test_filter_by_region(self, test_conn):
+        df = load_live_qt(
+            test_conn, effective_year=2027, region="Western/Central",
+        )
+        assert not df.empty
+        assert (df["region"] == "Western/Central").all()
+
+    def test_filter_by_division_junior(self, test_conn):
+        df = load_live_qt(test_conn, division="Junior")
+        assert len(df) == 1
+        assert df.iloc[0]["division"] == "Junior"
+
+
+class TestGetLiveQtFilters:
+    def test_returns_expected_shape(self, test_conn):
+        f = get_live_qt_filters()
+        assert f["live_data_available"] is True
+        assert "M" in f["sexes"] and "F" in f["sexes"]
+        assert "Nationals" in f["levels"]
+        assert "Regionals" in f["levels"]
+        assert "Western/Central" in f["regions"]
+        assert "Eastern" in f["regions"]
+        assert f["divisions"] == ["Junior", "Open"]  # CPU canonical order
+        assert 2026 in f["effective_years"]
+        assert 2027 in f["effective_years"]
+        assert f["fetched_at"] is not None
+
+    def test_degraded_mode_when_live_unavailable(self, test_conn, monkeypatch):
+        import backend.app.data as data_mod
+        monkeypatch.setattr(data_mod, "_qt_current_available", False)
+        f = get_live_qt_filters()
+        assert f == {"live_data_available": False}
+
+
+class TestComputeLiveCoverage:
+    def test_men_open_nationals_2026_83(self, test_conn):
+        df = compute_live_coverage(
+            sex="M", level="Nationals", effective_year=2026,
+            division="Open",
+        )
+        row = df[df["weight_class"] == "83"].iloc[0]
+        assert row["qt"] == 500.0
+        assert row["n_lifters"] >= 1
+        assert row["n_meeting_qt"] >= 1
+        assert row["pct_meeting_qt"] is not None
+
+    def test_region_filter_selects_correct_qt(self, test_conn):
+        wc = compute_live_coverage(
+            sex="M", level="Regionals", effective_year=2027,
+            division="Open", region="Western/Central",
+        )
+        ea = compute_live_coverage(
+            sex="M", level="Regionals", effective_year=2027,
+            division="Open", region="Eastern",
+        )
+        wc_qt = wc[wc["weight_class"] == "83"].iloc[0]["qt"]
+        ea_qt = ea[ea["weight_class"] == "83"].iloc[0]["qt"]
+        assert wc_qt == 475.0
+        assert ea_qt == 460.0
+
+    def test_empty_result_when_no_matching_qt(self, test_conn):
+        df = compute_live_coverage(
+            sex="M", level="Nationals", effective_year=2026,
+            division="Master 1",
+        )
+        assert df.empty
+
+    def test_output_columns(self, test_conn):
+        df = compute_live_coverage(
+            sex="M", level="Nationals", effective_year=2026, division="Open",
+        )
+        assert list(df.columns) == [
+            "weight_class", "qt", "n_lifters", "n_meeting_qt", "pct_meeting_qt",
+        ]

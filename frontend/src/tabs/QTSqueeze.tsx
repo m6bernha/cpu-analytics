@@ -23,6 +23,7 @@ import {
 } from 'recharts'
 import { fetchQtBlocks, type QtBlockRow, type QtBlocksResponse } from '../lib/api'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
+import QtLiveCoveragePanel from './QtLiveCoveragePanel'
 
 type BlockKey = Exclude<keyof QtBlocksResponse, 'meta'>
 
@@ -282,6 +283,19 @@ export default function QTSqueeze({ isActive }: { isActive: boolean }) {
             </p>
           </div>
         </details>
+      </div>
+
+      <QtLiveCoveragePanel />
+
+      <div className="mb-4">
+        <h3 className="text-zinc-100 text-base font-semibold">
+          Historical standards (pre-2025 / 2025 / 2027 hypothetical)
+        </h3>
+        <p className="text-zinc-400 text-xs mt-1 max-w-3xl">
+          Four-block view of how the 2025 and 2027 standards compare to the
+          pre-2025 baseline. Driven by the vendored historical QT table;
+          use the filters below to switch age division.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 mb-4">

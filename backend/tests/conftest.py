@@ -161,12 +161,59 @@ _QT_ROWS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Synthetic qt_current rows for live-scrape tests.
+# Small subset: Open + Junior, Men + Women, Nationals + Regionals, 2026 +
+# 2027 with regional split in 2027. Values picked to exercise the coverage
+# math against the synthetic lifter rows above.
+# ---------------------------------------------------------------------------
+
+_QT_CURRENT_ROWS = [
+    # 2026 Nationals (pre regional split -> region NULL)
+    dict(sex="M", level="Nationals", region=None, division="Open",
+         equipment="Classic", event="SBD", weight_class="83",
+         qt=500.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    dict(sex="F", level="Nationals", region=None, division="Open",
+         equipment="Classic", event="SBD", weight_class="63",
+         qt=320.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # 2026 Regionals (no split)
+    dict(sex="M", level="Regionals", region=None, division="Open",
+         equipment="Classic", event="SBD", weight_class="83",
+         qt=450.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # 2027 Nationals (region still NULL -- no regional split at Nationals
+    # level).
+    dict(sex="M", level="Nationals", region=None, division="Open",
+         equipment="Classic", event="SBD", weight_class="83",
+         qt=525.0, effective_year=2027,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # 2027 Regionals -- Western/Central
+    dict(sex="M", level="Regionals", region="Western/Central",
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=475.0, effective_year=2027,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # 2027 Regionals -- Eastern
+    dict(sex="M", level="Regionals", region="Eastern",
+         division="Open", equipment="Classic", event="SBD",
+         weight_class="83", qt=460.0, effective_year=2027,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+    # Age division other than Open (Junior) to exercise division filter.
+    dict(sex="F", level="Nationals", region=None, division="Junior",
+         equipment="Classic", event="SBD", weight_class="63",
+         qt=280.0, effective_year=2026,
+         source_pdf="test", fetched_at="2026-04-21T00:00:00+00:00"),
+]
+
+
 @pytest.fixture(scope="session")
 def test_parquets(tmp_path_factory):
     """Write synthetic parquet files and return their paths."""
     d = tmp_path_factory.mktemp("data")
     openipf_path = d / "openipf.parquet"
     qt_path = d / "qt_standards.parquet"
+    qt_current_path = d / "qt_current.csv"
 
     df = pd.DataFrame(_ROWS)
     df.to_parquet(openipf_path, index=False)
@@ -174,7 +221,10 @@ def test_parquets(tmp_path_factory):
     qt = pd.DataFrame(_QT_ROWS)
     qt.to_parquet(qt_path, index=False)
 
-    return openipf_path, qt_path
+    # qt_current is CSV (matches production shape).
+    pd.DataFrame(_QT_CURRENT_ROWS).to_csv(qt_current_path, index=False)
+
+    return openipf_path, qt_path, qt_current_path
 
 
 @pytest.fixture(scope="session")
@@ -184,7 +234,7 @@ def test_conn(test_parquets):
     Monkey-patches backend.app.data so all modules that call get_conn()
     use this connection for the entire test session.
     """
-    openipf_path, qt_path = test_parquets
+    openipf_path, qt_path, qt_current_path = test_parquets
 
     conn = duckdb.connect(database=":memory:")
     conn.execute(
@@ -193,10 +243,16 @@ def test_conn(test_parquets):
     conn.execute(
         f"CREATE VIEW qt_standards AS SELECT * FROM parquet_scan('{qt_path.as_posix()}')"
     )
+    conn.execute(
+        "CREATE VIEW qt_current AS "
+        f"SELECT * FROM read_csv_auto('{qt_current_path.as_posix()}', header=True)"
+    )
 
     # Monkey-patch the singleton base connection so get_cursor() returns
     # cursors against the synthetic parquets instead of downloading real data.
+    # Also flip the live-data flag so is_qt_current_available() reports True.
     import backend.app.data as data_mod
     data_mod._base_conn = conn
+    data_mod._qt_current_available = True
 
     return conn

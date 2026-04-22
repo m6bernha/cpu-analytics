@@ -16,7 +16,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from .data import get_cursor
+from .data import get_cursor, is_qt_current_available
 from .data_static.qt_by_division import QT_OVERRIDES, has_age_specific_qt
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -385,3 +385,227 @@ def compute_blocks(
         ].to_dict(orient="records")
 
     return blocks
+
+
+# =========================
+# LIVE-SCRAPE COVERAGE (2026+)
+# =========================
+#
+# The functions below read from ``qt_current`` (CSV published weekly by
+# the qt_refresh GHA workflow) rather than ``qt_standards`` (parquet
+# derived from the vendored pre-2025 / 2025 CSV). They are additive;
+# nothing above this marker reads from qt_current.
+#
+# Data model recap (see data/scrapers/base.CSV_FIELDS):
+#   sex, level, region, division, equipment, event, weight_class,
+#   qt, effective_year, source_pdf, fetched_at
+#
+# Scope: Classic + SBD only. The orchestrator filters other values out
+# before the CSV is published, so downstream code doesn't need to re-check.
+
+
+# OpenIPF uses the word "Raw" for what CPU calls "Classic". Mapping is
+# applied only when querying the openipf view; qt_current stays in CPU
+# terminology end-to-end.
+_CPU_TO_OPENIPF_EQUIPMENT = {"Classic": "Raw", "Equipped": "Single-ply"}
+
+# Sentinel for load_live_qt(region=...) so callers can distinguish:
+#   region not passed -> no region filter (all regions)
+#   region=None      -> filter to "region IS NULL" (2026 Regionals)
+#   region="Eastern" -> filter to region = 'Eastern'
+_UNSET = object()
+
+
+def load_live_qt(
+    conn,
+    *,
+    sex: str | None = None,
+    level: str | None = None,
+    effective_year: int | None = None,
+    division: str | None = None,
+    region=_UNSET,
+    equipment: str | None = "Classic",
+    event: str | None = "SBD",
+) -> pd.DataFrame:
+    """
+    Read a slice of ``qt_current``. Scalar filters: arg is ``None`` -> skip.
+    ``region`` is tri-state via the _UNSET sentinel:
+      * not passed          -> no region filter (all regions)
+      * region=None         -> filter to ``region IS NULL`` (2026 Regionals
+                                 and any pre-split row)
+      * region="Eastern"    -> equality filter
+    """
+    if not is_qt_current_available():
+        return pd.DataFrame()
+
+    clauses: list[str] = []
+    params: list = []
+    if sex is not None:
+        clauses.append("sex = ?")
+        params.append(sex)
+    if level is not None:
+        clauses.append("level = ?")
+        params.append(level)
+    if effective_year is not None:
+        clauses.append("effective_year = ?")
+        params.append(int(effective_year))
+    if division is not None:
+        clauses.append("division = ?")
+        params.append(division)
+    if equipment is not None:
+        clauses.append("equipment = ?")
+        params.append(equipment)
+    if event is not None:
+        clauses.append("event = ?")
+        params.append(event)
+    if region is None:
+        clauses.append("(region IS NULL OR region = '')")
+    elif region is not _UNSET:
+        clauses.append("region = ?")
+        params.append(region)
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    return conn.execute(f"SELECT * FROM qt_current{where}", params).df()
+
+
+def get_live_qt_filters() -> dict:
+    """Enumerate available filter values from qt_current.
+
+    Returned shape::
+
+        {
+            "live_data_available": bool,
+            "sexes": [...], "levels": [...], "regions": [...],
+            "divisions": [...], "effective_years": [...],
+            "fetched_at": "<iso>",
+        }
+
+    If live data isn't available, only ``live_data_available: false``
+    is returned. The frontend falls back to the 4-block view in that
+    case.
+    """
+    if not is_qt_current_available():
+        return {"live_data_available": False}
+    conn = get_cursor()
+    df = conn.execute(
+        "SELECT DISTINCT sex, level, region, division, effective_year, "
+        "fetched_at FROM qt_current"
+    ).df()
+    # fetched_at should be identical across rows in a single publish, but
+    # take the max to be safe.
+    fetched_at = (
+        df["fetched_at"].max() if "fetched_at" in df and not df.empty else None
+    )
+
+    def _uniq_sorted(col: str) -> list:
+        if col not in df or df.empty:
+            return []
+        return sorted(df[col].dropna().unique().tolist())
+
+    # Division needs a CPU-canonical order (not alphabetical).
+    division_order = [
+        "Sub-Junior", "Junior", "Open",
+        "Master 1", "Master 2", "Master 3", "Master 4",
+    ]
+    divisions = [d for d in division_order if d in set(_uniq_sorted("division"))]
+
+    return {
+        "live_data_available": True,
+        "sexes": _uniq_sorted("sex"),
+        "levels": _uniq_sorted("level"),
+        "regions": _uniq_sorted("region"),
+        "divisions": divisions,
+        "effective_years": [int(y) for y in _uniq_sorted("effective_year")],
+        "fetched_at": fetched_at,
+    }
+
+
+def _wc_sort_value(s: str) -> float:
+    s = str(s)
+    if s.endswith("+"):
+        try:
+            return float(s.rstrip("+")) + 0.5
+        except ValueError:
+            return 9999.0
+    try:
+        return float(s)
+    except ValueError:
+        return 9999.0
+
+
+def compute_live_coverage(
+    *,
+    sex: str,
+    level: str,
+    effective_year: int,
+    division: str = "Open",
+    region: str | None = None,
+    equipment: str = "Classic",
+    country: str = DEFAULT_COUNTRY,
+    federation: str = "CPU",
+    tested: str = "Yes",
+    event: str = "SBD",
+) -> pd.DataFrame:
+    """
+    Coverage rate per weight class for a single slice of the live QT
+    table.
+
+    Cohort: all lifters in the openipf scope matching the filters whose
+    most recent SBD total falls in the 24-month window ending March 1
+    of the ``effective_year``. E.g. ``effective_year=2026`` -> the
+    qualifying window is ``[2024-03-01, 2026-03-01)``.
+
+    Returns a DataFrame with columns: ``weight_class, qt, n_lifters,
+    n_meeting_qt, pct_meeting_qt``. Empty if no QT rows match the
+    filter.
+    """
+    conn = get_cursor()
+    qt_df = load_live_qt(
+        conn,
+        sex=sex, level=level, effective_year=effective_year,
+        division=division, equipment=equipment, event=event,
+        region=region,  # None -> NULL, string -> equality, see _UNSET sentinel
+    )
+    if qt_df.empty:
+        return pd.DataFrame(columns=[
+            "weight_class", "qt", "n_lifters", "n_meeting_qt", "pct_meeting_qt",
+        ])
+
+    end = pd.Timestamp(year=int(effective_year), month=NATIONALS_MONTH, day=NATIONALS_DAY)
+    start = end - pd.DateOffset(months=24)
+    openipf_equipment = _CPU_TO_OPENIPF_EQUIPMENT.get(equipment, equipment)
+
+    clauses = [
+        "Country = ?", "Federation = ?", "Equipment = ?", "Tested = ?",
+        "Event = ?", "Sex = ?", "Division = ?",
+        "Date >= ?", "Date < ?",
+    ]
+    params = [
+        country, federation, openipf_equipment, tested, event, sex, division,
+        start.date(), end.date(),
+    ]
+    sql = (
+        "SELECT CanonicalWeightClass, Name, MAX(TotalKg) AS best_total "
+        "FROM openipf "
+        f"WHERE {' AND '.join(clauses)} "
+        "GROUP BY CanonicalWeightClass, Name"
+    )
+    bests = conn.execute(sql, params).df()
+
+    results = []
+    for _, qt_row in qt_df.iterrows():
+        wc = str(qt_row["weight_class"])
+        qt_value = float(qt_row["qt"])
+        cohort = bests[bests["CanonicalWeightClass"].astype(str) == wc]
+        n = int(len(cohort))
+        meeting = int((cohort["best_total"] >= qt_value).sum()) if n > 0 else 0
+        pct = round(100.0 * meeting / n, 2) if n > 0 else None
+        results.append({
+            "weight_class": wc,
+            "qt": qt_value,
+            "n_lifters": n,
+            "n_meeting_qt": meeting,
+            "pct_meeting_qt": pct,
+        })
+    out = pd.DataFrame(results)
+    out = out.sort_values("weight_class", key=lambda s: s.map(_wc_sort_value))
+    return out.reset_index(drop=True)

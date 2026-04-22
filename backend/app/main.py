@@ -45,7 +45,20 @@ async def lifespan(_app: FastAPI):
         # records the parquet_scan SQL.
         n_meets = conn.execute("SELECT COUNT(*) FROM openipf").fetchone()[0]
         n_qt = conn.execute("SELECT COUNT(*) FROM qt_standards").fetchone()[0]
-        print(f"[startup] warmed: openipf={n_meets:,} rows, qt_standards={n_qt} rows")
+        # qt_current is optional; skipped if the view wasn't registered.
+        from .data import is_qt_current_available
+        if is_qt_current_available():
+            n_qt_current = conn.execute("SELECT COUNT(*) FROM qt_current").fetchone()[0]
+            print(
+                f"[startup] warmed: openipf={n_meets:,} rows, "
+                f"qt_standards={n_qt} rows, qt_current={n_qt_current} rows"
+            )
+        else:
+            print(
+                f"[startup] warmed: openipf={n_meets:,} rows, "
+                f"qt_standards={n_qt} rows, qt_current=UNAVAILABLE "
+                f"(live endpoints degraded)"
+            )
         # Memory footprint after warmup. Visible in Render logs so future
         # regressions (accidental full-table .df() load, etc) are obvious.
         try:
@@ -407,3 +420,109 @@ def api_qt_blocks(
             },
         }
     )
+
+
+# =========================================================================
+# Live-scrape QT endpoints (2026+)
+#
+# These serve the qualifying totals scraped weekly from powerlifting.ca
+# (see data/scrapers/cpu.py and .github/workflows/qt_refresh.yml). The
+# older /api/qt/coverage and /api/qt/blocks endpoints above keep serving
+# the historical pre-2025 / 2025 values from qt_standards.parquet.
+# =========================================================================
+
+
+@app.get("/api/qt/live/filters")
+def api_qt_live_filters(request: Request, response: Response) -> Any:
+    """Available filter values for the live-scrape QT view.
+
+    Returns ``{live_data_available: bool, sexes, levels, regions,
+    divisions, effective_years, fetched_at}``. When live data is not
+    available (scraper hasn't run yet, or CSV unreachable), only
+    ``live_data_available: false`` is returned and the frontend should
+    hide or disable the live filter panel.
+    """
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
+    return _clean(qt_mod.get_live_qt_filters())
+
+
+@app.get("/api/qt/live/coverage")
+def api_qt_live_coverage(
+    request: Request,
+    response: Response,
+    sex: str = Query(..., description="M or F"),
+    level: str = Query(..., description="Nationals or Regionals"),
+    effective_year: int = Query(..., description="e.g. 2026 or 2027"),
+    division: str = Query("Open"),
+    region: str | None = Query(
+        None,
+        description="Western/Central, Eastern, or omit for pre-2027 Regionals",
+    ),
+    equipment: str = Query("Classic"),
+    event: str = Query("SBD"),
+) -> Any:
+    """Per-weight-class coverage for one live-QT slice.
+
+    Cohort: lifters in the Canada+IPF+CPU scope whose best SBD total
+    in the 24 months ending March 1 of ``effective_year`` matches the
+    requested filters. Response shape::
+
+        {
+            "rows": [
+                {"weight_class": "83", "qt": 700.0, "n_lifters": 142,
+                 "n_meeting_qt": 6, "pct_meeting_qt": 4.23},
+                ...
+            ],
+            "meta": {
+                "live_data_available": bool,
+                "filters": {...the parameters the request used...},
+                "fetched_at": "<iso>" | null,
+            },
+        }
+    """
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
+
+    if not qt_mod.is_qt_current_available():
+        return _clean({
+            "rows": [],
+            "meta": {
+                "live_data_available": False,
+                "filters": {
+                    "sex": sex, "level": level, "effective_year": effective_year,
+                    "division": division, "region": region,
+                    "equipment": equipment, "event": event,
+                },
+                "fetched_at": None,
+            },
+        })
+
+    df = qt_mod.compute_live_coverage(
+        sex=sex,
+        level=level,
+        effective_year=effective_year,
+        division=division,
+        region=region,
+        equipment=equipment,
+        event=event,
+    )
+    rows = df.to_dict(orient="records") if not df.empty else []
+
+    # Pull fetched_at from any matching qt_current row so the UI can
+    # display "data last updated YYYY-MM-DD".
+    filters_meta = qt_mod.get_live_qt_filters()
+    return _clean({
+        "rows": rows,
+        "meta": {
+            "live_data_available": True,
+            "filters": {
+                "sex": sex, "level": level, "effective_year": effective_year,
+                "division": division, "region": region,
+                "equipment": equipment, "event": event,
+            },
+            "fetched_at": filters_meta.get("fetched_at"),
+        },
+    })

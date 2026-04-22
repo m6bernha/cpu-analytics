@@ -216,6 +216,80 @@ export function fetchQtStandards(): Promise<QtStandardRow[]> {
   return getJson<QtStandardRow[]>(`${API_BASE}/api/qt/standards`)
 }
 
+// ---------- Live-scrape QT (2026+) ----------
+//
+// These endpoints read from qt_current.csv, published weekly by the
+// qt_refresh GHA workflow from scraped powerlifting.ca PDFs. When the
+// CSV isn't yet present (first cold start before the scraper has run,
+// or release asset missing), live_data_available is false and the
+// frontend should hide the live panel.
+
+export type QtLiveFilters = {
+  live_data_available: boolean
+  sexes?: string[]
+  levels?: string[]
+  regions?: string[]
+  divisions?: string[]
+  effective_years?: number[]
+  fetched_at?: string | null
+}
+
+export function fetchQtLiveFilters(): Promise<QtLiveFilters> {
+  return getJson<QtLiveFilters>(`${API_BASE}/api/qt/live/filters`)
+}
+
+export type QtLiveCoverageRow = {
+  weight_class: string
+  qt: number
+  n_lifters: number
+  n_meeting_qt: number
+  pct_meeting_qt: number | null
+}
+
+export type QtLiveCoverageResponse = {
+  rows: QtLiveCoverageRow[]
+  meta: {
+    live_data_available: boolean
+    filters: {
+      sex: string
+      level: string
+      effective_year: number
+      division: string
+      region: string | null
+      equipment: string
+      event: string
+    }
+    fetched_at: string | null
+  }
+}
+
+export type QtLiveCoverageParams = {
+  sex: 'M' | 'F'
+  level: 'Nationals' | 'Regionals'
+  effective_year: number
+  division?: string
+  region?: string | null
+  equipment?: string
+  event?: string
+}
+
+export function fetchQtLiveCoverage(
+  p: QtLiveCoverageParams,
+): Promise<QtLiveCoverageResponse> {
+  const params = new URLSearchParams({
+    sex: p.sex,
+    level: p.level,
+    effective_year: String(p.effective_year),
+    division: p.division ?? 'Open',
+    equipment: p.equipment ?? 'Classic',
+    event: p.event ?? 'SBD',
+  })
+  if (p.region) params.set('region', p.region)
+  return getJson<QtLiveCoverageResponse>(
+    `${API_BASE}/api/qt/live/coverage?${params}`,
+  )
+}
+
 // ---------- Lifter history ----------
 
 export type LifterMeet = {
