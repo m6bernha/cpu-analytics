@@ -5,11 +5,13 @@ in this repo, then read `NEXT_STEPS.md` for the current backlog.
 
 ## What this is
 
-A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Three tabs:
+A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Five tabs:
 
 1. **Progression** — cohort average total change over time, filterable.
-2. **QT Squeeze** — four-block Open-only view of CPU qualifying total coverage across pre-2025 / 2025 / 2027 standards.
+2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
+4. **QT Squeeze** — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
+5. **About** — full methodology, backtest MAPE table placeholder, references, and disclaimers. Linked from every other tab's methodology block.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 
@@ -161,12 +163,12 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  174 backend tests covering progression (age baseline, division filter,
-  per-lift filter plumbing, BW/GLP metrics, edge cases), lifter search and
-  history (search, PR detection, event types), projection, QT, manual
-  entry, security, weight class Hypothesis, and concurrency. Always use
-  `python -m pytest`, NOT plain `pytest`, or the `backend.app` imports
-  fail with `ModuleNotFoundError`.
+  314 backend tests (174 baseline + 47 Engine C + 23 IPF-GL + ~70 QT
+  scraper fixtures) covering progression, lifters, projection, athlete
+  projection, QT (federal + provincial scrapers), manual entry, security,
+  weight class Hypothesis, and concurrency. Always use `python -m pytest`,
+  NOT plain `pytest`, or the `backend.app` imports fail with
+  `ModuleNotFoundError`.
 - `cd frontend && npm run test` -- 3 Vitest unit tests for useUrlState
   key collisions. Runs in jsdom, ~1.5 s.
 - `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests, local
@@ -269,14 +271,16 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**174 pytest + 3 Vitest passing.** Pytest covers progression, lifters,
-projection, qt, manual, security, weight_class (with 19 Hypothesis
-property tests), and concurrency modules. 68 edge-case tests landed
-2026-04-17 in `cb7038e`, 8 TestLiftProgressionFilters in `98cbdef`,
-2 per-lift (Equipped + Master 1) in `e3230a0`, and 9 BW/GLP tests in
-`fca221e`. Vitest (added 2026-04-20, commit `84a7ea7`) covers
-useUrlState key-collision warnings. Playwright scaffold (commit
-`454f1de`) covers 6 smoke flows locally, not wired into CI.
+**314 pytest + 3 Vitest passing.** Pytest covers progression, lifters,
+projection, athlete projection (Engine C + IPF-GL), qt (federal + OPA +
+MPA + NSPL + NLPA + APU + FQD parsers), manual, security, weight_class
+(with 19 Hypothesis property tests), and concurrency modules. Athlete
+Projection BETA added 70 tests across `test_athlete_projection.py` and
+`test_ipf_gl_points.py` (commits `02b9e43`, `dd9c3cc`, `58b7c7d`); QT
+scraper fixtures added ~70 tests in `test_scrape_qt.py`. Vitest (added
+2026-04-20, commit `84a7ea7`) covers useUrlState key-collision warnings.
+Playwright scaffold (commit `454f1de`) covers 6 smoke flows locally, not
+wired into CI.
 
 **CI is now enforcing on main.** `.github/workflows/ci.yml` (commit
 `12cbb46`) runs frontend `tsc + npm run build` and backend `pytest` in

@@ -83,11 +83,10 @@ python data/backtest_projection.py \
   backend/app/athlete_projection.py `mixed_effects_projection`
   docstring. Ship criterion: MixedLM converges on >=90% of the
   backtest sample when the probe runs; otherwise keep gated.
-- **QT Squeeze About-link** -- the methodology block in QTSqueeze.tsx
-  did not get the `?tab=about` link in C6 because that file is owned
-  by the parallel QT live-scrape chat per
-  `~/.claude/rules/common/parallel-chat-isolation.md`. Append the link
-  in a tiny follow-up commit once the QT branch merges to main.
+- ~~**QT Squeeze About-link**~~ -- SHIPPED 2026-04-22 in commit
+  `e8d49c6` after PR #1 merged to main. QTSqueeze.tsx methodology block
+  now links to `?tab=about` matching the pattern in Progression,
+  LifterLookup, Compare, and Manual entry.
 - **Backtest on global OpenIPF** -- populate About page MAPE table
   from a real run on the full global export (~5400 Canada + 500,000+
   global lifters), not the 50-lifter Canadian smoke sample.
@@ -463,43 +462,44 @@ ManualFormRow adds squat/bench/deadlift inputs on desktop table and
 mobile card; total placeholder becomes auto from S/B/D; partial-lift
 warning banner blocks submit.
 
-### Athlete Projection (BETA) tab -- full implementation
+### ~~Athlete Projection (BETA) tab -- full implementation~~ -- SHIPPED (BETA)
 
-Placeholder exists (commit `fd017fe`). Core feature spec:
+BETA tab shipped 2026-04-22 across 10 commits on the `athlete-projection`
+branch, merged to main as `2268c45`. Per-lift Bayesian shrinkage
+(Engine C) with 2D (age division × IPF-GL bracket) cohort stratification,
+Kaplan-Meier dropout-adjusted prediction intervals, two-pass
+bracket-transition projection, outlier flag, and a matching About page
+with full methodology. Backtest harness at `data/backtest_projection.py`
+ships with a 50-lifter Canada+IPF baseline (all three ship gates pass).
 
-1. Pick a lifter (search) OR use "current manual entry".
-2. Pick a target date.
-3. Pick a target QT: Regionals 2025/2027, Nationals 2025/2027, custom.
-4. Output: predicted total on target date + confidence interval +
-   kg-gap to chosen QT.
-5. **Critical UI**: slider between "personal trajectory weight" and
-   "cohort average weight". See the math roundtable below -- this
-   tab cannot ship numbers until we pick a weighting methodology.
+The original spec below is preserved for historical reference. The
+"personal vs. cohort weight" slider was replaced by a Bayesian shrinkage
+posterior that picks the weight per-lifter based on sample size and
+residual variance -- see `athlete_projection.py`:
+`shrinkage_projection` and the About tab's methodology block.
 
-### Coach "on pace for Nationals 2027" widget
+Remaining follow-ups tracked in the "Follow-ups from the Athlete
+Projection BETA" block near the top of this file (Engine D MixedLM
+wiring, global-OpenIPF backtest, About-page artifact rendering, per-lift
+history arrays, cold-start cost measurement).
 
-Fills the Athlete Projection BETA placeholder with one useful widget that
-does NOT need the P3 weighting decision to ship.
+Historical spec (superseded):
 
-Inputs: lifter (search) or current manual entry, target date (default
-next Nationals), target QT (Regionals 2025/2027, Nationals 2025/2027,
-custom).
+1. ~~Pick a lifter (search) OR use "current manual entry".~~ Lifter
+   search + projection shipped.
+2. ~~Pick a target date.~~ Horizon-months parameter (1-24).
+3. ~~Pick a target QT.~~ Deferred to a future QT-overlay follow-up;
+   current BETA shows the projection only.
+4. ~~Output: predicted total + confidence interval + kg-gap to QT.~~
+   Shipped minus the QT gap (see #3).
+5. ~~Slider between personal and cohort weights.~~ Replaced by
+   Bayesian shrinkage posterior.
 
-Output: predicted total using the existing individual linear projection,
-kg gap to selected QT, on-pace badge with honest-brokerage disclaimer.
+### ~~Coach "on pace for Nationals 2027" widget~~ -- SUPERSEDED
 
-Depends on nothing new. Reuses projection math in
-`backend/app/projection.py`. UI-only change in the BETA tab file.
-
-Does NOT replace the full Athlete Projection spec above (which still
-needs P3 for the blended personal+cohort math). Ships independently as
-a useful-while-you-wait widget.
-
-Estimated effort: 1 focused session.
-
-Files: `frontend/src/tabs/AthleteProjection.tsx` (fill placeholder),
-possibly a small helper in `backend/app/projection.py` if kg-gap needs
-server-side QT lookup.
+Folded into the shipped BETA. The "on pace" view is now the per-lift
+projection chart with QT reference lines landing in a later follow-up.
+Use the Athlete Projection tab as the UX home for this workflow.
 
 ---
 
@@ -575,14 +575,13 @@ math ships to production.** Until then the tab renders a BETA placeholder.
 
 ## P4 -- Transparency / methodology writing -- SHIPPED
 
-Commit `61d010c` landed 2026-04-21. Every user-facing tab now carries a
-collapsed `<details>` block styled consistently with the existing
-Progression methodology block. Content sketch preserved below for
-reference. One unresolved follow-up: the Athlete Projection BETA tab is
-a placeholder with no chart, so no disclaimer is rendered there yet.
-When the Coach "on pace for Nationals 2027" widget fills that tab,
-attach a methodology block covering the projection assumptions and the
-qualifying-total comparison used by that widget.
+Commit `61d010c` landed 2026-04-21 for the base tabs. The Athlete
+Projection BETA tab got its own MethodologyBlock inside
+`AthleteProjection.tsx` in commit `651ced6` (2026-04-22). The QT Squeeze
+About-link follow-up shipped in `e8d49c6` (2026-04-22). Every
+user-facing tab now carries a collapsed `<details>` block styled
+consistently, and every one of them links to the About page for full
+methodology detail.
 
 Original content sketch (now implemented):
 
@@ -780,12 +779,11 @@ below.
 4. **G4 Recharts per-chart guard** — trigger: A+B+C+E all merged, and
    only if user picked the per-chart path in Wave 2. Files: each tab's
    ResponsiveContainer wrapper. Closes Issue 1.
-5. **G5 disclaimer copy pass** — SHIPPED 2026-04-21 (commit `61d010c`).
-   Closes P4. Methodology/caveat `<details>` blocks on every tab:
-   Progression expanded, Lifter Lookup top-level + Manual entry form,
-   Compare mode, QT Squeeze. Athlete Projection BETA placeholder is
-   still without a disclaimer; when the Coach widget fills that tab
-   it should get one describing projection assumptions.
+5. **G5 disclaimer copy pass** — SHIPPED 2026-04-21 (commit `61d010c`)
+   for the base tabs and 2026-04-22 for the Athlete Projection BETA
+   (commit `651ced6`) and the QT Squeeze About-link (commit `e8d49c6`).
+   Closes P4. Methodology/caveat `<details>` blocks on every tab now
+   link to the About page (`?tab=about`) for full methodology.
 
 ### Rules / lessons captured this session
 - Recharts + display:none: inactive tabs that render ResponsiveContainer with a
