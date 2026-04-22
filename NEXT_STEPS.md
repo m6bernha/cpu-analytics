@@ -249,42 +249,77 @@ Frontend MVP (SHIPPED):
   intact for the historical (pre-2025 / 2025 / 2027-hypothetical)
   narrative.
 
-Frontend UX rebuild (PENDING -- next session):
+Frontend UX rebuild -- SHIPPED 2026-04-22 (commit `da4fa24`):
 
-* Retire the 4-block layout entirely. The historical narrative can
-  become a small "standards tightening over time" callout rather than
-  the main view.
-* Unify the live panel + historical callout into the single
-  filter-panel-driven design originally specced in the plan.
-* Add "data last refreshed YYYY-MM-DD" metadata to the page footer.
+* Four-block layout retired entirely. `QTSqueeze.tsx` shrank from 343
+  to 77 lines: header + methodology details + the unified panel.
+* `QtLiveCoveragePanel.tsx` is now the only view. Filter row: Sex,
+  Level (Nationals/Regionals/Provincials), Division, Effective year +
+  conditional Region (2027 Regionals) or Province (Provincials).
+* Main bundle dropped 309.82 KB -> 288.14 KB (-22 KB) as Recharts
+  BarChart usage left the tab.
+* "Data fetched YYYY-MM-DD from powerlifting.ca [and
+  ontariopowerlifting.org]" shown in the panel header.
 
-**Phase 2 -- Ontario (OPA) scraper as pilot**
+**Phase 2 -- Ontario (OPA) scraper as pilot** -- SHIPPED 2026-04-22
 
-* New module `data/scrapers/opa.py`.
-* Share `base.py` schema and validation. Whatever format OPA publishes
-  (HTML, DOCX, PDF) gets translated to the same row shape.
-* Orchestrator combines federal + provincial rows, deduping by the full
-  key tuple.
-* Frontend Region selector gains "Ontario" option when provincial rows
-  are present.
+* `data/scrapers/opa.py`: discover_xlsx_url() regexes the Dropbox
+  href out of the OPA landing page (html.unescape + dl=1 tweak);
+  download_xlsx() streams the file; parse_xlsx() walks the Classic
+  sheet only (Equipped and Bench are out of scope).
+* Schema extended: `base.py` adds `province` column + `VALID_PROVINCE`
+  + `Provincials` level. validate_row enforces that Provincials rows
+  have province set and federal rows have province=None.
+* Orchestrator runs CPU + OPA back-to-back. OPA failure is
+  non-fatal -- federal CSV still publishes. Total in-scope rows:
+  696 (580 federal + 116 Ontario).
+* Backend `compute_live_coverage` routes Provincials -> province
+  filter, federal -> region filter. `/api/qt/live/coverage` accepts
+  `province` query param.
+* Frontend Level dropdown gains "Provincials"; a Province dropdown
+  appears when Provincials is selected. Provinces come from the
+  backend's `provinces` filter list so new provinces appear
+  automatically as scrapers come online.
+* 3 new OPA fixture tests (parser output lock, known-QT spot checks,
+  validation). 2 new OPA rows in conftest synthetic fixture to
+  exercise the Provincials path in the live-coverage tests.
+* Total pytest: 207.
 
-**Phase 3+ -- remaining provinces**
+**Phase 3+ -- remaining provinces** (IN PROGRESS / AUDIT)
 
-* BCPA, APU, SPU, MPA, QPU, NBPU, NSPU, PEIPA, NLPA. One per session.
-* Each adds a `data/scrapers/<federation>.py` module following the OPA
-  pattern. Provincial federations publish inconsistently (Facebook
-  posts, Word docs, occasional full redesigns), so each scraper is a
-  tuning job.
-* Dispatch as their own sessions so a single provincial site redesign
-  doesn't block the whole pipeline.
+Provincial-landscape research 2026-04-22:
+
+| Province | Separate Provincial QTs? | Source |
+|---|---|---|
+| Ontario (OPA) | YES -- Excel on Dropbox | SHIPPED above |
+| British Columbia (BCPA) | NO -- explicitly "meet the regional qualifying total" | No scraper needed; UI maps BC Provincials -> CPU Regional |
+| Alberta (APU) | LIKELY YES -- page text says "PROVINCIAL qualifying standards listed below"; site was ECONNREFUSED during first audit | Needs re-audit + scraper |
+| Quebec (FQD) | UNKNOWN -- JS-rendered site, WebFetch returned title only | Needs re-audit |
+| SK, MB, NB, NS, PE, NL | Not yet audited | Needs audit |
+
+Per-province work is scoped to its own session using the OPA module
+as the template:
+
+* Audit first: determine format (PDF, Excel, HTML table, image) and
+  whether numbers differ from CPU Regional.
+* If separate: add `data/scrapers/<federation>.py` with the same
+  discover/download/parse shape as `opa.py`, register in
+  `scrape_qt.py` orchestrator, add fixture + tests.
+* If same as CPU Regional: no scraper needed. Add a one-line note to
+  `VALID_PROVINCE` mapping in the docs so the frontend dropdown
+  routes that province's Provincials view to the Regional data.
+* Dispatch as their own sessions so a single provincial site
+  redesign doesn't block the whole pipeline.
 
 **Estimated effort**
 
-* Phase 1b: 1 session (GHA workflow + run_once + release upload path).
-* Phase 1c: 1 session (backend loader + qt.py params + frontend
-  filter panel).
-* Phase 2: 1 session for OPA pilot.
-* Phase 3+: ~9 sessions for the remaining provinces.
+* Phase 1b: SHIPPED (1 session).
+* Phase 1c: SHIPPED (1 session: backend + frontend MVP).
+* UX rebuild: SHIPPED (folded into same session as OPA).
+* Phase 2 (OPA): SHIPPED (1 session).
+* Phase 3+ audit: 1 session to audit all 8 remaining sites and
+  produce a structured report. Each "yes, separate" outcome becomes
+  its own build session after that.
 
 **Operational notes**
 
