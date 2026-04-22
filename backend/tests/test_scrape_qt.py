@@ -32,7 +32,14 @@ from data.scrapers.cpu import parse_pdf  # noqa: E402
 
 
 FIXTURE_DIR = REPO_ROOT / "backend" / "tests" / "fixtures" / "qt_pdfs"
-PDF_FIXTURES = sorted(FIXTURE_DIR.glob("*.pdf"))
+
+# CPU federal PDFs all start with a year (2026_*, 2027_*). Provincial
+# PDFs use a federation-prefix naming convention (mpa_*, etc.) so the
+# CPU-specific parametrised tests don't see them.
+PDF_FIXTURES = sorted(
+    p for p in FIXTURE_DIR.glob("*.pdf") if p.stem[:4].isdigit()
+)
+MPA_PDF_FIXTURES = sorted(FIXTURE_DIR.glob("mpa_*.pdf"))
 
 # Columns in the expected CSV (parser output schema).
 EXPECTED_FIELDS = tuple(
@@ -326,6 +333,66 @@ def test_opa_open_rows_match_known_values() -> None:
 def test_opa_rows_pass_validation() -> None:
     for row in opa_scraper.parse_xlsx(OPA_FIXTURE):
         base.validate_row(row)
+
+
+# -------------------------------------------------------------------------
+# MPA provincial scraper tests (PDF from manitobapowerlifting.ca)
+# -------------------------------------------------------------------------
+
+from data.scrapers import mpa as mpa_scraper  # noqa: E402
+
+
+def test_mpa_pdf_fixtures_present() -> None:
+    """Regression guard: if someone deletes the MPA fixture by accident
+    the tests below silently skip the real check; fail loudly here."""
+    assert MPA_PDF_FIXTURES, "no mpa_*.pdf fixture found"
+
+
+@pytest.mark.parametrize("pdf_path", MPA_PDF_FIXTURES, ids=lambda p: p.stem)
+def test_mpa_parse_pdf_matches_expected_csv(pdf_path: Path) -> None:
+    """Row-for-row lock against committed expected CSV."""
+    expected_csv = pdf_path.with_suffix(".expected.csv")
+    assert expected_csv.exists(), (
+        f"missing {expected_csv.name}; "
+        "regenerate with python -m data.scrape_qt --regenerate-fixtures"
+    )
+    actual = mpa_scraper.parse_pdf(pdf_path)
+    expected = _load_expected(expected_csv)
+    assert len(actual) == len(expected), (
+        f"row count drift: parser={len(actual)} fixture={len(expected)}"
+    )
+    for i, (a, e) in enumerate(zip(actual, expected)):
+        assert a == e, f"row {i} differs:\n  got:      {a}\n  expected: {e}"
+
+
+@pytest.mark.parametrize("pdf_path", MPA_PDF_FIXTURES, ids=lambda p: p.stem)
+def test_mpa_open_rows_match_audit_values(pdf_path: Path) -> None:
+    """Audit spot-checks from 2026-04-22 provincial landscape report."""
+    rows = mpa_scraper.parse_pdf(pdf_path)
+    scope = [
+        r for r in rows if r["equipment"] == "Classic" and r["event"] == "SBD"
+    ]
+    by_key = {
+        (r["sex"], r["division"], r["weight_class"]): r["qt"] for r in scope
+    }
+    assert by_key[("M", "Open", "83")] == 517.5
+    assert by_key[("F", "Open", "63")] == 290.0
+    assert by_key[("M", "Master 1", "83")] == 420.0
+    assert by_key[("F", "Sub-Junior", "63")] == 180.0
+
+
+@pytest.mark.parametrize("pdf_path", MPA_PDF_FIXTURES, ids=lambda p: p.stem)
+def test_mpa_rows_pass_row_validation(pdf_path: Path) -> None:
+    for row in mpa_scraper.parse_pdf(pdf_path):
+        base.validate_row(row)
+
+
+def test_mpa_province_is_set_and_level_is_provincials() -> None:
+    for pdf_path in MPA_PDF_FIXTURES:
+        for r in mpa_scraper.parse_pdf(pdf_path):
+            assert r["province"] == "Manitoba"
+            assert r["level"] == "Provincials"
+            assert r["region"] is None
 
 
 def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:

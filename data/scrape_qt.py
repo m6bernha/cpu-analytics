@@ -39,6 +39,7 @@ from pathlib import Path
 from data.scrapers import base
 from data.scrapers.cpu import discover_pdf_urls, download_pdf, parse_pdf
 from data.scrapers import opa as opa_scraper
+from data.scrapers import mpa as mpa_scraper
 
 log = logging.getLogger(__name__)
 
@@ -194,7 +195,22 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
         log.info("OPA: %d provincial rows", len(opa_rows))
     except Exception as e:
         log.warning(
-            "OPA scrape failed (%s); continuing with federal rows only", e,
+            "OPA scrape failed (%s); continuing without Ontario", e,
+        )
+
+    # MPA provincial scrape (Manitoba). Same graceful-degrade contract.
+    try:
+        mpa_url, _mpa_year = mpa_scraper.discover_pdf_url()
+        mpa_path = mpa_scraper.download_pdf(mpa_url, tmpdir)
+        mpa_rows = mpa_scraper.parse_pdf(mpa_path)
+        for r in mpa_rows:
+            r["source_pdf"] = mpa_url
+            r["fetched_at"] = fetched_at
+        all_rows.extend(mpa_rows)
+        log.info("MPA: %d provincial rows", len(mpa_rows))
+    except Exception as e:
+        log.warning(
+            "MPA scrape failed (%s); continuing without Manitoba", e,
         )
 
     log.info("parsed %d raw rows; applying scope filter", len(all_rows))
@@ -270,6 +286,17 @@ def run_once(
     return 0
 
 
+def _parser_for_fixture(pdf_path: Path):
+    """Dispatch the correct parser based on fixture filename prefix.
+
+    * ``mpa_*.pdf`` -> Manitoba parser
+    * anything else (``2026_*``, ``2027_*``) -> CPU federal parser
+    """
+    if pdf_path.stem.startswith("mpa_"):
+        return mpa_scraper.parse_pdf
+    return parse_pdf
+
+
 def regenerate_fixtures() -> int:
     """
     Re-run the parser on every committed fixture PDF and rewrite its
@@ -281,7 +308,8 @@ def regenerate_fixtures() -> int:
     )
     total = 0
     for pdf_path in sorted(FIXTURE_DIR.glob("*.pdf")):
-        rows = parse_pdf(pdf_path)
+        parser = _parser_for_fixture(pdf_path)
+        rows = parser(pdf_path)
         for r in rows:
             base.validate_row(r)
         out = pdf_path.with_suffix(".expected.csv")

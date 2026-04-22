@@ -1,0 +1,465 @@
+sex,level,region,province,division,equipment,event,weight_class,qt,effective_year
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,53,267.5,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,53,330.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,59,290.0,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,59,360.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,59,402.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,59,335.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,59,310.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,59,280.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,59,250.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,66,312.5,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,66,400.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,66,440.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,66,362.5,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,66,332.5,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,66,302.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,66,270.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,74,337.5,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,74,427.5,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,74,480.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,74,390.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,74,362.5,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,74,327.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,74,292.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,83,360.0,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,83,475.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,83,517.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,83,420.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,83,390.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,83,352.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,83,312.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,93,385.0,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,93,505.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,93,552.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,93,450.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,93,410.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,93,375.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,93,335.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,105,410.0,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,105,525.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,105,587.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,105,477.5,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,105,435.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,105,402.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,105,357.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,120,440.0,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,120,560.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,120,610.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,120,512.5,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,120,470.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,120,430.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,120,382.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,SBD,120+,462.5,2025
+M,Provincials,,Manitoba,Junior,Classic,SBD,120+,590.0,2025
+M,Provincials,,Manitoba,Open,Classic,SBD,120+,630.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,SBD,120+,542.5,2025
+M,Provincials,,Manitoba,Master 2,Classic,SBD,120+,500.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,SBD,120+,455.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,SBD,120+,405.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,43,132.5,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,43,177.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,47,147.5,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,47,197.5,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,47,235.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,47,175.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,47,142.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,47,125.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,47,110.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,52,155.0,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,52,215.0,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,52,252.5,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,52,187.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,52,157.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,52,137.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,52,122.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,57,170.0,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,57,232.5,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,57,270.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,57,200.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,57,170.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,57,147.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,57,132.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,63,180.0,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,63,255.0,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,63,290.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,63,215.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,63,182.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,63,160.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,63,142.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,69,192.5,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,69,280.0,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,69,310.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,69,227.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,69,195.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,69,170.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,69,152.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,76,200.0,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,76,290.0,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,76,327.5,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,76,242.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,76,205.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,76,180.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,76,162.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,84,212.5,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,84,300.0,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,84,345.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,84,255.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,84,215.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,84,190.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,84,170.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,SBD,84+,217.5,2025
+F,Provincials,,Manitoba,Junior,Classic,SBD,84+,312.5,2025
+F,Provincials,,Manitoba,Open,Classic,SBD,84+,370.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,SBD,84+,270.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,SBD,84+,230.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,SBD,84+,202.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,SBD,84+,175.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,53,275.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,53,350.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,59,305.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,59,385.0,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,59,425.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,59,335.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,59,327.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,59,290.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,59,260.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,66,335.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,66,422.5,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,66,470.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,66,357.5,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,66,360.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,66,325.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,66,277.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,74,365.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,74,460.0,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,74,507.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,74,397.5,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,74,392.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,74,352.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,74,302.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,83,395.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,83,500.0,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,83,550.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,83,430.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,83,425.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,83,387.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,83,330.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,93,427.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,93,432.5,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,93,590.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,93,467.5,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,93,442.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,93,405.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,93,352.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,105,460.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,105,577.5,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,105,635.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,105,497.5,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,105,467.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,105,427.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,105,375.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,120,495.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,120,610.0,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,120,650.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,120,535.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,120,495.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,120,455.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,120,397.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,120+,527.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,SBD,120+,632.5,2025
+M,Provincials,,Manitoba,Open,Equipped,SBD,120+,677.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,SBD,120+,547.5,2025
+M,Provincials,,Manitoba,Master 2,Equipped,SBD,120+,510.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,SBD,120+,467.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,SBD,120+,405.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,43,140.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,43,197.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,47,152.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,47,215.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,47,225.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,47,190.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,47,160.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,47,130.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,47,115.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,52,165.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,52,235.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,52,247.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,52,207.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,52,170.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,52,142.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,52,125.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,57,177.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,57,255.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,57,267.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,57,220.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,57,185.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,57,160.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,57,137.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,63,192.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,63,277.5,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,63,290.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,63,245.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,63,207.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,63,167.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,63,150.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,69,212.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,69,302.5,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,69,317.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,69,267.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,69,222.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,69,187.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,69,165.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,76,227.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,76,325.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,76,340.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,76,280.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,76,237.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,76,205.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,76,175.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,84,237.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,84,340.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,84,352.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,84,292.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,84,250.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,84,210.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,84,190.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,SBD,84+,252.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,SBD,84+,360.0,2025
+F,Provincials,,Manitoba,Open,Equipped,SBD,84+,365.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,SBD,84+,305.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,SBD,84+,265.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,SBD,84+,222.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,SBD,84+,205.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,53,55.0,2025
+M,Provincials,,Manitoba,Junior,Classic,B,53,70.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,59,60.0,2025
+M,Provincials,,Manitoba,Junior,Classic,B,59,80.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,59,87.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,59,70.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,59,60.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,59,55.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,59,50.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,66,65.0,2025
+M,Provincials,,Manitoba,Junior,Classic,B,66,87.5,2025
+M,Provincials,,Manitoba,Open,Classic,B,66,95.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,66,77.5,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,66,67.5,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,66,60.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,66,55.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,74,72.5,2025
+M,Provincials,,Manitoba,Junior,Classic,B,74,100.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,74,107.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,74,85.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,74,72.5,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,74,65.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,74,60.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,83,77.5,2025
+M,Provincials,,Manitoba,Junior,Classic,B,83,110.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,83,117.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,83,95.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,83,82.5,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,83,70.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,83,65.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,93,85.0,2025
+M,Provincials,,Manitoba,Junior,Classic,B,93,117.5,2025
+M,Provincials,,Manitoba,Open,Classic,B,93,125.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,93,100.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,93,85.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,93,72.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,93,70.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,105,90.0,2025
+M,Provincials,,Manitoba,Junior,Classic,B,105,125.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,105,132.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,105,105.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,105,90.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,105,77.5,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,105,75.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,120,97.5,2025
+M,Provincials,,Manitoba,Junior,Classic,B,120,130.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,120,142.5,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,120,110.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,120,95.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,120,85.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,120,77.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Classic,B,120+,102.5,2025
+M,Provincials,,Manitoba,Junior,Classic,B,120+,135.0,2025
+M,Provincials,,Manitoba,Open,Classic,B,120+,150.0,2025
+M,Provincials,,Manitoba,Master 1,Classic,B,120+,115.0,2025
+M,Provincials,,Manitoba,Master 2,Classic,B,120+,100.0,2025
+M,Provincials,,Manitoba,Master 3,Classic,B,120+,90.0,2025
+M,Provincials,,Manitoba,Master 4,Classic,B,120+,82.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,43,25.0,2025
+F,Provincials,,Manitoba,Junior,Classic,B,43,32.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,47,27.5,2025
+F,Provincials,,Manitoba,Junior,Classic,B,47,35.0,2025
+F,Provincials,,Manitoba,Open,Classic,B,47,40.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,47,30.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,47,25.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,47,25.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,47,25.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,52,30.0,2025
+F,Provincials,,Manitoba,Junior,Classic,B,52,40.0,2025
+F,Provincials,,Manitoba,Open,Classic,B,52,40.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,52,32.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,52,27.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,52,25.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,52,25.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,57,32.5,2025
+F,Provincials,,Manitoba,Junior,Classic,B,57,42.5,2025
+F,Provincials,,Manitoba,Open,Classic,B,57,47.5,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,57,35.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,57,30.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,57,27.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,57,27.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,63,35.0,2025
+F,Provincials,,Manitoba,Junior,Classic,B,63,47.5,2025
+F,Provincials,,Manitoba,Open,Classic,B,63,52.5,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,63,37.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,63,32.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,63,30.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,63,30.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,69,37.5,2025
+F,Provincials,,Manitoba,Junior,Classic,B,69,50.0,2025
+F,Provincials,,Manitoba,Open,Classic,B,69,55.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,69,40.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,69,35.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,69,32.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,69,32.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,76,40.0,2025
+F,Provincials,,Manitoba,Junior,Classic,B,76,52.5,2025
+F,Provincials,,Manitoba,Open,Classic,B,76,60.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,76,42.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,76,35.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,76,35.0,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,76,35.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,84,40.0,2025
+F,Provincials,,Manitoba,Junior,Classic,B,84,55.0,2025
+F,Provincials,,Manitoba,Open,Classic,B,84,65.0,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,84,45.0,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,84,35.0,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,84,37.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,84,37.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Classic,B,84+,42.5,2025
+F,Provincials,,Manitoba,Junior,Classic,B,84+,57.5,2025
+F,Provincials,,Manitoba,Open,Classic,B,84+,67.5,2025
+F,Provincials,,Manitoba,Master 1,Classic,B,84+,47.5,2025
+F,Provincials,,Manitoba,Master 2,Classic,B,84+,37.5,2025
+F,Provincials,,Manitoba,Master 3,Classic,B,84+,37.5,2025
+F,Provincials,,Manitoba,Master 4,Classic,B,84+,37.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,53,55.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,53,70.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,59,62.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,59,85.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,59,95.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,59,75.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,59,65.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,59,57.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,59,52.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,66,72.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,66,97.5,2025
+M,Provincials,,Manitoba,Open,Equipped,B,66,102.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,66,85.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,66,72.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,66,65.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,66,57.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,74,82.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,74,110.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,74,115.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,74,95.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,74,80.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,74,70.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,74,62.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,83,92.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,83,120.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,83,127.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,83,105.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,83,87.5,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,83,80.0,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,83,70.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,93,102.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,93,125.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,93,135.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,93,110.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,93,90.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,93,82.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,93,75.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,105,112.5,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,105,135.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,105,142.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,105,115.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,105,95.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,105,87.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,105,80.0,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,120,125.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,120,140.0,2025
+M,Provincials,,Manitoba,Open,Equipped,B,120,150.0,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,120,120.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,120,100.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,120,92.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,120,82.5,2025
+M,Provincials,,Manitoba,Sub-Junior,Equipped,B,120+,135.0,2025
+M,Provincials,,Manitoba,Junior,Equipped,B,120+,147.5,2025
+M,Provincials,,Manitoba,Open,Equipped,B,120+,157.5,2025
+M,Provincials,,Manitoba,Master 1,Equipped,B,120+,130.0,2025
+M,Provincials,,Manitoba,Master 2,Equipped,B,120+,105.0,2025
+M,Provincials,,Manitoba,Master 3,Equipped,B,120+,97.5,2025
+M,Provincials,,Manitoba,Master 4,Equipped,B,120+,87.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,43,25.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,43,35.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,47,25.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,47,37.5,2025
+F,Provincials,,Manitoba,Open,Equipped,B,47,40.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,47,32.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,47,25.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,47,22.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,47,20.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,52,27.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,52,40.0,2025
+F,Provincials,,Manitoba,Open,Equipped,B,52,45.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,52,37.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,52,27.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,52,25.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,52,22.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,57,30.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,57,42.5,2025
+F,Provincials,,Manitoba,Open,Equipped,B,57,52.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,57,40.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,57,30.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,57,27.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,57,25.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,63,35.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,63,50.0,2025
+F,Provincials,,Manitoba,Open,Equipped,B,63,57.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,63,42.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,63,35.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,63,30.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,63,27.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,69,40.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,69,55.0,2025
+F,Provincials,,Manitoba,Open,Equipped,B,69,62.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,69,45.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,69,37.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,69,32.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,69,30.0,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,76,42.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,76,62.5,2025
+F,Provincials,,Manitoba,Open,Equipped,B,76,67.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,76,47.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,76,40.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,76,35.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,76,32.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,84,42.5,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,84,62.5,2025
+F,Provincials,,Manitoba,Open,Equipped,B,84,70.0,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,84,50.0,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,84,42.5,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,84,37.5,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,84,32.5,2025
+F,Provincials,,Manitoba,Sub-Junior,Equipped,B,84+,45.0,2025
+F,Provincials,,Manitoba,Junior,Equipped,B,84+,67.5,2025
+F,Provincials,,Manitoba,Open,Equipped,B,84+,72.5,2025
+F,Provincials,,Manitoba,Master 1,Equipped,B,84+,52.5,2025
+F,Provincials,,Manitoba,Master 2,Equipped,B,84+,45.0,2025
+F,Provincials,,Manitoba,Master 3,Equipped,B,84+,40.0,2025
+F,Provincials,,Manitoba,Master 4,Equipped,B,84+,35.0,2025
