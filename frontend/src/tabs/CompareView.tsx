@@ -764,6 +764,14 @@ export default function CompareView({
                   their full SBD history in the dataset, not restricted to the x-axis
                   range. They reflect the lifter's actual shape, not the chart window.
                 </p>
+                <p>
+                  <a
+                    href="?tab=about"
+                    className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200"
+                  >
+                    See the About tab for full methodology, references, and disclaimers.
+                  </a>
+                </p>
               </div>
             </details>
 

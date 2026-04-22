@@ -164,6 +164,14 @@ function ManualEntryForm({
             weight class of your most recent entry. Switching your entered weight class
             across meets will redraw them against the latest one.
           </p>
+          <p>
+            <a
+              href="?tab=about"
+              className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200"
+            >
+              See the About tab for full methodology, references, and disclaimers.
+            </a>
+          </p>
         </div>
       </details>
 
@@ -603,6 +611,14 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                 single comparable total. Bench-only and push-pull meets still appear in
                 the meet table below the chart, muted, with the event type chip and a
                 delta column computed against the first SBD meet.
+              </p>
+              <p>
+                <a
+                  href="?tab=about"
+                  className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200"
+                >
+                  See the About tab for full methodology, references, and disclaimers.
+                </a>
               </p>
             </div>
           </details>

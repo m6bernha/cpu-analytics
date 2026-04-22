@@ -638,6 +638,14 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                   in, and non-IPF federations (CPF, WPC, GPC, etc.), are excluded at the
                   parquet level. This site is not affiliated with the CPU or IPF.
                 </p>
+                <p>
+                  <a
+                    href="?tab=about"
+                    className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200"
+                  >
+                    See the About tab for full methodology, references, and disclaimers.
+                  </a>
+                </p>
               </div>
             </details>
           </>
