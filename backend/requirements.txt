@@ -10,3 +10,8 @@ pytest-asyncio>=0.23
 hypothesis>=6.100
 httpx>=0.27
 psutil>=5.9
+# QT scraper (data/scrapers/cpu.py, tests/test_scrape_qt.py). Used by
+# CI test runs and the weekly GHA qt_refresh workflow. Not imported by
+# the FastAPI app at runtime.
+pdfplumber>=0.11
+requests>=2.32

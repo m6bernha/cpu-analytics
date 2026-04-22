@@ -1,0 +1,115 @@
+name: Refresh QT standards
+
+# Weekly scrape of CPU qualifying totals from powerlifting.ca.
+#
+# On every run:
+#   1. Download the last-published qt_current.csv from the rolling
+#      "data-latest" release (if it exists).
+#   2. Run data.scrape_qt --once against the two CPU landing pages. The
+#      script rediscovers current PDF URLs (they rotate when CPU revises
+#      a standard), downloads and parses each in-scope PDF, applies the
+#      Classic + SBD scope filter, validates, and writes a candidate
+#      qt_current.csv + diff summary to scraper_out/.
+#   3. If the scrape detected any change (added / removed / changed QT
+#      values), upload the new CSV to the data-latest release, open a
+#      GitHub issue with the row-level diff for human review, and
+#      commit a dated snapshot to data/qt_history/YYYY-MM-DD.csv for
+#      audit trail.
+#
+# CPU revises standards roughly every two years, so most weekly runs
+# detect nothing and exit quietly. When CPU does update, the issue +
+# snapshot give you a review trail before the change goes live.
+#
+# The backend picks up the new CSV on its next cold start via the
+# qt_data_loader (Phase 1c). No redeploy is required.
+
+on:
+  schedule:
+    # Sundays 06:43 UTC, 30 minutes after the OpenIPF refresh.
+    - cron: "43 6 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write      # upload release asset + commit snapshot
+  issues: write        # open issue on diff
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Download existing qt_current.csv (if any)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p scraper_out
+          if gh release download data-latest -p qt_current.csv \
+              -O scraper_out/existing.csv 2>/dev/null; then
+            echo "Using existing CSV for diff"
+            wc -l scraper_out/existing.csv
+          else
+            echo "No existing CSV in data-latest release (first publish)"
+          fi
+
+      - name: Scrape + validate + diff
+        id: scrape
+        run: |
+          python -m data.scrape_qt --once \
+            --output-dir scraper_out \
+            --existing scraper_out/existing.csv
+
+      - name: Upload CSV to data-latest release
+        if: steps.scrape.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: data-latest
+          name: data-latest
+          body: |
+            Rolling pointer at the most recent data snapshot.
+            QT standards refreshed ${{ github.run_id }} on ${{ github.event.repository.updated_at }}.
+          files: scraper_out/qt_current.csv
+
+      - name: Open issue with diff summary
+        if: steps.scrape.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="QT standards updated ($(date -u +%Y-%m-%d))"
+          gh issue create \
+            --title "$TITLE" \
+            --body-file scraper_out/qt_diff_summary.md
+
+      - name: Commit history snapshot
+        if: steps.scrape.outputs.changed == 'true' && steps.scrape.outputs.snapshot_path != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/qt_history/
+          if git diff --cached --quiet; then
+            echo "No new snapshot to commit (already up-to-date)"
+          else
+            git commit -m "chore(qt): snapshot $(date -u +%Y-%m-%d) after CPU standards update
+
+Added: ${{ steps.scrape.outputs.added_count }}
+Removed: ${{ steps.scrape.outputs.removed_count }}
+Changed: ${{ steps.scrape.outputs.changed_count }}
+
+See GitHub Actions run ${{ github.run_id }} for details."
+            git push
+          fi

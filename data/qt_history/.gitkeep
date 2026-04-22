@@ -1,0 +1,8 @@
+# This directory is committed to preserve the QT-standards change audit
+# trail. Each time the weekly qt_refresh workflow detects that CPU has
+# updated a qualifying total, the workflow commits a dated snapshot
+# here as `YYYY-MM-DD.csv`. Diffing two snapshots shows exactly which
+# values CPU changed and when.
+#
+# Do not manually edit files in this directory; they are written by the
+# workflow.

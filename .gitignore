@@ -4,6 +4,12 @@ __pycache__/
 venv/
 .env
 data/processed/*.parquet
+# qt_current.csv is produced by the weekly qt_refresh workflow and
+# published to the data-latest release. The backend downloads it at
+# cold start; the file is never committed.
+data/qt_current.csv
+# Local scraper output dir (used by manual --dry-run invocations).
+scraper_out/
 frontend/node_modules/
 frontend/dist/
 .DS_Store
