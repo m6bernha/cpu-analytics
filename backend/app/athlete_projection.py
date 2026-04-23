@@ -180,6 +180,12 @@ _COHORT: dict[tuple[str, str, str], GlpCohortCell] = {}
 _KM: dict[str, KMTable] = {}
 _PRECOMPUTED: bool = False
 
+# Schema version for the serialized cohort + K-M artifact. Bump when the
+# GlpCohortCell or KMTable dataclass shape changes, or when the fitting
+# algorithm changes in a way that makes old artifacts wrong. A backend
+# that sees a mismatched version falls back to live precompute.
+SERIALIZED_TABLES_SCHEMA_VERSION: int = 1
+
 
 def is_precomputed() -> bool:
     """True once precompute_tables has succeeded at least once."""
@@ -194,6 +200,158 @@ def get_cohort_cell(
 
 def get_km_table(division: str) -> KMTable | None:
     return _KM.get(division)
+
+
+def _tables_to_dict() -> dict[str, Any]:
+    """Serialize the currently loaded cohort + K-M tables to a plain dict.
+
+    Used by preprocess.py to write an on-disk artifact after fitting, and
+    by load_serialized_tables() to round-trip through the test suite.
+
+    Note on key_bracket vs glp_bracket: after bracket-merging, multiple
+    dict keys can alias the same GlpCohortCell object (e.g. cells for
+    "60-70" and "70-80" both resolve to the same merged cell whose
+    `glp_bracket` is "60-70"). The serialised form emits one row per
+    dict key and preserves `key_bracket` separately so the load side
+    can rebuild the full key set without collapsing aliases.
+    """
+    return {
+        "schema_version": SERIALIZED_TABLES_SCHEMA_VERSION,
+        "cohort_cells": [
+            {
+                "key_bracket": key[1],
+                "division": cell.division,
+                "glp_bracket": cell.glp_bracket,
+                "lift": cell.lift,
+                "n_lifters": cell.n_lifters,
+                "slope_kg_per_day": cell.slope_kg_per_day,
+                "residual_std": cell.residual_std,
+                "merged_from": list(cell.merged_from),
+                "is_global_fallback": cell.is_global_fallback,
+            }
+            for key, cell in _COHORT.items()
+        ],
+        "km_tables": [
+            {
+                "division": km.division,
+                "sample_size": km.sample_size,
+                # JSON object keys must be strings. Round-trip reader
+                # converts them back to int.
+                "survival_by_month": {
+                    str(month): float(prob)
+                    for month, prob in km.survival_by_month.items()
+                },
+            }
+            for km in _KM.values()
+        ],
+    }
+
+
+def serialize_tables(path: "Path") -> None:
+    """Write the in-memory cohort + K-M tables to ``path`` as JSON.
+
+    The companion loader is load_serialized_tables(). Intended for
+    data/preprocess.py which runs in CI after openipf.parquet is written.
+    """
+    import json
+    from pathlib import Path as _Path
+
+    if not isinstance(path, _Path):
+        path = _Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(_tables_to_dict(), f, separators=(",", ":"))
+    logger.info(
+        "[athlete_projection] serialized tables to %s (cells=%d km=%d)",
+        path, len(_COHORT), len(_KM),
+    )
+
+
+def load_serialized_tables(path: "Path") -> dict[str, int]:
+    """Populate module-level tables from a serialized artifact on disk.
+
+    Replaces a full ``precompute_tables(cursor)`` call when the artifact
+    was produced at preprocess time and shipped alongside the parquet.
+    Drops the ~27 s fit cost on cold start.
+
+    Raises on schema-version mismatch or structural error so the caller
+    can fall back to live precompute. Never mutates the tables on
+    failure -- on success, atomically replaces _COHORT, _KM, _PRECOMPUTED.
+
+    Returns the same stats shape as precompute_tables.
+    """
+    import json
+    from pathlib import Path as _Path
+
+    global _COHORT, _KM, _PRECOMPUTED
+
+    if not isinstance(path, _Path):
+        path = _Path(path)
+    with path.open("r", encoding="utf-8") as f:
+        doc = json.load(f)
+
+    schema = doc.get("schema_version")
+    if schema != SERIALIZED_TABLES_SCHEMA_VERSION:
+        raise ValueError(
+            f"serialized tables schema_version={schema!r} does not match "
+            f"expected {SERIALIZED_TABLES_SCHEMA_VERSION}; falling back to live fit"
+        )
+
+    # Dedup merged-alias cells by (division, glp_bracket, lift, is_global).
+    # Multiple rows with the same "cell identity" but different key_bracket
+    # values resolve to the same GlpCohortCell object, matching how the
+    # merge path populates _COHORT at fit time. This is load-bearing:
+    # `get_cohort_cell` only reads by key tuple, but comparing cell
+    # identity across the app still expects identity alias consistency.
+    cohort: dict[tuple[str, str, str], GlpCohortCell] = {}
+    interned: dict[tuple[Any, ...], GlpCohortCell] = {}
+    for row in doc.get("cohort_cells", []):
+        merged_from = tuple(row.get("merged_from") or ())
+        cell_id = (
+            row["division"],
+            row["glp_bracket"],
+            row["lift"],
+            int(row["n_lifters"]),
+            bool(row["is_global_fallback"]),
+            merged_from,
+        )
+        cell = interned.get(cell_id)
+        if cell is None:
+            cell = GlpCohortCell(
+                division=row["division"],
+                glp_bracket=row["glp_bracket"],
+                lift=row["lift"],
+                n_lifters=int(row["n_lifters"]),
+                slope_kg_per_day=float(row["slope_kg_per_day"]),
+                residual_std=float(row["residual_std"]),
+                merged_from=merged_from,
+                is_global_fallback=bool(row["is_global_fallback"]),
+            )
+            interned[cell_id] = cell
+        key_bracket = row.get("key_bracket") or cell.glp_bracket
+        cohort[(cell.division, key_bracket, cell.lift)] = cell
+
+    km: dict[str, KMTable] = {}
+    for row in doc.get("km_tables", []):
+        km_table = KMTable(
+            division=row["division"],
+            sample_size=int(row["sample_size"]),
+            survival_by_month={
+                int(month): float(prob)
+                for month, prob in (row.get("survival_by_month") or {}).items()
+            },
+        )
+        km[km_table.division] = km_table
+
+    _COHORT = cohort
+    _KM = km
+    _PRECOMPUTED = True
+    stats = {"cohort_cells": len(_COHORT), "km_tables": len(_KM)}
+    logger.info(
+        "[athlete_projection] loaded serialized tables cohort_cells=%d km_tables=%d",
+        stats["cohort_cells"], stats["km_tables"],
+    )
+    return stats
 
 
 def precompute_tables(cursor=None) -> dict[str, int]:

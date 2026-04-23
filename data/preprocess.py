@@ -161,15 +161,68 @@ def preprocess_qt(src: Path, dst: Path) -> int:
     return len(qt)
 
 
+def preprocess_athlete_projection_tables(
+    openipf_parquet: Path,
+    dst: Path,
+) -> dict[str, int] | None:
+    """Fit cohort + K-M tables against the freshly-written parquet and
+    serialize them to ``dst`` as a JSON artifact.
+
+    Shipping this alongside openipf.parquet in the data-latest release
+    drops the ~27 s precompute cost off every Render cold start: the
+    backend loads the artifact instead of re-fitting on boot.
+
+    Returns the serialization stats dict, or None if fitting failed
+    (non-fatal; the backend falls back to live precompute).
+    """
+    import duckdb
+
+    from backend.app import athlete_projection as ap
+
+    print(f"[proj] fitting cohort + K-M tables against {openipf_parquet}")
+    conn = duckdb.connect(database=":memory:")
+    try:
+        conn.execute(
+            f"CREATE VIEW openipf AS SELECT * FROM "
+            f"parquet_scan('{openipf_parquet.as_posix()}')"
+        )
+        stats = ap.precompute_tables(conn)
+        ap.serialize_tables(dst)
+        size_kb = dst.stat().st_size / 1024.0
+        print(
+            f"[proj] wrote {dst} ({stats['cohort_cells']} cells, "
+            f"{stats['km_tables']} km tables, {size_kb:.1f} KB)"
+        )
+        return stats
+    except Exception as exc:  # pragma: no cover -- defensive
+        print(f"[proj] WARNING: table fit failed ({exc!r}); "
+              f"backend will fall back to live precompute")
+        return None
+    finally:
+        conn.close()
+
+
 def main() -> None:
     openipf_csv = Path(os.environ.get("OPENIPF_CSV", DEFAULT_OPENIPF_CSV))
     qt_csv = Path(os.environ.get("QT_CSV", DEFAULT_QT_CSV))
 
-    openipf_rows = preprocess_openipf(openipf_csv, PROCESSED_DIR / "openipf.parquet")
+    openipf_parquet = PROCESSED_DIR / "openipf.parquet"
+    openipf_rows = preprocess_openipf(openipf_csv, openipf_parquet)
     qt_rows = preprocess_qt(qt_csv, PROCESSED_DIR / "qt_standards.parquet")
+
+    proj_tables_path = PROCESSED_DIR / "athlete_projection_tables.json"
+    proj_stats = preprocess_athlete_projection_tables(
+        openipf_parquet, proj_tables_path,
+    )
 
     print()
     print(f"done. openipf={openipf_rows:,} rows  qt={qt_rows} rows")
+    if proj_stats is not None:
+        print(
+            f"      athlete_projection_tables="
+            f"{proj_stats['cohort_cells']} cells, "
+            f"{proj_stats['km_tables']} km tables"
+        )
 
 
 if __name__ == "__main__":

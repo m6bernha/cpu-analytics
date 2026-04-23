@@ -25,7 +25,8 @@ from . import filters as filters_mod
 from . import lifters as lifters_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
-from .data import OPENIPF_PARQUET, QT_PARQUET, get_cursor
+from .data import ATHLETE_PROJ_TABLES, OPENIPF_PARQUET, QT_PARQUET, get_cursor
+from .data_loader import ensure_athlete_proj_tables
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -68,27 +69,47 @@ async def lifespan(_app: FastAPI):
             print(f"[startup] process RSS: {rss_mb:.1f} MB")
         except ImportError:
             pass
-        # Athlete Projection cohort + Kaplan-Meier precompute. Populates
-        # module-level tables so per-request projection endpoints never run
-        # a cohort fit. Non-raising on failure (falls back to global-mean
-        # cohort slope and neutral K-M multiplier).
+        # Athlete Projection cohort + Kaplan-Meier tables. Populates
+        # module-level state so per-request projection endpoints never
+        # run a cohort fit.
         #
-        # Local measurement 2026-04-22: 231-cell cohort fit + 7 K-M tables
-        # takes ~27 s on the Canada+IPF parquet (~5.4 k lifters, ~69 k rows).
-        # On Render free tier this adds to the ~20-50 s baseline cold start.
-        # If the precompute duration materially exceeds the parquet warmup
-        # duration for weeks in a row, consider serializing cohort cells at
-        # preprocess time so the backend can load them from disk on boot.
+        # Fast path: preprocess.py writes a serialized artifact
+        # (athlete_projection_tables.json) alongside openipf.parquet and
+        # ships it in the data-latest release. Loading the artifact is a
+        # ~ms operation vs the ~27 s cost of live fitting. The artifact
+        # is versioned (SERIALIZED_TABLES_SCHEMA_VERSION); a mismatch or
+        # any load error falls through to the live-fit slow path.
         if n_meets > 0:
             import time
-            t_precompute = time.perf_counter()
-            stats = athlete_proj_mod.precompute_tables(conn)
-            precompute_ms = 1000.0 * (time.perf_counter() - t_precompute)
-            print(
-                f"[startup] athlete_projection tables: "
-                f"cohort_cells={stats['cohort_cells']} km={stats['km_tables']} "
-                f"elapsed_ms={precompute_ms:.0f}"
-            )
+            stats: dict[str, int] | None = None
+            have_artifact = ensure_athlete_proj_tables(ATHLETE_PROJ_TABLES)
+            if have_artifact:
+                t_load = time.perf_counter()
+                try:
+                    stats = athlete_proj_mod.load_serialized_tables(
+                        ATHLETE_PROJ_TABLES,
+                    )
+                    load_ms = 1000.0 * (time.perf_counter() - t_load)
+                    print(
+                        f"[startup] athlete_projection tables: loaded from disk "
+                        f"cohort_cells={stats['cohort_cells']} "
+                        f"km={stats['km_tables']} elapsed_ms={load_ms:.0f}"
+                    )
+                except Exception as exc:
+                    print(
+                        f"[startup] athlete_projection artifact load failed: "
+                        f"{exc!r} -- falling back to live fit"
+                    )
+                    stats = None
+            if stats is None:
+                t_precompute = time.perf_counter()
+                stats = athlete_proj_mod.precompute_tables(conn)
+                precompute_ms = 1000.0 * (time.perf_counter() - t_precompute)
+                print(
+                    f"[startup] athlete_projection tables: fitted "
+                    f"cohort_cells={stats['cohort_cells']} "
+                    f"km={stats['km_tables']} elapsed_ms={precompute_ms:.0f}"
+                )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
         if n_meets == 0 or n_qt == 0:

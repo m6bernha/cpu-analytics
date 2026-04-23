@@ -536,3 +536,115 @@ class TestPrecompute:
         assert result.engine == "mixed_effects"
         # Until MixedLM wiring lands, Engine D returns the shrinkage fallback.
         assert result.meta.get("engine_d_available") is False
+
+
+# =============================================================================
+# Serialized cohort + K-M artifact (preprocess -> backend boot fast path)
+# =============================================================================
+
+
+class TestSerializedTables:
+    def test_round_trip_preserves_cohort_and_km(self, precomputed, tmp_path):
+        """serialize_tables -> load_serialized_tables yields byte-equivalent
+        in-memory state."""
+        path = tmp_path / "athlete_projection_tables.json"
+        cohort_before = dict(ap._COHORT)
+        km_before = dict(ap._KM)
+        assert len(cohort_before) > 0
+        assert len(km_before) > 0
+
+        ap.serialize_tables(path)
+        assert path.exists()
+        assert path.stat().st_size > 0
+
+        # Reset module state to be sure load actually repopulates it.
+        ap._COHORT = {}
+        ap._KM = {}
+        ap._PRECOMPUTED = False
+
+        stats = ap.load_serialized_tables(path)
+        assert stats["cohort_cells"] == len(cohort_before)
+        assert stats["km_tables"] == len(km_before)
+        assert ap.is_precomputed() is True
+
+        # Every key survives and values round-trip, including merged-alias
+        # keys (multiple dict keys that pointed to the same Cell object
+        # before serialisation must still point to the same Cell object
+        # after load).
+        assert set(ap._COHORT.keys()) == set(cohort_before.keys())
+        for key, before in cohort_before.items():
+            after = ap._COHORT[key]
+            assert after.division == before.division
+            assert after.glp_bracket == before.glp_bracket
+            assert after.lift == before.lift
+            assert after.n_lifters == before.n_lifters
+            assert after.slope_kg_per_day == pytest.approx(
+                before.slope_kg_per_day, rel=1e-9,
+            )
+            assert after.residual_std == pytest.approx(
+                before.residual_std, rel=1e-9,
+            )
+            assert after.merged_from == before.merged_from
+            assert after.is_global_fallback == before.is_global_fallback
+
+        for div, km in km_before.items():
+            loaded = ap._KM[div]
+            assert loaded.sample_size == km.sample_size
+            assert loaded.survival_by_month == km.survival_by_month
+
+    def test_round_trip_preserves_merged_alias_identity(
+        self, precomputed, tmp_path,
+    ):
+        """Multiple dict keys aliasing the same GlpCohortCell object (after
+        bracket merging) must still alias the same object after reload.
+        Without this invariant, mutating a cell post-boot would no longer
+        reflect across its aliased keys."""
+        from collections import defaultdict
+        before_groups: dict[int, list] = defaultdict(list)
+        for key, cell in ap._COHORT.items():
+            before_groups[id(cell)].append(key)
+        aliased_groups = [keys for keys in before_groups.values() if len(keys) > 1]
+        if not aliased_groups:
+            pytest.skip("synthetic fixture has no merged-alias cells to exercise")
+
+        path = tmp_path / "tables.json"
+        ap.serialize_tables(path)
+        ap._COHORT = {}
+        ap._KM = {}
+        ap._PRECOMPUTED = False
+        ap.load_serialized_tables(path)
+
+        for keys in aliased_groups:
+            cells_after = {id(ap._COHORT[k]) for k in keys}
+            assert len(cells_after) == 1, (
+                f"merged-alias group {keys} lost identity during round trip: "
+                f"{cells_after}"
+            )
+
+    def test_schema_version_mismatch_raises(self, precomputed, tmp_path):
+        """Old artifact with wrong schema_version forces fallback to live fit."""
+        import json
+        path = tmp_path / "bad.json"
+        ap.serialize_tables(path)
+        with path.open("r", encoding="utf-8") as f:
+            doc = json.load(f)
+        doc["schema_version"] = ap.SERIALIZED_TABLES_SCHEMA_VERSION + 1
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(doc, f)
+
+        with pytest.raises(ValueError, match="schema_version"):
+            ap.load_serialized_tables(path)
+
+    def test_load_missing_file_raises(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            ap.load_serialized_tables(tmp_path / "does-not-exist.json")
+
+    def test_artifact_is_reasonably_compact(self, precomputed, tmp_path):
+        """Sanity check for release-asset size. Real production artifact
+        should be under 100 KB; the synthetic test fixture is smaller still."""
+        path = tmp_path / "tables.json"
+        ap.serialize_tables(path)
+        size_kb = path.stat().st_size / 1024.0
+        # 100 KB ceiling guards against an accidental pickle of the full
+        # DataFrame or similar.
+        assert size_kb < 100, f"artifact {size_kb:.1f} KB is implausibly large"
