@@ -26,46 +26,29 @@ import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
   fetchAthleteProjection,
   fetchLifterSearch,
-  fetchQtStandards,
+  fetchQtLiveCoverage,
+  fetchQtLiveFilters,
   type AthleteProjectionEngine,
   type AthleteProjectionLift,
   type AthleteProjectionResponse,
   type LifterSearchResult,
-  type QtStandardRow,
+  type QtLiveCoverageResponse,
 } from '../lib/api'
 import { useUrlState } from '../lib/useUrlState'
 import { ShareButton } from '../lib/ShareButton'
 
 const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
-const QT_ERAS_STATIC = ['pre2025', '2025', '2027'] as const
 
-type QtEra = 'pre2025' | '2025' | '2027'
-
-const QT_ERA_FIELD: Record<QtEra, 'QT_pre2025' | 'QT_2025' | 'QT_2027'> = {
-  pre2025: 'QT_pre2025',
-  '2025': 'QT_2025',
-  '2027': 'QT_2027',
-}
-
-const QT_ERA_LABEL: Record<QtEra, string> = {
-  pre2025: 'Pre-2025',
-  '2025': '2025',
-  '2027': '2027',
-}
-
-function findQtForLifter(
-  standards: QtStandardRow[] | undefined,
-  sex: string | undefined,
+// Find the QT kg value for a specific weight class in a live-coverage
+// response. Returns undefined if the class is not present in the returned
+// rows (e.g. the lifter's class is outside the scope of the published feed).
+function findQtForClass(
+  response: QtLiveCoverageResponse | undefined,
   weightClass: string | null | undefined,
-): { regionals?: QtStandardRow; nationals?: QtStandardRow } {
-  if (!standards || !sex || !weightClass) return {}
-  const matches = standards.filter(
-    (s) => s.Sex === sex && s.WeightClass === weightClass,
-  )
-  return {
-    regionals: matches.find((m) => m.Level === 'Regionals'),
-    nationals: matches.find((m) => m.Level === 'Nationals'),
-  }
+): number | undefined {
+  if (!response || !weightClass) return undefined
+  const row = response.rows.find((r) => r.weight_class === weightClass)
+  return row?.qt
 }
 
 type LiftKey = 'total' | 'squat' | 'bench' | 'deadlift'
@@ -106,7 +89,10 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     ap_horizon: '12',
     ap_lift: 'total',
     ap_show_qt: 'false',
-    ap_qt_era: '2027',
+    // Empty default picks up whatever the live QT feed reports as its
+    // latest effective_year; users only see a URL key when they pin a
+    // specific year.
+    ap_qt_year: '',
   })
 
   const horizon = (() => {
@@ -119,11 +105,11 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     ? (urlState.ap_lift as LiftKey)
     : 'total'
   const showQt = urlState.ap_show_qt === 'true'
-  const qtEra: QtEra = (QT_ERAS_STATIC as readonly string[]).includes(
-    urlState.ap_qt_era,
-  )
-    ? (urlState.ap_qt_era as QtEra)
-    : '2027'
+  const urlQtYear: number | null = (() => {
+    if (!urlState.ap_qt_year) return null
+    const n = Number(urlState.ap_qt_year)
+    return Number.isInteger(n) && n > 2000 ? n : null
+  })()
 
   const setHorizon = useCallback(
     (h: number) => setUrlState({ ap_horizon: String(h) }),
@@ -137,8 +123,8 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     (v: boolean) => setUrlState({ ap_show_qt: String(v) }),
     [setUrlState],
   )
-  const setQtEra = useCallback(
-    (e: QtEra) => setUrlState({ ap_qt_era: e }),
+  const setQtYear = useCallback(
+    (y: number) => setUrlState({ ap_qt_year: String(y) }),
     [setUrlState],
   )
 
@@ -195,11 +181,75 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     staleTime: 5 * 60 * 1000,
   })
 
-  const qtStandardsQuery = useQuery({
-    queryKey: ['ap-qt-standards'],
-    queryFn: fetchQtStandards,
+  // Live QT feed: the effective_year list populates the year picker; per-
+  // (sex, level) coverage fetches resolve the actual Regionals / Nationals
+  // QT kg for the lifter's class. Filter fetch is cheap and shared across
+  // the two coverage queries; the coverage queries are only enabled once we
+  // know which effective_year is active.
+  const qtLiveFiltersQuery = useQuery({
+    queryKey: ['ap-qt-live-filters'],
+    queryFn: fetchQtLiveFilters,
     enabled: !!selected && isActive && showQt && liftKey === 'total',
-    staleTime: 60 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+  })
+
+  // The live filter endpoint reports every effective_year across every
+  // scraper, including provincial stragglers (e.g. NLPA publishes a stale
+  // 2022 list). CPU Nationals / Regionals only exist from 2026 onward
+  // in the live feed; earlier years are either vendored-historical
+  // (covered on Lifter Lookup) or provincial-only, so filter them out to
+  // keep the Athlete Projection picker CPU-scoped.
+  const availableYears: number[] = useMemo(() => {
+    const raw = qtLiveFiltersQuery.data?.effective_years ?? []
+    return [...raw].filter((y) => y >= 2026).sort((a, b) => a - b)
+  }, [qtLiveFiltersQuery.data])
+  const qtLiveAvailable = qtLiveFiltersQuery.data?.live_data_available ?? false
+  // Pick the pinned URL year if it's in the published list; otherwise fall
+  // back to the most recent year. null means we can't fetch coverage yet.
+  const effectiveYear: number | null =
+    urlQtYear != null && availableYears.includes(urlQtYear)
+      ? urlQtYear
+      : availableYears.length > 0
+        ? availableYears[availableYears.length - 1]
+        : null
+
+  const qtSex = (selected?.Sex === 'F' ? 'F' : 'M') as 'M' | 'F'
+  const qtLiveEnabled =
+    !!selected &&
+    isActive &&
+    showQt &&
+    liftKey === 'total' &&
+    qtLiveAvailable &&
+    effectiveYear != null
+
+  // Regionals are split into Eastern and Western/Central CPU regions with
+  // slightly different QT values per year. For BETA we show a single
+  // Regionals line per the Western/Central list -- that's the region most
+  // CPU members qualify through, and it matches the routing fallback the
+  // QT Squeeze tab uses for BC/SK. A future revision can add a region
+  // picker or fetch both to show the minimum.
+  const qtRegionalsQuery = useQuery({
+    queryKey: ['ap-qt-live-coverage', 'Regionals', qtSex, effectiveYear],
+    queryFn: () =>
+      fetchQtLiveCoverage({
+        sex: qtSex,
+        level: 'Regionals',
+        effective_year: effectiveYear!,
+        region: 'Western/Central',
+      }),
+    enabled: qtLiveEnabled,
+    staleTime: 10 * 60 * 1000,
+  })
+  const qtNationalsQuery = useQuery({
+    queryKey: ['ap-qt-live-coverage', 'Nationals', qtSex, effectiveYear],
+    queryFn: () =>
+      fetchQtLiveCoverage({
+        sex: qtSex,
+        level: 'Nationals',
+        effective_year: effectiveYear!,
+      }),
+    enabled: qtLiveEnabled,
+    staleTime: 10 * 60 * 1000,
   })
 
   const onSelectLifter = (r: LifterSearchResult) => {
@@ -247,8 +297,10 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
         setLiftKey={setLiftKey}
         showQt={showQt}
         setShowQt={setShowQt}
-        qtEra={qtEra}
-        setQtEra={setQtEra}
+        availableYears={availableYears}
+        effectiveYear={effectiveYear}
+        setQtYear={setQtYear}
+        qtLiveAvailable={qtLiveAvailable}
       />
 
       {!selected && (
@@ -279,10 +331,13 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
           horizon={horizon}
           isActive={isActive}
           showQt={showQt}
-          qtEra={qtEra}
-          qtRows={findQtForLifter(
-            qtStandardsQuery.data,
-            selected.Sex,
+          effectiveYear={effectiveYear}
+          regionalsQtKg={findQtForClass(
+            qtRegionalsQuery.data,
+            selected.LatestWeightClass,
+          )}
+          nationalsQtKg={findQtForClass(
+            qtNationalsQuery.data,
             selected.LatestWeightClass,
           )}
         />
@@ -318,8 +373,10 @@ function SelectorPanel({
   setLiftKey,
   showQt,
   setShowQt,
-  qtEra,
-  setQtEra,
+  availableYears,
+  effectiveYear,
+  setQtYear,
+  qtLiveAvailable,
 }: {
   selected: LifterSearchResult | null
   query: string
@@ -336,8 +393,10 @@ function SelectorPanel({
   setLiftKey: (l: LiftKey) => void
   showQt: boolean
   setShowQt: (v: boolean) => void
-  qtEra: QtEra
-  setQtEra: (e: QtEra) => void
+  availableYears: number[]
+  effectiveYear: number | null
+  setQtYear: (y: number) => void
+  qtLiveAvailable: boolean
 }) {
   return (
     <section
@@ -420,8 +479,10 @@ function SelectorPanel({
           setLiftKey={setLiftKey}
           showQt={showQt}
           setShowQt={setShowQt}
-          qtEra={qtEra}
-          setQtEra={setQtEra}
+          availableYears={availableYears}
+          effectiveYear={effectiveYear}
+          setQtYear={setQtYear}
+          qtLiveAvailable={qtLiveAvailable}
         />
       </div>
     </section>
@@ -514,15 +575,19 @@ function LiftSelect({
   setLiftKey,
   showQt,
   setShowQt,
-  qtEra,
-  setQtEra,
+  availableYears,
+  effectiveYear,
+  setQtYear,
+  qtLiveAvailable,
 }: {
   liftKey: LiftKey
   setLiftKey: (l: LiftKey) => void
   showQt: boolean
   setShowQt: (v: boolean) => void
-  qtEra: QtEra
-  setQtEra: (e: QtEra) => void
+  availableYears: number[]
+  effectiveYear: number | null
+  setQtYear: (y: number) => void
+  qtLiveAvailable: boolean
 }) {
   return (
     <div>
@@ -565,30 +630,35 @@ function LiftSelect({
             />
             <span>Show CPU QT reference lines</span>
           </label>
-          {showQt && (
+          {showQt && qtLiveAvailable && availableYears.length > 0 && (
             <div
               role="radiogroup"
-              aria-label="QT standard era"
+              aria-label="QT effective year"
               className="inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden"
             >
-              {(['pre2025', '2025', '2027'] as QtEra[]).map((e) => (
+              {availableYears.map((y) => (
                 <button
-                  key={e}
+                  key={y}
                   type="button"
                   role="radio"
-                  aria-checked={qtEra === e}
-                  onClick={() => setQtEra(e)}
+                  aria-checked={effectiveYear === y}
+                  onClick={() => setQtYear(y)}
                   className={
                     'px-3 py-1.5 text-xs transition-colors ' +
-                    (qtEra === e
+                    (effectiveYear === y
                       ? 'bg-zinc-800 text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-200')
                   }
                 >
-                  {QT_ERA_LABEL[e]}
+                  {y}
                 </button>
               ))}
             </div>
+          )}
+          {showQt && !qtLiveAvailable && (
+            <span className="text-xs text-amber-400">
+              Live QT feed unavailable; reference lines disabled.
+            </span>
           )}
         </div>
       )}
@@ -604,22 +674,24 @@ function ResultPanel({
   horizon,
   isActive,
   showQt,
-  qtEra,
-  qtRows,
+  effectiveYear,
+  regionalsQtKg,
+  nationalsQtKg,
 }: {
   data: AthleteProjectionResponse
   liftKey: LiftKey
   horizon: number
   isActive: boolean
   showQt: boolean
-  qtEra: QtEra
-  qtRows: { regionals?: QtStandardRow; nationals?: QtStandardRow }
+  effectiveYear: number | null
+  regionalsQtKg: number | undefined
+  nationalsQtKg: number | undefined
 }) {
-  const qtField = QT_ERA_FIELD[qtEra]
+  const showQtLines = showQt && liftKey === 'total' && effectiveYear != null
   const regionalsQt: number | undefined =
-    showQt && liftKey === 'total' ? qtRows.regionals?.[qtField] ?? undefined : undefined
+    showQtLines ? regionalsQtKg : undefined
   const nationalsQt: number | undefined =
-    showQt && liftKey === 'total' ? qtRows.nationals?.[qtField] ?? undefined : undefined
+    showQtLines ? nationalsQtKg : undefined
   const chartData = useMemo(
     () => buildChartData(data, liftKey),
     [data, liftKey],
@@ -732,7 +804,7 @@ function ResultPanel({
                   strokeDasharray="4 4"
                   ifOverflow="extendDomain"
                   label={{
-                    value: `Regionals ${QT_ERA_LABEL[qtEra]} (${regionalsQt.toFixed(0)})`,
+                    value: `Regionals ${effectiveYear ?? ''} (${regionalsQt.toFixed(0)})`.trim(),
                     position: 'insideTopLeft',
                     fill: '#94a3b8',
                     fontSize: 11,
@@ -747,7 +819,7 @@ function ResultPanel({
                   strokeDasharray="4 4"
                   ifOverflow="extendDomain"
                   label={{
-                    value: `Nationals ${QT_ERA_LABEL[qtEra]} (${nationalsQt.toFixed(0)})`,
+                    value: `Nationals ${effectiveYear ?? ''} (${nationalsQt.toFixed(0)})`.trim(),
                     position: 'insideTopLeft',
                     fill: '#f59e0b',
                     fontSize: 11,
@@ -764,7 +836,7 @@ function ResultPanel({
         data={data}
         liftKey={liftKey}
         showQt={showQt}
-        qtEra={qtEra}
+        effectiveYear={effectiveYear}
         regionalsQt={regionalsQt}
         nationalsQt={nationalsQt}
       />
@@ -918,14 +990,14 @@ function InfoPanel({
   data,
   liftKey,
   showQt,
-  qtEra,
+  effectiveYear,
   regionalsQt,
   nationalsQt,
 }: {
   data: AthleteProjectionResponse
   liftKey: LiftKey
   showQt: boolean
-  qtEra: QtEra
+  effectiveYear: number | null
   regionalsQt: number | undefined
   nationalsQt: number | undefined
 }) {
@@ -1026,7 +1098,7 @@ function InfoPanel({
       </InfoCard>
 
       {showProximity && (
-        <InfoCard title={`QT proximity (${QT_ERA_LABEL[qtEra]})`}>
+        <InfoCard title={`QT proximity (${effectiveYear ?? ''})`.trim()}>
           <QtProximityRows
             data={data}
             regionalsQt={regionalsQt}
