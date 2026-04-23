@@ -53,6 +53,10 @@ X_AXIS_COLS = {
     "Weeks": ("WeeksFromFirst", "Weeks since first meet"),
     "Months": ("MonthsFromFirst", "Months since first meet"),
     "Years": ("YearsFromFirst", "Years since first meet"),
+    "Career quartile": (
+        "CareerQuartile",
+        "Career quartile (Q1 = first 25% of each lifter's meets)",
+    ),
 }
 
 
@@ -358,6 +362,22 @@ def compute_progression(
     df["WeeksFromFirst"] = (df["DaysFromFirst"] / 7).round().astype(int)
     df["MonthsFromFirst"] = (df["DaysFromFirst"] / 30.44).round().astype(int)
     df["YearsFromFirst"] = (df["DaysFromFirst"] / 365.25).round().astype(int)
+    # Career quartile: for each lifter, split their career span (first -> last
+    # meet) into four equal time windows and tag each meet with its quartile
+    # 1..4. Lifters with all meets on the same day (career_span = 0) fall
+    # into Q1 by default. The ≥2 meet filter above guarantees len >= 2 per
+    # lifter but does not guarantee span > 0.
+    career_span = df.groupby("Name")["DaysFromFirst"].transform("max")
+    # Avoid div-by-zero: where span is 0, put every meet in Q1.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        raw_q = np.where(
+            career_span > 0,
+            df["DaysFromFirst"].to_numpy(dtype=float) / career_span.to_numpy(dtype=float),
+            0.0,
+        )
+    df["CareerQuartile"] = np.clip(
+        np.floor(raw_q * 4).astype(int) + 1, 1, 4,
+    )
 
     x_col, x_label = X_AXIS_COLS[x_axis]
     grouped = (
@@ -397,6 +417,7 @@ def compute_progression(
             "Weeks": "week",
             "Months": "month",
             "Years": "year",
+            "Career quartile": "quartile",
         }
         # Residual std for projection confidence band
         residuals = y_arr - y_pred
@@ -411,8 +432,10 @@ def compute_progression(
         }
 
     # Cohort projection: extend the trendline forward with confidence band.
+    # Skip for the "Career quartile" axis -- Q4 is by definition the end of a
+    # lifter's career, so extrapolating past it has no meaning.
     projection = None
-    if trend is not None:
+    if trend is not None and x_axis != "Career quartile":
         last_x = int(grouped["x"].max())
         project_steps = 4
         projection_points = []
