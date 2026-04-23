@@ -88,6 +88,7 @@ jobs:
           files: |
             data/processed/openipf.parquet
             data/processed/qt_standards.parquet
+            data/processed/athlete_projection_tables.json
 
       - name: Update rolling data-latest release
         uses: softprops/action-gh-release@v3
@@ -100,3 +101,4 @@ jobs:
           files: |
             data/processed/openipf.parquet
             data/processed/qt_standards.parquet
+            data/processed/athlete_projection_tables.json

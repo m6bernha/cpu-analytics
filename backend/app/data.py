@@ -24,6 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 OPENIPF_PARQUET = PROCESSED_DIR / "openipf.parquet"
 QT_PARQUET = PROCESSED_DIR / "qt_standards.parquet"
+# Serialized cohort + K-M artifact written by data/preprocess.py after it
+# runs precompute_tables against the fresh parquet. Published alongside
+# the parquet in the data-latest release. Optional: if missing or stale
+# the backend falls back to live precompute on boot (~27 s).
+ATHLETE_PROJ_TABLES = PROCESSED_DIR / "athlete_projection_tables.json"
 # Live-scraped QT CSV (2026+). Published weekly by qt_refresh workflow
 # to the data-latest release. Optional: the backend boots without it.
 QT_CURRENT_CSV = REPO_ROOT / "data" / "qt_current.csv"

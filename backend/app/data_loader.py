@@ -7,12 +7,17 @@ the parquet files are downloaded on first startup from a GitHub Release
 asset built by .github/workflows/refresh-data.yml.
 
 Env vars:
-    OPENIPF_PARQUET_URL   - direct download URL for openipf.parquet
-    QT_PARQUET_URL        - direct download URL for qt_standards.parquet
+    OPENIPF_PARQUET_URL         - direct download URL for openipf.parquet
+    QT_PARQUET_URL              - direct download URL for qt_standards.parquet
+    ATHLETE_PROJ_TABLES_URL     - direct download URL for the Athlete
+                                  Projection cohort + K-M artifact
+                                  (athlete_projection_tables.json).
+                                  Optional; if missing, the backend falls
+                                  back to live precompute on boot.
 
-If both files already exist locally, no download happens. If they're missing
-and the URLs aren't set, we raise a clear error pointing the developer at
-either preprocess.py or the env vars.
+If both parquets already exist locally, no download happens. If they're
+missing and the URLs aren't set, we raise a clear error pointing the
+developer at either preprocess.py or the env vars.
 
 Self-heal: after download (or on cold start with files already present), we
 validate that openipf has >0 rows AND every required column. On failure we
@@ -132,6 +137,30 @@ def assert_parquet_health(openipf_path: Path, qt_path: Path) -> None:
         status_code=503,
         detail=f"Data not ready: {problem}. Please retry in a moment.",
     )
+
+
+def ensure_athlete_proj_tables(tables_path: Path) -> bool:
+    """Best-effort fetch of the serialized Athlete Projection artifact.
+
+    Returns True iff the artifact is present on disk after this call.
+    Never raises: download failure or missing URL is a soft miss and
+    the lifespan falls back to live precompute (~27 s). This is a cold-
+    start optimisation, not a correctness requirement.
+    """
+    if tables_path.exists():
+        return True
+    url = os.environ.get("ATHLETE_PROJ_TABLES_URL")
+    if not url:
+        return False
+    try:
+        _download(url, tables_path)
+    except Exception as exc:  # pragma: no cover -- defensive
+        print(
+            f"[data_loader] athlete_proj_tables download failed: {exc!r} "
+            f"(falling back to live precompute)"
+        )
+        return False
+    return tables_path.exists()
 
 
 def ensure_parquets(openipf_path: Path, qt_path: Path) -> None:
