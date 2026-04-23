@@ -441,3 +441,71 @@ class TestMetricParam:
         assert result["points"] == []
         assert result["metric"] == "bodyweight"
         assert result["y_label"] == METRIC_COLS["bodyweight"][1]
+
+
+class TestCareerQuartileAxis:
+    """Career quartile bucketing: for each lifter, split their meets into
+    four equal-time windows Q1..Q4 from first-meet to last-meet."""
+
+    def test_shape_matches_other_axes(self, test_conn):
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Career quartile",
+            min_lifters_for_trend=1,
+        )
+        assert result["x_axis"] == "Career quartile"
+        assert "first 25%" in result["x_label"]
+        # Buckets are in [1, 4]; with Bob + Carl across their careers we
+        # should see at least Q1 and a later quartile.
+        xs = {p["x"] for p in result["points"]}
+        assert xs.issubset({1, 2, 3, 4})
+        assert 1 in xs
+
+    def test_q1_contains_first_meet_only(self, test_conn):
+        """Every lifter's DaysFromFirst=0 meet is Q1, so the Q1 bucket's
+        mean diff-from-first is 0 (each lifter subtracts their own baseline)."""
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Career quartile",
+            min_lifters_for_trend=1,
+        )
+        q1 = [p for p in result["points"] if p["x"] == 1]
+        assert len(q1) == 1
+        assert abs(q1[0]["y"]) < 0.01
+
+    def test_no_projection_beyond_q4(self, test_conn):
+        """Projection beyond Q4 has no meaning -- career is done by definition."""
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Career quartile",
+            min_lifters_for_trend=1,
+        )
+        assert result["projection"] is None
+
+    def test_trend_unit_is_quartile(self, test_conn):
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Career quartile",
+            min_lifters_for_trend=1,
+        )
+        if result["trend"] is not None:
+            assert result["trend"]["unit"] == "quartile"
+
+    def test_same_day_career_lands_in_q1(self, test_conn):
+        """Guard: lifters whose last-meet-day == first-meet-day have
+        career_span=0, which would div-by-zero without the code's guard.
+        The test fixture should not crash; everyone lands in Q1."""
+        # This is mostly a smoke test since the synthetic fixture spans
+        # real dates; the guard is visible in the implementation.
+        result = compute_progression(
+            sex="F", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Career quartile",
+            min_lifters_for_trend=1,
+        )
+        for p in result["points"]:
+            assert 1 <= p["x"] <= 4

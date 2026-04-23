@@ -13,7 +13,7 @@ from functools import lru_cache
 from typing import Any
 
 
-X_AXIS_OPTIONS = ["Meet #", "Days", "Weeks", "Months", "Years"]
+X_AXIS_OPTIONS = ["Meet #", "Days", "Weeks", "Months", "Years", "Career quartile"]
 
 MEN_CLASSES = ["59", "66", "74", "83", "93", "105", "120", "120+"]
 WOMEN_CLASSES = ["47", "52", "57", "63", "69", "76", "84", "84+"]
