@@ -163,13 +163,29 @@ export default function LifterDetail({
   history,
   standards,
   isActive,
+  era: eraProp,
+  setEra: setEraProp,
+  viewMode: viewModeProp,
+  setViewMode: setViewModeProp,
 }: {
   history: LifterHistory
   standards: QtStandardRow[] | undefined
   isActive: boolean
+  // Era + viewMode are URL-backed in LifterLookup so detail views are
+  // shareable via a single link. When LifterDetail is used outside the
+  // LifterLookup URL-state tree (e.g. manual-entry hypothetical preview),
+  // these are optional and fall back to internal state.
+  era?: Era
+  setEra?: (e: Era) => void
+  viewMode?: 'total' | 'per_lift'
+  setViewMode?: (v: 'total' | 'per_lift') => void
 }) {
-  const [era, setEra] = useState<Era>('2025')
-  const [viewMode, setViewMode] = useState<'total' | 'per_lift'>('total')
+  const [eraLocal, setEraLocal] = useState<Era>('2025')
+  const [viewModeLocal, setViewModeLocal] = useState<'total' | 'per_lift'>('total')
+  const era = eraProp ?? eraLocal
+  const setEra = setEraProp ?? setEraLocal
+  const viewMode = viewModeProp ?? viewModeLocal
+  const setViewMode = setViewModeProp ?? setViewModeLocal
 
   const qts = findQtForLifter(standards, history.sex, history.latest_weight_class)
   const qtField = ERA_QT_FIELD[era]

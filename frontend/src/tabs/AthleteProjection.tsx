@@ -34,6 +34,7 @@ import {
   type QtStandardRow,
 } from '../lib/api'
 import { useUrlState } from '../lib/useUrlState'
+import { ShareButton } from '../lib/ShareButton'
 
 const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
 const QT_ERAS_STATIC = ['pre2025', '2025', '2027'] as const
@@ -396,7 +397,7 @@ function SelectorPanel({
                 {selected.LatestEquipment})
               </span>
             </div>
-            <ShareButton />
+            <ShareButton ariaLabel="Copy shareable link to this projection" />
             <button
               type="button"
               onClick={onReset}
@@ -1240,49 +1241,3 @@ function MethodologyBlock() {
   )
 }
 
-// ---------- Share button (copies the current URL to the clipboard) ----------
-
-function ShareButton() {
-  const [copied, setCopied] = useState<boolean>(false)
-
-  const onClick = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // Clipboard API can reject (insecure context, user gesture missing).
-      // Fall back to a selection-based copy via a temporary textarea.
-      const ta = document.createElement('textarea')
-      ta.value = window.location.href
-      ta.style.position = 'fixed'
-      ta.style.left = '-9999px'
-      document.body.appendChild(ta)
-      ta.select()
-      try {
-        document.execCommand('copy')
-        setCopied(true)
-        window.setTimeout(() => setCopied(false), 1500)
-      } catch {
-        // Give up silently; the URL is still visible in the address bar.
-      }
-      document.body.removeChild(ta)
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Copy shareable link to this projection"
-      className={
-        'px-3 py-2 text-xs rounded border transition-colors ' +
-        (copied
-          ? 'text-emerald-300 border-emerald-800 bg-emerald-950/30'
-          : 'text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800')
-      }
-    >
-      {copied ? 'Copied!' : 'Share'}
-    </button>
-  )
-}

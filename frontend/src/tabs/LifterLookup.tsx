@@ -16,6 +16,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
+import { ShareButton } from '../lib/ShareButton'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
   fetchLifterHistory,
@@ -463,6 +464,12 @@ const CompareView = lazy(() => import('./CompareView'))
 const MAX_COMPARE = 4
 
 type Mode = 'search' | 'compare' | 'manual'
+// Detail-view state shared via URL so single-lifter deep links round-trip
+// cleanly. These mirror the state shape LifterDetail / CompareView used
+// to hold internally; moved up to LifterLookup so useUrlState can back them.
+export type LookupEra = 'pre2025' | '2025' | '2027'
+export type LookupViewMode = 'total' | 'per_lift'
+export type LookupRange = 'all' | '6' | '12' | '24' | '60'
 
 
 const MODE_LABELS: Record<Mode, string> = {
@@ -495,6 +502,13 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
     mode: 'search',
     lifter: '',
     lifters: '',
+    // Detail-view state (search mode). Defaults match the prior useState
+    // defaults on LifterDetail so existing bookmarks keep rendering the
+    // same thing they did before this refactor.
+    era: '2025',
+    view_mode: 'total',
+    // Compare-view x-axis range.
+    range: 'all',
   })
   const mode: Mode = parseMode(urlState.mode)
   const selectedName: string | null = urlState.lifter ? urlState.lifter : null
@@ -502,6 +516,20 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
     () => parseLifters(urlState.lifters),
     [urlState.lifters],
   )
+  const era: LookupEra =
+    urlState.era === 'pre2025' || urlState.era === '2025' || urlState.era === '2027'
+      ? (urlState.era as LookupEra)
+      : '2025'
+  const viewMode: LookupViewMode =
+    urlState.view_mode === 'per_lift' ? 'per_lift' : 'total'
+  const xRange: LookupRange =
+    urlState.range === '6' ||
+    urlState.range === '12' ||
+    urlState.range === '24' ||
+    urlState.range === '60'
+      ? (urlState.range as LookupRange)
+      : 'all'
+
   const setMode = (m: Mode) => {
     setUrlState({ mode: m })
     setQuery('')  // clear stale search text when switching modes
@@ -510,6 +538,9 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
     setUrlState({ lifter: name ?? '' })
   const setCompareNames = (names: string[]) =>
     setUrlState({ lifters: names.slice(0, MAX_COMPARE).join(',') })
+  const setEra = (e: LookupEra) => setUrlState({ era: e })
+  const setViewMode = (v: LookupViewMode) => setUrlState({ view_mode: v })
+  const setXRange = (r: LookupRange) => setUrlState({ range: r })
   const addCompare = (name: string) => {
     if (compareNames.includes(name)) return
     if (compareNames.length >= MAX_COMPARE) return
@@ -623,27 +654,36 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
             </div>
           </details>
         </div>
-        <div
-          className="flex gap-2 shrink-0 -mx-1 px-1 overflow-x-auto"
-          role="tablist"
-          aria-label="Lifter Lookup mode"
-        >
-          {(['search', 'compare', 'manual'] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              role="tab"
-              aria-selected={mode === m}
-              className={
-                'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
-                (mode === m
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
-              }
-            >
-              {MODE_LABELS[m]}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="flex gap-2 -mx-1 px-1 overflow-x-auto"
+            role="tablist"
+            aria-label="Lifter Lookup mode"
+          >
+            {(['search', 'compare', 'manual'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                role="tab"
+                aria-selected={mode === m}
+                className={
+                  'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
+                  (mode === m
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
+                }
+              >
+                {MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+          {/* Share is only meaningful when there's something specific in the
+              URL beyond tab+mode: a selected lifter (search) or a populated
+              compare list. Hide it on the bare search landing + manual form. */}
+          {((mode === 'search' && selectedName) ||
+            (mode === 'compare' && compareNames.length > 0)) && (
+            <ShareButton ariaLabel="Copy shareable link to this lookup" />
+          )}
         </div>
       </div>
 
@@ -736,7 +776,15 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
             )}
             {historyQuery.data && historyQuery.data.found && (
               <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
-                <LifterDetail history={historyQuery.data} standards={standardsQuery.data} isActive={isActive} />
+                <LifterDetail
+                  history={historyQuery.data}
+                  standards={standardsQuery.data}
+                  isActive={isActive}
+                  era={era}
+                  setEra={setEra}
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                />
               </Suspense>
             )}
             {historyQuery.data && !historyQuery.data.found && (
@@ -759,6 +807,8 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
             searchIsFetching={searchQuery.isFetching}
             searchError={searchQuery.error}
             isActive={isActive}
+            xRange={xRange}
+            setXRange={setXRange}
           />
         </Suspense>
       )}

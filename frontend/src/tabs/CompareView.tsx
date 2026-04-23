@@ -336,6 +336,8 @@ export default function CompareView({
   searchIsFetching,
   searchError,
   isActive,
+  xRange: xRangeProp,
+  setXRange: setXRangeProp,
 }: {
   compareNames: string[]
   addCompare: (name: string) => void
@@ -347,8 +349,14 @@ export default function CompareView({
   searchIsFetching: boolean
   searchError: unknown
   isActive: boolean
+  // URL-backed by LifterLookup for share-link round-trip. Optional so
+  // CompareView can still be mounted standalone.
+  xRange?: XRange
+  setXRange?: (r: XRange) => void
 }) {
-  const [xRange, setXRange] = useState<XRange>('all')
+  const [xRangeLocal, setXRangeLocal] = useState<XRange>('all')
+  const xRange = xRangeProp ?? xRangeLocal
+  const setXRange = setXRangeProp ?? setXRangeLocal
   // 'off' means no reference lines; otherwise it's the selected weight class.
   const [qtClass, setQtClass] = useState<string>('off')
 
