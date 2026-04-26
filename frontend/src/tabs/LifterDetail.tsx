@@ -25,6 +25,7 @@ import {
   YAxis,
 } from 'recharts'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
+import { MethodPill } from '../components/MethodPill'
 
 // ---------- Class-change badge with hover tooltip ----------
 //
@@ -410,6 +411,10 @@ export default function LifterDetail({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mb-3">
+        <MethodPill variant="lifter-lookup" />
       </div>
 
       {nonSbdCount > 0 && (

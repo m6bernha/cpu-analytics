@@ -36,6 +36,7 @@ import {
 } from '../lib/api'
 import { useUrlState } from '../lib/useUrlState'
 import { ShareButton } from '../lib/ShareButton'
+import { MethodPill } from '../components/MethodPill'
 
 const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
 
@@ -283,6 +284,9 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
           Combines the lifter's own trajectory (Huber regression) with a cohort
           slope for their age division and IPF GL Points bracket.
         </p>
+        <div className="mt-3">
+          <MethodPill variant="athlete-projection" />
+        </div>
       </header>
 
       <SelectorPanel
@@ -405,7 +409,7 @@ function SelectorPanel({
   return (
     <section
       aria-label="Projection controls"
-      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 max-w-5xl"
+      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 max-w-5xl items-end"
     >
       <div>
         <label
@@ -452,22 +456,30 @@ function SelectorPanel({
             )}
           </div>
         ) : (
+          // AP2 (plan v1, 2026-04-26): standalone "Change" button replaced
+          // with an embedded ✕ inside the lifter chip. Removable-pill pattern
+          // — one fewer visually-distinct element, hover state telegraphs
+          // "this clears." Share stays separate as it's a different action.
           <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-100 text-sm">
-              {selected.Name}
-              <span className="text-zinc-500 ml-2 text-xs">
-                ({selected.Sex} · {selected.LatestWeightClass} kg ·{' '}
-                {selected.LatestEquipment})
+            <div className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-100 text-sm flex items-center justify-between gap-2">
+              <span>
+                {selected.Name}
+                <span className="text-zinc-500 ml-2 text-xs">
+                  ({selected.Sex} · {selected.LatestWeightClass} kg ·{' '}
+                  {selected.LatestEquipment})
+                </span>
               </span>
+              <button
+                type="button"
+                onClick={onReset}
+                aria-label="Change lifter"
+                title="Change lifter"
+                className="text-zinc-500 hover:text-red-400 text-base leading-none px-1 transition-colors focus:outline-none focus:text-red-400"
+              >
+                ×
+              </button>
             </div>
             <ShareButton ariaLabel="Copy shareable link to this projection" />
-            <button
-              type="button"
-              onClick={onReset}
-              className="px-3 py-2 text-zinc-400 text-xs hover:text-zinc-200 border border-zinc-700 rounded hover:bg-zinc-800"
-            >
-              Change
-            </button>
           </div>
         )}
       </div>
@@ -645,47 +657,68 @@ function LiftSelect({
       </div>
 
       {liftKey === 'total' && (
+        // AP3 (plan v1, 2026-04-26): single segmented control combining
+        // the prior checkbox + year-picker + amber-text-on-unavailable into
+        // one compact pill. Off + each available year are mutually exclusive
+        // segments. When the live QT feed is down, the whole control is
+        // disabled with a tooltip — no extra inline message needed.
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-          <label className="inline-flex items-center gap-2 text-zinc-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showQt}
-              onChange={(e) => setShowQt(e.target.checked)}
-              className="accent-orange-500"
-              aria-label="Show CPU QT reference lines"
-            />
-            <span>Show CPU QT reference lines</span>
-          </label>
-          {showQt && qtLiveAvailable && availableYears.length > 0 && (
-            <div
-              role="radiogroup"
-              aria-label="QT effective year"
-              className="inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden"
+          <span className="text-zinc-400 text-xs uppercase tracking-wide">
+            QT lines
+          </span>
+          <div
+            role="radiogroup"
+            aria-label="CPU QT reference lines"
+            className={
+              'inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden ' +
+              (!qtLiveAvailable ? 'opacity-50 cursor-not-allowed' : '')
+            }
+            title={
+              !qtLiveAvailable
+                ? 'Live QT feed unavailable; reference lines disabled.'
+                : undefined
+            }
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!showQt}
+              disabled={!qtLiveAvailable}
+              onClick={() => setShowQt(false)}
+              className={
+                'px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed ' +
+                (!showQt
+                  ? 'bg-zinc-800 text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200')
+              }
             >
-              {availableYears.map((y) => (
+              Off
+            </button>
+            {availableYears.map((y) => {
+              const active = showQt && effectiveYear === y
+              return (
                 <button
                   key={y}
                   type="button"
                   role="radio"
-                  aria-checked={effectiveYear === y}
-                  onClick={() => setQtYear(y)}
+                  aria-checked={active}
+                  disabled={!qtLiveAvailable}
+                  onClick={() => {
+                    setShowQt(true)
+                    setQtYear(y)
+                  }}
                   className={
-                    'px-3 py-1.5 text-xs transition-colors ' +
-                    (effectiveYear === y
+                    'px-3 py-1.5 text-xs transition-colors border-l border-zinc-800 disabled:cursor-not-allowed ' +
+                    (active
                       ? 'bg-zinc-800 text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-200')
                   }
                 >
                   {y}
                 </button>
-              ))}
-            </div>
-          )}
-          {showQt && !qtLiveAvailable && (
-            <span className="text-xs text-orange-400">
-              Live QT feed unavailable; reference lines disabled.
-            </span>
-          )}
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -722,6 +755,28 @@ function ResultPanel({
     () => buildChartData(data, liftKey),
     [data, liftKey],
   )
+
+  // AP4 (plan v1, 2026-04-26): chart-window toggle. Long-history lifters
+  // (5+ years of meets) make a 3-18 month projection band visually
+  // invisible against the timeline. Default to "Recent" — last 24 months
+  // of history plus all projection points — so the band is always a
+  // meaningful fraction of the chart width. "Full history" preserves the
+  // prior behavior one click away.
+  const RECENT_WINDOW_DAYS = 730 // 24 months
+  const [chartView, setChartView] = useState<'recent' | 'full'>('recent')
+  const displayedChartData = useMemo(() => {
+    if (chartView === 'full') return chartData
+    const histDays = chartData
+      .filter((r) => r.history != null)
+      .map((r) => r.days)
+    if (histDays.length === 0) return chartData
+    const cutoff = Math.max(...histDays) - RECENT_WINDOW_DAYS
+    // Always keep projection points (projected != null) so the PI band
+    // remains visible regardless of how recent the last meet was.
+    return chartData.filter(
+      (r) => r.days >= cutoff || r.projected != null,
+    )
+  }, [chartData, chartView])
 
   const warningBanners = (
     <div className="flex flex-col gap-2 mb-3">
@@ -764,10 +819,48 @@ function ResultPanel({
     <div className="mt-6">
       {warningBanners}
 
+      <div className="flex items-center gap-2 mb-2 text-xs">
+        <span className="text-zinc-400 uppercase tracking-wide">View</span>
+        <div
+          role="radiogroup"
+          aria-label="Chart time window"
+          className="inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden"
+        >
+          <button
+            type="button"
+            role="radio"
+            aria-checked={chartView === 'recent'}
+            onClick={() => setChartView('recent')}
+            className={
+              'px-3 py-1 transition-colors ' +
+              (chartView === 'recent'
+                ? 'bg-zinc-800 text-zinc-100'
+                : 'text-zinc-400 hover:text-zinc-200')
+            }
+          >
+            Recent
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={chartView === 'full'}
+            onClick={() => setChartView('full')}
+            className={
+              'px-3 py-1 border-l border-zinc-800 transition-colors ' +
+              (chartView === 'full'
+                ? 'bg-zinc-800 text-zinc-100'
+                : 'text-zinc-400 hover:text-zinc-200')
+            }
+          >
+            Full history
+          </button>
+        </div>
+      </div>
+
       <div className="h-[400px] sm:h-[480px]">
         {isActive && (
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 16, right: 24, bottom: 8, left: 8 }}>
+            <ComposedChart data={displayedChartData} margin={{ top: 16, right: 24, bottom: 8, left: 8 }}>
               <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="days"
