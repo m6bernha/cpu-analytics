@@ -58,6 +58,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Check env var pinning (render.yaml)
+        # Fails CI if backend/app/ reads an os.environ.get("*_URL") whose
+        # key is not pinned in render.yaml. Catches the recurring failure
+        # where an env var is activated only in the Render dashboard and
+        # gets silently dropped on a Blueprint re-provision. See
+        # scripts/check_env_var_pinning.py for the full rule.
+        run: python scripts/check_env_var_pinning.py
+
       - name: Run tests
         # `python -m pytest` (not plain `pytest`) prepends cwd to sys.path so
         # `from backend.app import ...` imports resolve. Using `pytest` alone
