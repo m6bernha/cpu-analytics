@@ -26,3 +26,9 @@ services:
         value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/openipf.parquet
       - key: QT_PARQUET_URL
         value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/qt_standards.parquet
+      # Without this, the backend falls back to a ~27 s live precompute on
+      # every cold start. With it, cold-start tables load from the artifact
+      # in ~2 ms. Activated live in the Render dashboard 2026-04-23; this
+      # entry pins the same value into the Blueprint so a re-provision keeps it.
+      - key: ATHLETE_PROJ_TABLES_URL
+        value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/athlete_projection_tables.json
