@@ -284,7 +284,7 @@ export default function QtLiveCoveragePanel() {
           </div>
         )}
         {routeViaCpuRegional && provinceConfig && (
-          <p className="text-xs text-amber-400/80 mb-2">
+          <p className="text-xs text-orange-400/80 mb-2">
             {provinceConfig.note} Showing CPU Regional {provinceConfig.cpuRegion}
             {' '}coverage below.
           </p>
@@ -301,18 +301,18 @@ export default function QtLiveCoveragePanel() {
         {!routeIsOpenEntry && !coverageQuery.isLoading && !coverageQuery.isError && (
           <>
             {regionApplies && !region && (
-              <p className="text-xs text-amber-400/80 mb-2">
+              <p className="text-xs text-orange-400/80 mb-2">
                 Pick a region to see 2027 Regionals coverage.
               </p>
             )}
             {provinceApplies && !province && (
-              <p className="text-xs text-amber-400/80 mb-2">
+              <p className="text-xs text-orange-400/80 mb-2">
                 Pick a province to see Provincial coverage.
               </p>
             )}
             {provinceApplies && province && !routeViaCpuRegional
               && rows.length === 0 && (
-              <p className="text-xs text-amber-400/80 mb-2">
+              <p className="text-xs text-orange-400/80 mb-2">
                 No provincial QT data yet for {province}. Check the weekly
                 qt_refresh workflow status; this province may still be in
                 the scraper backlog.

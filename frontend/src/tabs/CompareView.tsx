@@ -21,7 +21,18 @@ import {
   type QtStandardRow,
 } from '../lib/api'
 
-export const COMPARE_COLORS = ['#569cd6', '#ce9178', '#4ec9b0', '#c586c0']
+// 6-color non-orange palette. Locked 2026-04-26 (plan v1 Q2 color pass) so
+// coral #FB923C can live alone in the orange family for accents/warnings.
+// Order chosen to maximize hue distance between adjacent slots so the first
+// 2-3 lifters in a compare view never sit on neighboring hues.
+export const COMPARE_COLORS = [
+  '#60A5FA', // blue-400
+  '#2DD4BF', // teal-400
+  '#A78BFA', // violet-400
+  '#F472B6', // pink-400
+  '#4ADE80', // green-400
+  '#818CF8', // indigo-400
+]
 export const MAX_COMPARE = 4
 
 type SeriesPoint = {
@@ -706,7 +717,7 @@ export default function CompareView({
             )}
 
             {careerMismatch && xRange === 'all' && (
-              <p className="text-amber-400 text-xs mb-2">
+              <p className="text-orange-400 text-xs mb-2">
                 Career lengths vary by {Math.round(maxCareer / minCareer)}x. Pick a
                 smaller range above to compare progression rates side by side.
               </p>

@@ -61,10 +61,14 @@ const LIFTS: { key: LiftKey; label: string }[] = [
   { key: 'deadlift', label: 'Deadlift' },
 ]
 
+// Color tokens. Coral #FB923C (Tailwind orange-400) is the only orange-family
+// color allowed sitewide (locked 2026-04-26 design pass, plan v1 Q2). The
+// projection line and prediction-interval band use indigo #818CF8 to keep
+// orange free for accents and warnings.
 const COLORS = {
   history: '#569cd6',
-  projected: '#ce9178',
-  piBand: '#ce9178',
+  projected: '#818CF8',
+  piBand: '#818CF8',
   reference: '#4ec9b0',
   grid: '#3f3f46',
 }
@@ -269,7 +273,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
       <header className="mb-6">
         <h2 className="text-zinc-100 text-lg font-semibold flex items-baseline gap-2">
           Athlete Projection
-          <span className="text-amber-500 text-xs uppercase tracking-wide">
+          <span className="text-orange-500 text-xs uppercase tracking-wide">
             Beta
           </span>
         </h2>
@@ -344,7 +348,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
       )}
 
       {selected && projectionQuery.data && !projectionQuery.data.found && (
-        <div className="mt-6 p-4 border border-amber-900/40 bg-amber-950/20 rounded max-w-3xl text-amber-300 text-sm">
+        <div className="mt-6 p-4 border border-orange-900/40 bg-orange-950/20 rounded max-w-3xl text-orange-300 text-sm">
           No projection available: {projectionQuery.data.reason ?? 'unknown reason'}.
           A projection needs at least one SBD meet with age + bodyweight populated.
         </div>
@@ -473,7 +477,11 @@ function SelectorPanel({
             the backend reports engine_d_available=true. Until then we ship
             Simple-only to avoid a toggle that silently falls back. */}
         {false && <EngineToggle engine={engine} setEngine={setEngine} />}
-        <HorizonSelect horizon={horizon} setHorizon={setHorizon} />
+        <HorizonSelect
+          horizon={horizon}
+          setHorizon={setHorizon}
+          meetCount={selected?.MeetCount ?? null}
+        />
         <LiftSelect
           liftKey={liftKey}
           setLiftKey={setLiftKey}
@@ -542,10 +550,28 @@ function EngineToggle({
 function HorizonSelect({
   horizon,
   setHorizon,
+  meetCount,
 }: {
   horizon: number
   setHorizon: (h: number) => void
+  meetCount: number | null
 }) {
+  // AP6 (plan v1, 2026-04-26): cap selectable horizons at 6 months when the
+  // lifter has < 5 meets. Backend clamps server-side regardless, but limiting
+  // the dropdown removes the "you picked 12 then got demoted to 6" UX glitch.
+  // Mirrors the small_n_warning rule in the backend projection engine.
+  const isSmallN = meetCount != null && meetCount < 5
+  const allowedHorizons = isSmallN ? HORIZONS.filter((h) => h <= 6) : HORIZONS
+
+  // If the user previously picked a horizon now disallowed (e.g. selected a
+  // big lifter at 18 months, then switched to a beginner), snap back to the
+  // largest allowed value so the displayed selection always matches state.
+  useEffect(() => {
+    if (isSmallN && horizon > 6) {
+      setHorizon(6)
+    }
+  }, [isSmallN, horizon, setHorizon])
+
   return (
     <div>
       <label
@@ -560,7 +586,7 @@ function HorizonSelect({
         onChange={(e) => setHorizon(Number(e.target.value))}
         className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 focus:outline-none focus:border-zinc-500"
       >
-        {HORIZONS.map((h) => (
+        {allowedHorizons.map((h) => (
           <option key={h} value={h}>
             {h} months
           </option>
@@ -625,7 +651,7 @@ function LiftSelect({
               type="checkbox"
               checked={showQt}
               onChange={(e) => setShowQt(e.target.checked)}
-              className="accent-amber-500"
+              className="accent-orange-500"
               aria-label="Show CPU QT reference lines"
             />
             <span>Show CPU QT reference lines</span>
@@ -656,7 +682,7 @@ function LiftSelect({
             </div>
           )}
           {showQt && !qtLiveAvailable && (
-            <span className="text-xs text-amber-400">
+            <span className="text-xs text-orange-400">
               Live QT feed unavailable; reference lines disabled.
             </span>
           )}
@@ -815,13 +841,13 @@ function ResultPanel({
               {nationalsQt != null && (
                 <ReferenceLine
                   y={nationalsQt}
-                  stroke="#f59e0b"
+                  stroke="#FB923C"
                   strokeDasharray="4 4"
                   ifOverflow="extendDomain"
                   label={{
                     value: `Nationals ${effectiveYear ?? ''} (${nationalsQt.toFixed(0)})`.trim(),
                     position: 'insideTopLeft',
-                    fill: '#f59e0b',
+                    fill: '#FB923C',
                     fontSize: 11,
                     offset: 6,
                   }}
@@ -853,7 +879,7 @@ function Banner({
 }) {
   const cls =
     tone === 'amber'
-      ? 'border-amber-900/40 bg-amber-950/20 text-amber-300'
+      ? 'border-orange-900/40 bg-orange-950/20 text-orange-300'
       : 'border-zinc-800 bg-zinc-900/40 text-zinc-300'
   return (
     <div className={`p-3 border ${cls} rounded text-sm max-w-3xl`}>
@@ -1030,7 +1056,7 @@ function InfoPanel({
               />
             )}
             {bracket.is_global_fallback && (
-              <div className="text-xs text-amber-400 mt-1">
+              <div className="text-xs text-orange-400 mt-1">
                 Division has sparse data; using division-global slope.
               </div>
             )}
@@ -1169,7 +1195,7 @@ function QtGapRow({
     <Row
       label={label}
       value={`-${gap.toFixed(1)} kg (${timing})`}
-      valueClass={crossingMonth == null ? 'text-amber-400' : 'text-zinc-200'}
+      valueClass={crossingMonth == null ? 'text-orange-400' : 'text-zinc-200'}
     />
   )
 }

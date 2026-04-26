@@ -432,7 +432,7 @@ function ManualEntryForm({
       </div>
 
       {hasPartialLiftWarning && (
-        <div className="mt-3 text-amber-400 text-sm">
+        <div className="mt-3 text-orange-400 text-sm">
           Some rows have one or two lifts filled but not all three. Fill in squat,
           bench, and deadlift together, or clear them to enter a total only.
         </div>

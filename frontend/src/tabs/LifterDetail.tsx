@@ -41,7 +41,7 @@ function ClassChangeBadge({ label }: { label: string }) {
   return (
     <>
       <span
-        className="ml-1 inline-block text-amber-400 text-xs cursor-help"
+        className="ml-1 inline-block text-orange-400 text-xs cursor-help"
         aria-label={label}
         onMouseEnter={(e: ReactMouseEvent<HTMLSpanElement>) => {
           const r = e.currentTarget.getBoundingClientRect()
@@ -559,12 +559,12 @@ export default function LifterDetail({
             {nationalsQt && (
               <ReferenceLine
                 y={nationalsQt}
-                stroke="#ce9178"
+                stroke="#FB923C"
                 strokeDasharray="4 4"
                 label={{
                   value: `Nationals ${ERA_LABEL[era]} (${nationalsQt.toFixed(0)})`,
                   position: 'insideTopLeft',
-                  fill: '#ce9178',
+                  fill: '#FB923C',
                   fontSize: 11,
                   offset: 6,
                 }}
@@ -619,9 +619,11 @@ export default function LifterDetail({
 
       {/* Meet table. On phones we hide Class, Division, and S/B/D — Date +
           Meet + Event + Total + Δ is enough at small widths. The full table
-          returns at sm:. The SBD triplet cells wrap instead of scrolling so
-          the table always fits the detail pane regardless of how big the
-          lifter's numbers are. */}
+          returns at sm:. The SBD triplet cell stays on a single line
+          (whitespace-nowrap, LL2 fix 2026-04-26). For heavy lifters the meet
+          name cell wraps instead — meet names are repeatable across rows and
+          read fine on two lines, while a 3-line "270 / 175 / 285" stack of
+          numbers reads as visual noise. */}
       <div className="mt-6">
         <table className="w-full text-sm">
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
@@ -698,7 +700,7 @@ export default function LifterDetail({
                       )}
                     </td>
                     <td className="py-2 pr-3 hidden md:table-cell">{m.Division ?? '—'}</td>
-                    <td className="py-2 pl-2 text-right tabular-nums hidden sm:table-cell">
+                    <td className="py-2 pl-2 text-right tabular-nums hidden sm:table-cell whitespace-nowrap">
                       {fmtSbd(m.Best3SquatKg, m.Best3BenchKg, m.Best3DeadliftKg)}
                     </td>
                     <td className={totalCellClass}>

@@ -66,7 +66,7 @@ export default function App() {
               >
                 {t.label}
                 {t.beta && (
-                  <span className="ml-1 text-[9px] uppercase tracking-wider text-amber-500 align-top">
+                  <span className="ml-1 text-[9px] uppercase tracking-wider text-orange-500 align-top">
                     beta
                   </span>
                 )}

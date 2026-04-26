@@ -254,6 +254,10 @@ export default function Progression({ isActive }: { isActive: boolean }) {
         )}
         {f && (
           <>
+            {/* Sidebar order: Sex -> Weight -> Division -> X-axis -> Metric ->
+                Event -> Equipment -> Exclude gaps -> checkboxes. Reordered
+                2026-04-26 (Arc 2 P1) so the most-changed filters sit at the
+                top. */}
             <Select
               label="Sex"
               value={filters.sex}
@@ -265,34 +269,6 @@ export default function Progression({ isActive }: { isActive: boolean }) {
               value={filters.weight_class}
               options={weightClassOptions}
               onChange={(v) => update({ weight_class: v })}
-            />
-            <Select
-              label="Equipment"
-              value={filters.equipment}
-              options={f.equipment}
-              optionLabels={{ Raw: 'Raw (Classic)', Equipped: 'Equipped' }}
-              onChange={(v) => update({ equipment: v })}
-              hint="Raw = knee sleeves only. Equipped rolls up Single-ply, Wraps, and Multi-ply."
-            />
-            {/* Tested filter intentionally hidden: the OpenIPF export is IPF-only,
-                so every row already has Tested='Yes'. Showing a single-option
-                dropdown is just noise. The filter value is still sent to the API
-                so widening scope later is a one-line change. */}
-            <Select
-              label="Event"
-              value={filters.event}
-              options={f.event}
-              optionLabels={{ SBD: 'Full Power (SBD)', B: 'Bench Only' }}
-              onChange={(v) => update({ event: v })}
-              hint="Use the Per-lift toggle below to see Squat, Bench, or Deadlift trajectories within Full Power meets."
-            />
-            <Select
-              label="Metric"
-              value={filters.metric}
-              options={[...METRIC_OPTIONS]}
-              optionLabels={METRIC_LABELS}
-              onChange={(v) => update({ metric: v })}
-              hint="Total: sum of S+B+D. Bodyweight: lifter's recorded bodyweight. Goodlift: IPF GL score."
             />
             <Select
               label="Division"
@@ -307,47 +283,75 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                 the CPU canonical labels (Youth 1..3, Sub-Junior, Junior,
                 Open, Master 1..4). */}
             <Select
+              label="X axis"
+              value={filters.x_axis}
+              options={f.x_axis}
+              onChange={(v) => update({ x_axis: v })}
+            />
+            <Select
+              label="Metric"
+              value={filters.metric}
+              options={[...METRIC_OPTIONS]}
+              optionLabels={METRIC_LABELS}
+              onChange={(v) => update({ metric: v })}
+              hint="Total: sum of S+B+D. Bodyweight: lifter's recorded bodyweight. Goodlift: IPF GL score."
+            />
+            <Select
+              label="Event"
+              value={filters.event}
+              options={f.event}
+              optionLabels={{ SBD: 'Full Power (SBD)', B: 'Bench Only' }}
+              onChange={(v) => update({ event: v })}
+              hint="Use the Per-lift toggle below to see Squat, Bench, or Deadlift trajectories within Full Power meets."
+            />
+            <Select
+              label="Equipment"
+              value={filters.equipment}
+              options={f.equipment}
+              optionLabels={{ Raw: 'Raw (Classic)', Equipped: 'Equipped' }}
+              onChange={(v) => update({ equipment: v })}
+              hint="Raw = knee sleeves only. Equipped rolls up Single-ply, Wraps, and Multi-ply."
+            />
+            {/* Tested filter intentionally hidden: the OpenIPF export is IPF-only,
+                so every row already has Tested='Yes'. Showing a single-option
+                dropdown is just noise. The filter value is still sent to the API
+                so widening scope later is a one-line change. */}
+            <Select
               label="Exclude gaps longer than"
               value={filters.max_gap_months}
               options={['', '6', '12', '18', '24', '36']}
               onChange={(v) => update({ max_gap_months: v })}
               hint="Excludes lifters with any inter-meet gap longer than N months (comeback filter)."
             />
-            <label className="flex items-center gap-2 mb-3 cursor-pointer">
+            <label className="flex items-center gap-2 mb-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={filters.same_class_only === 'true'}
                 onChange={(e) =>
                   update({ same_class_only: e.target.checked ? 'true' : '' })
                 }
-                className="accent-zinc-400"
+                className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 accent-orange-400 cursor-pointer"
               />
               <span
-                className="text-zinc-300 text-xs uppercase tracking-wide"
+                className="text-zinc-300 text-xs uppercase tracking-wide group-hover:text-zinc-100"
                 title="When on, only lifters who stayed in the same weight class for their entire career in scope are included. A lifter who moved from 74 to 83 is excluded, because blending class-transitions into the cohort average distorts the curve."
               >
                 Same class only
               </span>
             </label>
-            <label className="flex items-center gap-2 mb-3 cursor-pointer">
+            <label className="flex items-center gap-2 mb-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={filters.per_lift === 'true'}
                 onChange={(e) =>
                   update({ per_lift: e.target.checked ? 'true' : '' })
                 }
-                className="accent-zinc-400"
+                className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 accent-orange-400 cursor-pointer"
               />
-              <span className="text-zinc-300 text-xs uppercase tracking-wide">
+              <span className="text-zinc-300 text-xs uppercase tracking-wide group-hover:text-zinc-100">
                 Per-lift (Squat / Bench / Deadlift)
               </span>
             </label>
-            <Select
-              label="X axis"
-              value={filters.x_axis}
-              options={f.x_axis}
-              onChange={(v) => update({ x_axis: v })}
-            />
           </>
         )}
         </div>
@@ -581,7 +585,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                         ? `Trend (${progQuery.data.trend.slope.toFixed(3)} kg/${progQuery.data.trend.unit})`
                         : 'Trend'
                     }
-                    stroke="#ce9178"
+                    stroke="#2DD4BF"
                     strokeDasharray="6 4"
                     dot={false}
                     isAnimationActive={false}
