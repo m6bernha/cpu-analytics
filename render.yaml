@@ -32,3 +32,10 @@ services:
       # entry pins the same value into the Blueprint so a re-provision keeps it.
       - key: ATHLETE_PROJ_TABLES_URL
         value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/athlete_projection_tables.json
+      # Without this, qt_data_loader.py returns None on startup and the
+      # QT Squeeze tab renders the "QT data not yet available" empty
+      # state. Activated live in the Render dashboard 2026-04-26. This
+      # entry pins the same value into the Blueprint so a re-provision
+      # keeps it.
+      - key: QT_CURRENT_CSV_URL
+        value: https://github.com/m6bernha/cpu-analytics/releases/download/data-latest/qt_current.csv
