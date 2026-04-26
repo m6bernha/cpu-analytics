@@ -9,6 +9,59 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-26 (Arc 1: sweep the deck) -- ALL SHIPPED
+
+Plan-mode v1 audit + execution session. Three commits to main, CI green,
+all 11 Arc 1 items shipped. Multi-arc plan locked in
+`C:\Users\Matthias\.claude\plans\do-an-audit-as-resilient-sparkle.md`.
+
+1. **Doc rollup** -- SHIPPED `d21953e`. Captured the 4-track wave + Athlete
+   Projection BETA recap into CLAUDE.md / NEXT_STEPS.md / README.md /
+   docs/ARCHITECTURE.md (147 net insertions). Cleared the working tree
+   that had been carrying the 2026-04-23 session's doc edits.
+2. **Frontend Arc 1 sweep** -- SHIPPED `a7deadd`. Six items in one commit:
+   - **NAV1**: hidden About tab from main nav (route still resolves via
+     `?tab=about`)
+   - **P3**: removed redundant "Age column vs Division" methodology paragraph
+     on Progression
+   - **P4**: tightened Progression scope copy. Verified via parquet
+     inspection that 69,259 Canadian rows already span CPU + NAPF +
+     Commonwealths + IPF Worlds + international IPF affiliates (meet
+     countries: Canada, Lithuania, USA, Argentina, Germany). New copy
+     accurately describes inclusion of international meets.
+   - **AP5**: centered the Athlete Projection InfoPanel grid via `mx-auto`
+   - **AP8**: removed the Sean Yen attribution paragraph
+   - **SW2**: renamed Sq/Bn/Dl -> Sq/Bp/Dl in LifterDetail meet-table
+     column headers
+3. **Infra hygiene** -- SHIPPED `0310b9a`. Two items:
+   - **INF2**: pinned `ATHLETE_PROJ_TABLES_URL` into `render.yaml`
+     Blueprint (was live-only on dashboard since 2026-04-23). Re-provision
+     now keeps the var.
+   - **INF4**: added `frontend/.env.example` documenting `VITE_API_BASE`
+     for next-contributor onboarding.
+
+Plus **MEM1** (visual-QA memory rule) written and indexed in MEMORY.md.
+
+Decisions locked in plan v1:
+- **Q1**: keep both projection methods (LL simple regression + AP Engine C);
+  surface the difference aesthetically (info icon / method pill, in Arc 3).
+- **Q2**: yellow accent -> coral `#FB923C` sitewide. Existing orange uses
+  displaced (LL prediction band -> indigo, Progression trend line -> teal,
+  Compare-view 6-color non-orange palette).
+
+Still queued (Arcs 2-7 in plan):
+- **Arc 2**: Progression sidebar reorder (P1) + checkbox restyle (P2)
+- **Arc 3**: sitewide design pass (SW1 color system + AP1 alignment + AP2
+  Change-button redesign + AP3 QT reference lines rework + AP4 prediction-
+  band display + AP6 horizon-cap + LL2 column wrap)
+- **Arc 4 (collapsed into Arc 3)**: Q1 implementation
+- **Arc 5**: AP7 Engine D MixedLM wiring
+- **Arc 6**: LL3 athlete-card dopamine pass + LL4 live QT integration
+- **Arc 7**: INF3 Playwright E2E into CI (parallel-friendly)
+- **Arc-X**: SW3 once Matthias's QT-squeeze notes drop
+
+---
+
 ## Session plan -- 2026-04-23 (four-track wave + Render artifact activation) -- ALL SHIPPED
 
 Four parallel PRs merged to main in one day, plus the Render

@@ -2,11 +2,11 @@
 
 **Live app:** https://cpu-analytics.vercel.app
 
-A web app that turns the OpenPowerlifting dataset into five views a Canadian
-raw powerlifter actually uses: cohort progression, per-lifter Bayesian-
-shrinkage projection, per-lifter history, CPU qualifying-total coverage
-(federal + provincial), and an About page with full methodology and
-live backtest MAPE.
+A web app that turns the OpenPowerlifting dataset into four primary views a
+Canadian raw powerlifter actually uses: cohort progression, per-lifter
+Bayesian-shrinkage projection, per-lifter history, and CPU qualifying-total
+coverage (federal + provincial). An About page with full methodology and
+live backtest MAPE is accessible via `?tab=about` while it's being finalized.
 
 Scoped to Canadian lifters in IPF-sanctioned meets (CPU domestic and IPF
 international). Data refreshed weekly from

@@ -5,13 +5,13 @@ in this repo, then read `NEXT_STEPS.md` for the current backlog.
 
 ## What this is
 
-A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Five tabs:
+A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Four primary tabs in the nav, plus an About page accessible by direct URL while it's being finalized:
 
 1. **Progression** — cohort average total change over time, filterable.
 2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
 4. **QT Squeeze** — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
-5. **About** — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Linked from every other tab's methodology block.
+5. **About** (hidden from primary nav as of 2026-04-26 until publish-ready) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Still linked from every other tab's methodology block; route resolves via `?tab=about`.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 
