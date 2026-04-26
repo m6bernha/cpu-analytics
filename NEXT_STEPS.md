@@ -9,6 +9,58 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-23 (four-track wave + Render artifact activation) -- ALL SHIPPED
+
+Four parallel PRs merged to main in one day, plus the Render
+post-merge action via Claude Chrome. Picked over the P7 big-ticket
+back-burner because all four were single-session scope and independent
+enough to land without blocking each other.
+
+1. **Cohort serialization** (P1 perf) -- SHIPPED `d3e7859` (PR #10).
+   New `serialize_tables` / `load_serialized_tables` in
+   `backend/app/athlete_projection.py`.
+   `preprocess_athlete_projection_tables` in `data/preprocess.py`.
+   `ensure_athlete_proj_tables` in `backend/app/data_loader.py`.
+   Lifespan in `main.py` tries load-from-disk first, falls back to
+   live fit on miss. `.github/workflows/refresh-data.yml` uploads
+   the JSON artifact to dated + rolling releases. Schema v1 uses
+   `key_bracket` to preserve merged-alias identity. Round-trip test
+   `test_round_trip_preserves_merged_alias_identity` locks the
+   merged-alias invariant.
+   Render env var `ATHLETE_PROJ_TABLES_URL` activated via Claude
+   Chrome 2026-04-23 01:43 UTC. Cold-start fit elapsed flipped from
+   `elapsed_ms=200698` to `elapsed_ms=2` on instance `b5v21`
+   (~100,000x). `/api/ready` 200 confirmed.
+2. **Career quartile x-axis** (P6) -- SHIPPED `6e96358` (PR #11).
+   `X_AXIS_OPTIONS` += `"Career quartile"` in
+   `backend/app/filters.py`. `X_AXIS_COLS` extended in
+   `backend/app/progression.py`. Quartile bucketing via pandas
+   `groupby.transform` on `DaysFromFirst / career_span`. Projection
+   skipped for this axis (normalized units, not time).
+3. **LifterLookup Share + URL state** (P5) -- SHIPPED `7fa84e4`
+   (PR #12). `ShareButton` extracted to
+   `frontend/src/lib/ShareButton.tsx` (clipboard API with textarea
+   fallback). URL keys added to LifterLookup: `era`, `view_mode`,
+   `range`. `LifterDetail` and `CompareView` accept the state via
+   optional props (`prop ?? useState` pattern) so the components
+   still work standalone.
+4. **Live QT feed on Athlete Projection** (Athlete Projection
+   follow-up) -- SHIPPED `3cc8147` (PR #13). Historical era picker
+   dropped (user chose option A "replace"). Effective-year picker
+   driven by `/api/qt/live/filters`, filtered to years >= 2026
+   (CPU Nationals/Regionals only exist from 2026 onward in the live
+   feed). Regionals query pinned `region='Western/Central'` until
+   CPU publishes non-Western Regionals. URL key `ap_qt_era` ->
+   `ap_qt_year`.
+
+Key efficiency observation: the serialize-at-preprocess pattern is
+reusable. Any startup fit > 1s on Render should follow the three-
+file shape (serialize helper, `ensure_*` loader, `*_URL` env var)
+rather than recomputing on every cold boot. Documented in
+`~/.claude/projects/<this-project>/memory/project_serialize_at_preprocess_pattern.md`.
+
+---
+
 ## Session plan -- 2026-04-20 (laptop campus study day) -- ALL SHIPPED
 
 Four parallel worktree chats on laptop, all merged to main on desktop
@@ -106,24 +158,29 @@ python data/backtest_projection.py \
 - ~~**QT reference lines on projection chart**~~ -- SHIPPED 2026-04-22
   in commit `8452835` (PR #4). Optional "Show CPU QT reference lines"
   toggle on the Total view with an era picker (Pre-2025 / 2025 / 2027,
-  default 2027). Uses the historical QT standards feed for consistency
-  with Lifter Lookup. Migration to the live QT feed is a follow-up.
-- **Cold-start cost of precompute** -- MEASURED 2026-04-22. Local
-  instrumentation around `precompute_tables` in `backend/app/main.py`
-  lifespan reports `elapsed_ms=27000` (~27 s) on the Canada+IPF parquet
-  (~5.4 k lifters, 69 k rows, 231 cohort cells + 7 K-M tables). Render
-  free tier cold start was previously ~20-50 s for parquet download +
-  DuckDB warmup; the precompute pushes this to ~45-75 s user-visible
-  cold start for any request that wakes the dyno. The UptimeRobot
-  keepalive cron keeps the backend warm between 5 min pings, so in
-  practice real users almost always hit a warm backend.
-  Follow-up options if keepalive ever misses or the user base grows:
-  (a) serialize cohort cells at preprocess time and ship them alongside
-  openipf.parquet in the `data-latest` release, loading from disk on
-  boot (~ms); (b) make precompute lazy -- first projection request
-  triggers the fit, subsequent projections read the cache. (a) is the
-  cleaner fix; (b) risks a 27 s response on the unlucky first-projection
-  user after every cold start.
+  default 2027). Migration to the live QT feed SHIPPED 2026-04-23
+  in commit `3cc8147` (PR #13): historical era picker retired,
+  effective-year picker driven by `/api/qt/live/filters` and filtered
+  to years >= 2026, Regionals pinned `region='Western/Central'` until
+  CPU publishes non-Western Regionals. URL key `ap_qt_era` renamed to
+  `ap_qt_year`.
+- ~~**Cold-start cost of precompute**~~ -- SHIPPED 2026-04-23
+  (PR #10, option (a)). Rather than wait for keepalive to miss, we
+  serialized the 231 cohort cells + 7 K-M tables to JSON at
+  preprocess time and wired a disk-load path in the FastAPI
+  lifespan. Render `ATHLETE_PROJ_TABLES_URL` env var was activated
+  2026-04-23 01:43 UTC and the cold-start fit elapsed flipped from
+  `elapsed_ms=200698` (~200 s on Render free tier, significantly
+  worse than the 27 s measured locally on a faster machine) to
+  `elapsed_ms=2`. Option (b) -- lazy first-request fit -- was
+  explicitly rejected because it risked a 200 s response for the
+  unlucky first-projection user after every cold start. Schema
+  version constant `SERIALIZED_TABLES_SCHEMA_VERSION=1` gates
+  compatibility; bumping it causes stale artifacts to be rejected
+  and the lifespan to fall back to live fit. Merged-alias
+  preservation (multiple dict keys pointing at the same cohort cell
+  after bracket merging) is locked by
+  `test_round_trip_preserves_merged_alias_identity`.
 
 ### Athlete Projection / P3 weighting methodology -- SUPERSEDED
 

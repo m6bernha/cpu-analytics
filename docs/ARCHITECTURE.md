@@ -122,13 +122,22 @@ Two layers:
 
 ### Lifespan warmup
 
-The FastAPI `lifespan` hook does two things before the app accepts
+The FastAPI `lifespan` hook does three things before the app accepts
 traffic:
 
 1. Downloads the parquet files if they aren't on local disk
-   (`data_loader.py`).
-2. Runs `SELECT COUNT(*)` against both views to force DuckDB to open the
-   parquet files rather than defer the work to the first real request.
+   (`data_loader.py`). Includes `athlete_projection_tables.json` (since
+   2026-04-23) so the Athlete Projection 231-cell cohort + 7 K-M
+   tables load from disk in ~2 ms instead of refitting in ~200 s on
+   Render free tier.
+2. Tries `load_serialized_tables` for the Athlete Projection artifact.
+   On miss (no env var, download failure, schema mismatch) falls back
+   to a live `precompute_tables` fit using the in-memory DuckDB view.
+   `SERIALIZED_TABLES_SCHEMA_VERSION` rejects stale artifacts after a
+   breaking schema change.
+3. Runs `SELECT COUNT(*)` against both parquet views to force DuckDB
+   to open the parquet files rather than defer the work to the first
+   real request.
 
 If either view returns 0 rows (corrupt parquet), it deletes the local
 files so the next cold boot re-downloads rather than serving broken
@@ -161,11 +170,13 @@ Registered keys (as of 2026-04):
 
 | Key | Scope | Example |
 |---|---|---|
-| `tab` | App shell | `progression`, `projection`, `qt`, `lookup` |
-| `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years` |
+| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `about` |
+| `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile` |
 | `mode` | Lifter Lookup | `search`, `compare`, `manual` |
 | `lifter` | Lifter Lookup search | `Matthias Bernhard` |
 | `lifters` | Lifter Lookup compare | `Matthias Bernhard,Alex Mardell` |
+| `era`, `view_mode`, `range` | Lifter Lookup | `2025`, `total`, `all` |
+| `ap_name`, `ap_horizon`, `ap_qt_year` | Athlete Projection | `Matthias Bernhard`, `12`, `2027` |
 
 Example permalinks:
 - `/?tab=progression&weight_class=83&x_axis=Months`
@@ -198,10 +209,13 @@ one tab shows a recoverable error panel without blanking the others.
 
 ### Code splitting
 
-`CompareView` is lazy-loaded inside `LifterLookup.tsx` via a dynamic
-import. It ships as its own ~8 KB chunk. Recharts is still
-static-imported in `LifterDetail`; lazy-loading that view is a tracked
-item in `NEXT_STEPS.md`.
+Both `CompareView` and `LifterDetail` are lazy-loaded inside
+`LifterLookup.tsx` via dynamic imports. They ship as 11 KB and 18 KB
+chunks respectively. Recharts is a shared 357 KB chunk that only loads
+when either view opens. Main bundle dropped from 663 KB to ~295 KB
+(-55%) after the LifterDetail split shipped 2026-04-20. A `ShareButton`
+shared component at `frontend/src/lib/ShareButton.tsx` (added
+2026-04-23) lets any URL-backed tab expose a one-click shareable link.
 
 ### Charts
 

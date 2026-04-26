@@ -2,9 +2,11 @@
 
 **Live app:** https://cpu-analytics.vercel.app
 
-A web app that turns the OpenPowerlifting dataset into four views a Canadian
-raw powerlifter actually uses: cohort progression, future projection,
-per-lifter history, and CPU qualifying-total coverage.
+A web app that turns the OpenPowerlifting dataset into five views a Canadian
+raw powerlifter actually uses: cohort progression, per-lifter Bayesian-
+shrinkage projection, per-lifter history, CPU qualifying-total coverage
+(federal + provincial), and an About page with full methodology and
+live backtest MAPE.
 
 Scoped to Canadian lifters in IPF-sanctioned meets (CPU domestic and IPF
 international). Data refreshed weekly from
@@ -42,7 +44,7 @@ reference points.
 
 ## What it does
 
-Four tabs, each answering one concrete question. All views share filters for
+Five tabs, each answering one concrete question. All views share filters for
 sex, weight class, equipment, event, division, and age bracket, and URL state
 is shareable (every meaningful view has a clean permalink).
 
@@ -57,9 +59,18 @@ long inter-meet gaps.
 
 ### 2. Athlete Projection (BETA) — "where will my total be in two years?"
 
-Applies cohort growth curves to a starting total and projects forward with a
-widening confidence interval. Percentile rank against the cohort at every
-future bucket so you see both the point estimate and the uncertainty.
+Per-lift Bayesian-shrinkage projection (Engine C) stratified by age division
+and IPF-GL bracket. Personal Huber slope blended with a cohort posterior that
+comes from 231 precomputed cells (7 divisions x 11 GLP brackets x 3 lifts).
+Kaplan-Meier dropout-adjusted prediction intervals widen with horizon.
+Optional CPU QT reference lines driven by the live qualifying-total feed.
+Full methodology and live backtest MAPE on the About tab.
+
+### 5. About — "how does this work and how well?"
+
+Full methodology notes for every tab, live backtest MAPE table rendered from
+`data/backtest_results.json`, ship-gate status, data source attribution, and
+disclaimers. Linked from every other tab's methodology block.
 
 ### 3. Lifter Lookup — "plot my own trajectory against the QT lines"
 
@@ -93,7 +104,7 @@ how hard is it about to get" in one view.
 | Data pipeline | GitHub Actions weekly cron + pandas preprocess |
 | Backend hosting | Render.com (free tier, Docker, `render.yaml` blueprint) |
 | Frontend hosting | Vercel Hobby (auto-deploy on push to `main`) |
-| Tests | pytest + Hypothesis (158 passing), Vite build as frontend gate |
+| Tests | pytest + Hypothesis (314 passing) + Vitest (3 passing) + Playwright local (6 smoke); Vite build as frontend gate |
 | CI | GitHub Actions build-gate on every push and PR |
 | Uptime | UptimeRobot HEAD ping + GHA cron keepalive |
 
@@ -193,8 +204,15 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 ### Tests
 
 ```bash
-# Backend tests (158 passing)
+# Backend tests (314 passing)
 .venv/Scripts/python -m pytest backend/tests/ -v
+
+# Frontend unit tests (3 Vitest passing)
+cd frontend && npm run test
+
+# Frontend E2E smoke (6 Playwright tests, local only, needs
+#   `npx playwright install chromium` on first run)
+cd frontend && npm run test:e2e
 
 # Frontend strict typecheck + production build
 cd frontend && npm run build
@@ -211,11 +229,18 @@ Both commands also run in CI on every push and PR.
 1. Downloads the latest OpenIPF bulk CSV from
    `openpowerlifting.gitlab.io/opl-csv/files/openipf-latest.zip`.
 2. Runs `data/preprocess.py` to produce `openipf.parquet` (Canada + IPF
-   filtered) and `qt_standards.parquet` (hand-curated CPU standards).
-3. Publishes both files as the rolling `data-latest` GitHub Release.
+   filtered), `qt_standards.parquet` (hand-curated CPU standards), and
+   `athlete_projection_tables.json` (serialized 231-cell Engine C cohort +
+   7 K-M tables, ~61 KB).
+3. Publishes all three files as the rolling `data-latest` GitHub Release.
 
-The production backend reads `OPENIPF_PARQUET_URL` and `QT_PARQUET_URL` env
-vars to fetch the latest parquet on cold start.
+A second weekly workflow `qt_refresh.yml` (Sundays 06:43 UTC) scrapes the
+live CPU + provincial qualifying totals and produces `qt_current.csv`.
+
+The production backend reads `OPENIPF_PARQUET_URL`, `QT_PARQUET_URL`,
+`QT_CURRENT_CSV_URL`, and `ATHLETE_PROJ_TABLES_URL` env vars to fetch the
+latest artifacts on cold start. The Athlete Projection tables artifact
+drops cold-start fit elapsed from ~200 s to ~2 ms on Render free tier.
 
 Manual refresh: Actions tab -> "Refresh OpenIPF data" -> Run workflow.
 
