@@ -52,16 +52,16 @@ Decisions locked in plan v1:
 Still queued (Arcs 2-7 in plan):
 - **Arc 2**: Progression sidebar reorder (P1) + checkbox restyle (P2)
   -- SHIPPED 2026-04-26 `e43a51f` (Arc 2/3 sweep)
-- **Arc 3**: sitewide design pass
+- **Arc 3**: sitewide design pass -- ALL SHIPPED
   - SW1 (color system swap, both parts) -- SHIPPED `e43a51f`
   - AP6 (horizon dropdown 6mo cap) -- SHIPPED `e43a51f`
   - LL2 (heavy-lifter SBD column wrap fix) -- SHIPPED `e43a51f`
-  - AP1 (top control bar misalignment) -- still queued, needs visual judgment
-  - AP2 (Change button redesign) -- still queued
-  - AP3 (QT reference lines UI rework) -- still queued
-  - AP4 (prediction-band display on long histories) -- still queued
+  - AP1 (top control bar misalignment) -- SHIPPED `189bfdc`
+  - AP2 (Change button redesign) -- SHIPPED `189bfdc`
+  - AP3 (QT reference lines UI rework) -- SHIPPED `189bfdc`
+  - AP4 (prediction-band display on long histories) -- SHIPPED `189bfdc`
   - Q1 method-pill UI (info icon / popover surfacing LL vs AP method
-    difference) -- still queued
+    difference) -- SHIPPED `189bfdc`
 - **Arc 5**: AP7 Engine D MixedLM wiring -- still queued, gated until
   convergence probe passes
 - **Arc 6**: LL3 athlete-card dopamine pass + LL4 live QT integration
@@ -110,6 +110,45 @@ Still queued from Arc 3: AP1 (top bar alignment), AP2 (Change button
 redesign), AP3 (QT reference lines UI rework), AP4 (prediction-band on
 long histories), Q1 method-pill UI -- all need visual / design
 judgment and should land after Matthias's next site walk.
+
+---
+
+## Session plan -- 2026-04-26 evening (Arc 3 finishing pass) -- ALL SHIPPED
+
+Closes the 5 design-judgment items deferred from the morning sweep.
+Sub-plan written and approved in plan mode, single sweep commit.
+
+1. **Frontend Arc 3 finish** -- SHIPPED `189bfdc` (292 +/-, 42 -, 4 files,
+   2 new). All five items landed:
+   - **AP1**: `items-end` on SelectorPanel grid; lifter chip and right-col
+     controls now bottom-align.
+   - **AP2**: standalone Change button removed; embedded × inside the
+     lifter chip (zinc-500 -> red-400 on hover). Same `onReset` callback.
+   - **AP3**: `Show CPU QT reference lines` checkbox + year radio + amber
+     unavailable message collapsed into a single segmented control
+     `[Off] [2026] [2027]`. When live QT feed is unavailable the entire
+     control disables with title-tooltip.
+   - **AP4**: `chartView` state ('recent' | 'full', default 'recent') in
+     ResultPanel. Recent = last 24 months of history + ALL projection
+     points so the PI band stays a meaningful fraction of chart width.
+     Full preserves prior behavior.
+   - **Q1**: new shared `MethodPill` component (`frontend/src/components/`,
+     first member). Two variants: `lifter-lookup` and
+     `athlete-projection`. Click ⓘ → tooltip; outside / Escape / re-click
+     closes. 6 vitest tests added.
+
+Build: `tsc -b && vite build` green (1.05s, 636 modules). Tests: 9
+passing (3 useUrlState + 6 MethodPill). Bundle: +3 KB index, +0.09 KB
+LifterDetail, +0.48 KB CSS.
+
+Multi-arc plan v1 status:
+- Arc 1: SHIPPED 2026-04-26 morning
+- Arc 2: SHIPPED 2026-04-26 morning
+- Arc 3: SHIPPED 2026-04-26 morning + evening (FULLY CLOSED)
+- Arc 5: queued (Engine D, gated)
+- Arc 6: queued (athlete cards, workshop needed)
+- Arc 7: SHIPPED 2026-04-26 morning
+- Arc-X: queued (SW3, awaiting QT-squeeze notes)
 
 ---
 
