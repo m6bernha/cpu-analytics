@@ -625,17 +625,11 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                   cleanly.
                 </p>
                 <p>
-                  <span className="text-zinc-400 font-medium">Age column vs Division:</span>{' '}
-                  The numeric Age column from OpenIPF is roughly 70% NULL on Canadian
-                  meets, so filtering by Age directly would silently exclude most of the
-                  dataset. Division (CPU age category) is the primary age mechanism here
-                  because it is populated for every meet. Division is also what the CPU
-                  qualifying totals are defined against.
-                </p>
-                <p>
-                  <span className="text-zinc-400 font-medium">Scope:</span> Canadian lifters
-                  in IPF-sanctioned meets only. Non-Canadian meets a lifter has competed
-                  in, and non-IPF federations (CPF, WPC, GPC, etc.), are excluded at the
+                  <span className="text-zinc-400 font-medium">Scope:</span> Canadian
+                  lifters at any IPF-affiliated meet, domestic or abroad. Includes
+                  international competitions (NAPF, Commonwealths, IPF Worlds, and
+                  meets sanctioned by any IPF national federation worldwide).
+                  Non-IPF federations (WPC, GPC, USPA, etc.) are excluded at the
                   parquet level. This site is not affiliated with the CPU or IPF.
                 </p>
                 <p>

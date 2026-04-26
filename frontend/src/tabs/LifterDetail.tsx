@@ -635,7 +635,7 @@ export default function LifterDetail({
                 className="text-right py-2 pl-2 font-normal hidden sm:table-cell whitespace-nowrap"
                 title="Squat / Bench / Deadlift (kg)"
               >
-                Sq / Bn / Dl
+                Sq / Bp / Dl
               </th>
               <th className="text-right py-2 pl-2 font-normal">Total</th>
               <th
@@ -648,7 +648,7 @@ export default function LifterDetail({
                 className="text-right py-2 pl-2 font-normal hidden lg:table-cell whitespace-nowrap"
                 title="Squat / Bench / Deadlift as % of total"
               >
-                Sq / Bn / Dl %
+                Sq / Bp / Dl %
               </th>
               <th className="text-right py-2 pl-2 font-normal">Δ first</th>
             </tr>

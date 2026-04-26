@@ -15,14 +15,14 @@ import { useUrlState } from './lib/useUrlState'
 type TabKey = 'progression' | 'projection' | 'lookup' | 'qt' | 'about'
 
 // Tab order: most-used analytics first, Projection as the new BETA feature,
-// Lifter Lookup for individual use, QT Squeeze last. About sits at the end
-// as a reference page for methodology and disclaimers.
+// Lifter Lookup for individual use, QT Squeeze last. About is intentionally
+// hidden from the nav while it isn't publish-ready (the route still resolves
+// via ?tab=about for direct dev access — see VALID_TABS below).
 const TABS: { key: TabKey; label: string; beta?: boolean }[] = [
   { key: 'progression', label: 'Progression' },
   { key: 'projection', label: 'Athlete Projection', beta: true },
   { key: 'lookup', label: 'Lifter Lookup' },
   { key: 'qt', label: 'QT Squeeze' },
-  { key: 'about', label: 'About' },
 ]
 
 const VALID_TABS: TabKey[] = ['progression', 'projection', 'lookup', 'qt', 'about']

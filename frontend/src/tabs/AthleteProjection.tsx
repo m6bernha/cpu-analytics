@@ -1009,7 +1009,7 @@ function InfoPanel({
   return (
     <div
       className={
-        'mt-4 grid grid-cols-1 gap-3 max-w-4xl ' +
+        'mt-4 grid grid-cols-1 gap-3 max-w-4xl mx-auto ' +
         (showProximity ? 'md:grid-cols-4' : 'md:grid-cols-3')
       }
     >
@@ -1302,11 +1302,6 @@ function MethodologyBlock() {
           Weight class changes, raw-to-equipped transitions, injury gaps,
           meet-day performance on specific dates, training quality, or coaching.
           Projection is a cohort baseline, not a prediction of your next result.
-        </p>
-        <p>
-          <span className="text-zinc-400 font-medium">Attribution:</span>{' '}
-          Cohort stratification approach follows coach Sean Yen's input.
-          Full methodology will live on the About page.
         </p>
       </div>
     </details>
