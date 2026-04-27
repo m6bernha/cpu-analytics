@@ -178,14 +178,16 @@ specifically, not the first meet of any kind.
   weight class Hypothesis, and concurrency. Always use `python -m pytest`,
   NOT plain `pytest`, or the `backend.app` imports fail with
   `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 3 Vitest unit tests for useUrlState
-  key collisions. Runs in jsdom, ~1.5 s.
-- `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests, local
-  only (NOT in CI). Requires `npx playwright install chromium` first run.
-- CI runs the tsc+build + pytest pair on every push and PR via
-  `.github/workflows/ci.yml` (Chrome audit Issue 8). Vitest and
-  Playwright are NOT yet wired into CI. A local failure will also fail
-  CI, so fix before pushing rather than relying on the remote run.
+- `cd frontend && npm run test` -- 13 Vitest unit tests (3 useUrlState
+  key collisions + 10 MethodPill cross-nav picker). Runs in jsdom, ~2 s.
+- `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
+  also runs in CI via the `e2e` job (Arc 7, commit `166c5ff`) with
+  `continue-on-error: true` until the suite is hardened. Requires
+  `npx playwright install chromium` on first local run.
+- CI runs three parallel jobs on every push and PR via
+  `.github/workflows/ci.yml`: frontend (tsc+build), backend (pytest),
+  e2e (Playwright). A local failure will also fail CI, so fix before
+  pushing rather than relying on the remote run.
 
 ## Scope
 
@@ -280,16 +282,17 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**314 pytest + 3 Vitest passing.** Pytest covers progression, lifters,
-projection, athlete projection (Engine C + IPF-GL), qt (federal + OPA +
-MPA + NSPL + NLPA + APU + FQD parsers), manual, security, weight_class
-(with 19 Hypothesis property tests), and concurrency modules. Athlete
-Projection BETA added 70 tests across `test_athlete_projection.py` and
-`test_ipf_gl_points.py` (commits `02b9e43`, `dd9c3cc`, `58b7c7d`); QT
-scraper fixtures added ~70 tests in `test_scrape_qt.py`. Vitest (added
-2026-04-20, commit `84a7ea7`) covers useUrlState key-collision warnings.
-Playwright scaffold (commit `454f1de`) covers 6 smoke flows locally, not
-wired into CI.
+**314 pytest + 13 Vitest + 6 Playwright passing.** Pytest covers
+progression, lifters, projection, athlete projection (Engine C +
+IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
+manual, security, weight_class (with 19 Hypothesis property tests), and
+concurrency modules. Athlete Projection BETA added 70 tests across
+`test_athlete_projection.py` and `test_ipf_gl_points.py` (commits
+`02b9e43`, `dd9c3cc`, `58b7c7d`); QT scraper fixtures added ~70 tests
+in `test_scrape_qt.py`. Vitest (added 2026-04-20, commit `84a7ea7`)
+covers useUrlState key-collision warnings + MethodPill cross-nav picker
+(added 2026-04-26, commits `189bfdc`/`0a5a3bc`). Playwright (commit
+`454f1de`, wired into CI Arc 7 commit `166c5ff`) covers 6 smoke flows.
 
 **CI is now enforcing on main.** `.github/workflows/ci.yml` (commit
 `12cbb46`) runs frontend `tsc + npm run build` and backend `pytest` in

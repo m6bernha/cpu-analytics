@@ -113,6 +113,52 @@ judgment and should land after Matthias's next site walk.
 
 ---
 
+## Session plan -- 2026-04-26 polish round (Arc 3 design refinements) -- ALL SHIPPED
+
+Same-night follow-up after Matthias's first walk of the morning Arc 3
+finish. Five regressions / refinements landed in one sweep commit.
+
+1. **Frontend Arc 3 polish** -- SHIPPED `0a5a3bc` (453 +/-, 140 -, 4
+   files). All five items addressed:
+   - **AP1 redo**: bottom-aligned was wrong; flipped to top-aligned
+     (`items-start` on grid + inner flex). Lifter / Horizon / Lift tops
+     now share a baseline; QT toggle hangs below Lift.
+   - **AP2 redo**: chip-with-X replaced by always-visible LL-style
+     search input + dropdown popup (`max-h-72`, focus-driven, scrollable).
+     `×` inside the input clears query + selection. New
+     `SelectorSearch` subcomponent.
+   - **AP3 fix**: `disabled={!qtLiveAvailable}` removed. First-paint
+     race had qtLiveAvailable=false until the live-QT-filters query
+     resolved, leaving the lone `[Off]` segment unclickable. Visual
+     greyed state stays as advisory; chart's `showQtLines` guard keeps
+     year buttons no-op-safe.
+   - **Tooltip enhancement**: ChartRow + buildChartData extended with
+     `date` (ISO YYYY-MM-DD, derived from first-meet date + days via
+     UTC math) and `daysSinceLastMeet`. New tooltip block separated by
+     top-border shows actual calendar date + "X days since last meet".
+   - **Q1 redo**: MethodPill upgraded from passive ⓘ tooltip to
+     click-to-open menu listing all 3 methods (Linear regression /
+     Engine C — Bayesian / Engine D — coming soon). Active variant
+     inline; other shipped variant is `<a href>` cross-nav (LL ↔ AP)
+     preserving the lifter via URL key swap (lifter on LL, ap_lifter
+     on AP). Engine D greyed.
+
+Build: `tsc -b && vite build` green (1.31s, 636 modules). Tests: 13
+passing (3 useUrlState + 10 MethodPill — added Engine D disabled note,
+URL-key cross-nav assertion, anchor href URLSearchParams parse).
+Bundle: +3 KB index, +0.02 KB LifterDetail, +0.61 KB CSS vs Arc 3 finish.
+
+Multi-arc plan v1 status (end of 2026-04-26):
+- Arc 1: SHIPPED (morning)
+- Arc 2: SHIPPED (morning)
+- Arc 3: SHIPPED + polished (morning + evening + late-evening)
+- Arc 5: queued (Engine D, gated)
+- Arc 6: queued (athlete cards, workshop needed)
+- Arc 7: SHIPPED (morning)
+- Arc-X: queued (SW3, awaiting QT-squeeze notes)
+
+---
+
 ## Session plan -- 2026-04-26 evening (Arc 3 finishing pass) -- ALL SHIPPED
 
 Closes the 5 design-judgment items deferred from the morning sweep.
