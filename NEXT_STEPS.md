@@ -9,6 +9,62 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-27 (Session C: athlete cards workshop ADR) -- COMPLETE
+
+Pre-code workshop session per the resume plan. Resolves the two LL3
+blockers in writing so the implementation session (Session D) ships
+without re-litigating: backend data-layer audit + design open
+questions.
+
+**Deliverable:** `docs/adr/0001-athlete-cards-design.md` (NEW; creates
+the `docs/adr/` directory). No code.
+
+**Backend audit result.** OpenIPF parquet already exposes `MeetName`,
+`Federation`, `ParentFederation`, `MeetCountry`, and `Place`. No
+schema change, no new column, no preprocess change. Tier inference
+runs client-side from `MeetName` substring patterns. Top-30 distinct
+meet names cover ~80% of in-scope rows; long tail falls back to
+`local`.
+
+**Design decisions (locked in ADR):**
+
+1. **Tier catalogue:** vendored JSON at
+   `frontend/src/data/meet_prestige_catalogue.json` (Vite static
+   import). Mirrors the `PROVINCE_CATALOGUE` pattern from
+   `QtLiveCoveragePanel.tsx`. Five tiers:
+   `international` / `national` / `regional` / `provincial` / `local`.
+2. **Tier styling:** flat amber/zinc tokens via new
+   `frontend/src/lib/colors.ts` -- no metallic gradients, no new hue
+   families beyond the locked palette.
+3. **Stat callouts (v1):** All-time PR (Total), All-time PR (GLP),
+   Highest tier reached. All client-side from existing
+   `/api/lifter/history`. Longest streak + biggest jump deferred to v2.
+4. **Image export:** `html-to-image` (~6 KB gzipped), lazy-loaded
+   inside a new `frontend/src/lib/exportCard.ts`. Beats html2canvas
+   (~46 KB) on bundle weight; flat dark theme has no CSS edge cases
+   needing the heavier lib.
+5. **Layout:** single 3:4 portrait frame (Instagram-story-friendly).
+   No compact/expanded toggle; the chart + meet table on
+   `LifterDetail` already serves the expanded view.
+6. **Animation:** Tailwind `transition-opacity` only. No Framer Motion.
+
+**Implementation roadmap (Session D, ~4 hr).** Six new files: the
+catalogue JSON, `colors.ts`, `exportCard.ts`, `meetTier.ts`,
+`AthleteCard.tsx`, and the matching vitest. Two files edited:
+`LifterDetail.tsx` (mounts the card + share row) and `package.json`
+(adds `html-to-image`). Backend untouched. CI gates unchanged.
+
+Multi-arc plan status (post-Session C):
+- Arc 1-3, 7: SHIPPED 2026-04-26
+- Arc-X (SW3): defensive logging shipped 2026-04-27, bug resolved on prod
+- P4 Banner cleanup: SHIPPED 2026-04-27
+- Arc 5 (Engine D): probe v2 PASSED Pass 2 at 91.7%; **B-2 cleared to
+  wire MixedLM** with two guardrails
+- Arc 6 (athlete cards): ADR LANDED; **Session D cleared to implement**
+  per the file list in `docs/adr/0001-athlete-cards-design.md`
+
+---
+
 ## Session plan -- 2026-04-27 (Session B-1.5: re-probe with merge ladder) -- COMPLETE, VERDICT: cleared with caveat
 
 Re-probe of Engine D MixedLM convergence using Engine C's bracket-merge
