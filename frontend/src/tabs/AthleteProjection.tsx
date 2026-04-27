@@ -7,7 +7,7 @@
 // Methodology lives on the About page (C6). The `<details>` block at the
 // bottom of this tab is the short methodology note + link to About.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Area,
@@ -285,7 +285,10 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
           slope for their age division and IPF GL Points bracket.
         </p>
         <div className="mt-3">
-          <MethodPill variant="athlete-projection" />
+          <MethodPill
+            variant="athlete-projection"
+            currentLifter={selected?.Name ?? null}
+          />
         </div>
       </header>
 
@@ -409,7 +412,7 @@ function SelectorPanel({
   return (
     <section
       aria-label="Projection controls"
-      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 max-w-5xl items-end"
+      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 max-w-5xl items-start"
     >
       <div>
         <label
@@ -418,73 +421,24 @@ function SelectorPanel({
         >
           Lifter
         </label>
-        {!selected ? (
-          <div className="relative">
-            <input
-              id="ap-search"
-              type="text"
-              aria-label="Search lifter by name"
-              placeholder="Start typing a name (min 2 chars)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-            />
-            {query.trim().length >= 2 && (
-              <div className="absolute top-full left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-800 rounded shadow-lg z-10">
-                {searchIsLoading && (
-                  <div className="px-3 py-2 text-zinc-500 text-sm">Searching...</div>
-                )}
-                {!searchIsLoading && searchResults.length === 0 && (
-                  <div className="px-3 py-2 text-zinc-500 text-sm">No matches.</div>
-                )}
-                {searchResults.map((r) => (
-                  <button
-                    key={`${r.Name}-${r.LatestMeetDate}`}
-                    type="button"
-                    onClick={() => onSelect(r)}
-                    className="w-full text-left px-3 py-2 hover:bg-zinc-800 border-b border-zinc-800 last:border-b-0"
-                  >
-                    <div className="text-zinc-100 text-sm">{r.Name}</div>
-                    <div className="text-zinc-500 text-xs">
-                      {r.Sex} · {r.LatestWeightClass} kg · {r.LatestEquipment} ·
-                      {' '}{r.MeetCount} meet{r.MeetCount === 1 ? '' : 's'} · best{' '}
-                      {Math.round(r.BestTotalKg)} kg
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          // AP2 (plan v1, 2026-04-26): standalone "Change" button replaced
-          // with an embedded ✕ inside the lifter chip. Removable-pill pattern
-          // — one fewer visually-distinct element, hover state telegraphs
-          // "this clears." Share stays separate as it's a different action.
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded text-zinc-100 text-sm flex items-center justify-between gap-2">
-              <span>
-                {selected.Name}
-                <span className="text-zinc-500 ml-2 text-xs">
-                  ({selected.Sex} · {selected.LatestWeightClass} kg ·{' '}
-                  {selected.LatestEquipment})
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={onReset}
-                aria-label="Change lifter"
-                title="Change lifter"
-                className="text-zinc-500 hover:text-red-400 text-base leading-none px-1 transition-colors focus:outline-none focus:text-red-400"
-              >
-                ×
-              </button>
-            </div>
-            <ShareButton ariaLabel="Copy shareable link to this projection" />
-          </div>
-        )}
+        {/* AP2 refinement (2026-04-26 evening): always-visible search input
+            mirroring the Lifter Lookup tab's design. Dropdown pops up on
+            focus when query is >= 2 chars, scrollable (max-h-72), closes on
+            blur (with delay so a click on a result lands first). The ×
+            inside the input replaces the prior chip-with-close pattern —
+            user can re-type at any time without first hitting "Change". */}
+        <SelectorSearch
+          query={query}
+          setQuery={setQuery}
+          searchResults={searchResults}
+          searchIsLoading={searchIsLoading}
+          selected={selected}
+          onSelect={onSelect}
+          onReset={onReset}
+        />
       </div>
 
-      <div className="flex flex-wrap gap-3 items-end">
+      <div className="flex flex-wrap gap-3 items-start">
         {/* Engine D (MixedLM) is not yet wired. The toggle renders only when
             the backend reports engine_d_available=true. Until then we ship
             Simple-only to avoid a toggle that silently falls back. */}
@@ -506,6 +460,131 @@ function SelectorPanel({
         />
       </div>
     </section>
+  )
+}
+
+// SelectorSearch — always-visible LL-style search input with dropdown.
+// AP2 refinement (2026-04-26 evening). Mirrors the design of LifterLookup's
+// search panel but rendered inline at the top of Athlete Projection rather
+// than in a persistent left column. Dropdown opens on focus + 2+ chars,
+// closes on outside click. The × inside the input clears both the search
+// query and the selected lifter, replacing the prior chip+Change pattern.
+function SelectorSearch({
+  query,
+  setQuery,
+  searchResults,
+  searchIsLoading,
+  selected,
+  onSelect,
+  onReset,
+}: {
+  query: string
+  setQuery: (v: string) => void
+  searchResults: LifterSearchResult[]
+  searchIsLoading: boolean
+  selected: LifterSearchResult | null
+  onSelect: (r: LifterSearchResult) => void
+  onReset: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  // Close the dropdown on outside click. Same pattern as MethodPill.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  // Show dropdown only when actively searching: focused + at least 2 chars
+  // typed AND the typed text is not literally the selected lifter's name
+  // (otherwise picking a lifter immediately re-opens with that lifter as
+  // the only result, which feels noisy).
+  const trimmed = query.trim()
+  const isSearchingNew = trimmed.length >= 2 && trimmed !== selected?.Name
+  const showDropdown = open && isSearchingNew
+
+  return (
+    <div className="flex items-center gap-2">
+      <div ref={containerRef} className="flex-1 relative">
+        <input
+          id="ap-search"
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            // Clearing the field also drops the selection. Otherwise the
+            // chart would keep rendering for a lifter the user just deleted.
+            if (e.target.value === '' && selected) onReset()
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Type a name"
+          aria-label="Search lifter by name"
+          className="w-full pl-4 pr-9 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+        />
+        {(query.length > 0 || selected) && (
+          <button
+            type="button"
+            onClick={() => {
+              onReset()
+              setOpen(false)
+            }}
+            aria-label="Clear lifter"
+            title="Clear lifter"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-red-400 text-base leading-none px-1 transition-colors focus:outline-none focus:text-red-400"
+          >
+            ×
+          </button>
+        )}
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-800 rounded shadow-lg z-10">
+            {searchIsLoading && (
+              <div className="px-3 py-2 text-zinc-500 text-sm">Searching...</div>
+            )}
+            {!searchIsLoading && searchResults.length === 0 && (
+              <div className="px-3 py-2 text-zinc-500 text-sm">No matches.</div>
+            )}
+            {searchResults.length > 0 && (
+              <ul className="divide-y divide-zinc-800">
+                {searchResults.map((r) => (
+                  <li key={`${r.Name}-${r.LatestMeetDate}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelect(r)
+                        setOpen(false)
+                      }}
+                      className={
+                        'w-full text-left px-3 py-2 hover:bg-zinc-800 transition-colors ' +
+                        (selected?.Name === r.Name ? 'bg-zinc-900' : '')
+                      }
+                    >
+                      <div className="text-zinc-100 text-sm">{r.Name}</div>
+                      <div className="text-zinc-500 text-xs mt-0.5">
+                        {r.Sex} · {r.LatestWeightClass} kg ·{' '}
+                        {r.LatestEquipment} ·{' '}
+                        {r.MeetCount} meet{r.MeetCount === 1 ? '' : 's'} · best{' '}
+                        {Math.round(r.BestTotalKg)} kg
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+      <ShareButton ariaLabel="Copy shareable link to this projection" />
+    </div>
   )
 }
 
@@ -658,10 +737,12 @@ function LiftSelect({
 
       {liftKey === 'total' && (
         // AP3 (plan v1, 2026-04-26): single segmented control combining
-        // the prior checkbox + year-picker + amber-text-on-unavailable into
+        // the prior checkbox + year-picker + amber unavailable-text into
         // one compact pill. Off + each available year are mutually exclusive
-        // segments. When the live QT feed is down, the whole control is
-        // disabled with a tooltip — no extra inline message needed.
+        // segments. When the live QT feed is down the control reads as
+        // greyed (visual advisory) but stays clickable so the Off state is
+        // always reachable. Year buttons no-op safely without live data
+        // because the chart's showQtLines guard requires effectiveYear too.
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
           <span className="text-zinc-400 text-xs uppercase tracking-wide">
             QT lines
@@ -671,11 +752,11 @@ function LiftSelect({
             aria-label="CPU QT reference lines"
             className={
               'inline-flex bg-zinc-900 border border-zinc-800 rounded overflow-hidden ' +
-              (!qtLiveAvailable ? 'opacity-50 cursor-not-allowed' : '')
+              (!qtLiveAvailable ? 'opacity-60' : '')
             }
             title={
               !qtLiveAvailable
-                ? 'Live QT feed unavailable; reference lines disabled.'
+                ? 'Live QT feed unavailable; reference lines hidden.'
                 : undefined
             }
           >
@@ -683,10 +764,9 @@ function LiftSelect({
               type="button"
               role="radio"
               aria-checked={!showQt}
-              disabled={!qtLiveAvailable}
               onClick={() => setShowQt(false)}
               className={
-                'px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed ' +
+                'px-3 py-1.5 text-xs transition-colors ' +
                 (!showQt
                   ? 'bg-zinc-800 text-zinc-100'
                   : 'text-zinc-400 hover:text-zinc-200')
@@ -702,13 +782,12 @@ function LiftSelect({
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  disabled={!qtLiveAvailable}
                   onClick={() => {
                     setShowQt(true)
                     setQtYear(y)
                   }}
                   className={
-                    'px-3 py-1.5 text-xs transition-colors border-l border-zinc-800 disabled:cursor-not-allowed ' +
+                    'px-3 py-1.5 text-xs transition-colors border-l border-zinc-800 ' +
                     (active
                       ? 'bg-zinc-800 text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-200')
@@ -983,9 +1062,40 @@ function Banner({
 
 type ChartRow = {
   days: number
+  // ISO YYYY-MM-DD. Derived from first meet date + days_from_first so
+  // projected points get a real calendar date the tooltip can display.
+  date?: string
+  // Days from this row's date back to the lifter's most recent historical
+  // meet. Negative-or-zero on historical rows, positive on projected rows.
+  // Tooltip shows the absolute value as "X days since last meet".
+  daysSinceLastMeet?: number
   history?: number
   projected?: number
   piBand?: [number, number]
+}
+
+// Add (or subtract) `days` whole days to an ISO YYYY-MM-DD date string.
+// UTC math so DST boundaries do not shift the projection by one day.
+function addDaysISO(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + Math.round(days))
+  const yy = dt.getUTCFullYear()
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getUTCDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
+
+// Format an ISO YYYY-MM-DD as "Mon DD, YYYY" without timezone drift.
+function fmtDateLong(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return dt.toLocaleDateString('en-CA', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 function liftLabel(liftKey: LiftKey): string {
@@ -1007,14 +1117,37 @@ function buildChartData(
 ): ChartRow[] {
   const rows: ChartRow[] = []
 
+  // Origin date for date-derivation. The total_history series anchors the
+  // days_from_first scale used by both total and per-lift projections, so
+  // its first entry is the canonical day-0. Per-lift series can have a
+  // different day-0 only if the lifter's first SBD meet is the same as
+  // their first contested-lift meet; backend currently ensures this.
+  const firstMeetDate: string | undefined = data.total_history?.[0]?.date
+  const lastTotalHistory =
+    data.total_history?.[data.total_history.length - 1]
+  const lastMeetDay: number | undefined = lastTotalHistory?.days_from_first
+
+  // Helpers to fill date + daysSinceLastMeet for any row given its days.
+  const dateFor = (days: number): string | undefined =>
+    firstMeetDate ? addDaysISO(firstMeetDate, days) : undefined
+  const sinceLastFor = (days: number): number | undefined =>
+    lastMeetDay != null ? Math.round(days - lastMeetDay) : undefined
+
   if (liftKey === 'total') {
     for (const h of data.total_history ?? []) {
-      rows.push({ days: h.days_from_first, history: h.total_kg })
+      rows.push({
+        days: h.days_from_first,
+        date: h.date,
+        daysSinceLastMeet: sinceLastFor(h.days_from_first),
+        history: h.total_kg,
+      })
     }
     const last = data.total_history?.[data.total_history.length - 1]
     if (last) {
       rows.push({
         days: last.days_from_first,
+        date: last.date,
+        daysSinceLastMeet: 0,
         projected: last.total_kg,
         piBand: [last.total_kg, last.total_kg],
       })
@@ -1022,6 +1155,8 @@ function buildChartData(
     for (const p of data.total_projected_points ?? []) {
       rows.push({
         days: p.days_from_first,
+        date: dateFor(p.days_from_first),
+        daysSinceLastMeet: sinceLastFor(p.days_from_first),
         projected: p.projected_kg,
         piBand: [p.lower_kg, p.upper_kg],
       })
@@ -1036,13 +1171,20 @@ function buildChartData(
     const liftHistory = lift.history ?? []
     if (liftHistory.length > 0) {
       for (const h of liftHistory) {
-        rows.push({ days: h.days_from_first, history: h.kg })
+        rows.push({
+          days: h.days_from_first,
+          date: h.date,
+          daysSinceLastMeet: sinceLastFor(h.days_from_first),
+          history: h.kg,
+        })
       }
       // Seed the projection line at the last historical point so the chart
       // joins history to projection without a visual gap.
       const last = liftHistory[liftHistory.length - 1]
       rows.push({
         days: last.days_from_first,
+        date: last.date,
+        daysSinceLastMeet: 0,
         projected: last.kg,
         piBand: [last.kg, last.kg],
       })
@@ -1050,6 +1192,8 @@ function buildChartData(
       // Fallback for responses that predate the history field.
       rows.push({
         days: lift.last_meet_day,
+        date: dateFor(lift.last_meet_day),
+        daysSinceLastMeet: sinceLastFor(lift.last_meet_day),
         history: lift.current_level,
         projected: lift.current_level,
         piBand: [lift.current_level, lift.current_level],
@@ -1058,6 +1202,8 @@ function buildChartData(
     for (const p of lift.projected_points) {
       rows.push({
         days: p.days_from_first,
+        date: dateFor(p.days_from_first),
+        daysSinceLastMeet: sinceLastFor(p.days_from_first),
         projected: p.projected_kg,
         piBand: [p.lower_kg, p.upper_kg],
       })
@@ -1081,6 +1227,19 @@ function ProjectionTooltip({
   if (!active || !payload || payload.length === 0) return null
   const row = payload[0].payload as ChartRow | undefined
   if (!row) return null
+  // Tooltip layout (top to bottom): existing day count + lift / projected /
+  // PI lines, then the new third block: actual date and days-since-last-meet.
+  // Date and days-since are derived in buildChartData from the first meet's
+  // calendar date so projected points get a real calendar reading.
+  const sinceMeet = row.daysSinceLastMeet
+  const sinceLabel =
+    sinceMeet == null
+      ? null
+      : sinceMeet === 0
+        ? 'Last meet'
+        : sinceMeet > 0
+          ? `${sinceMeet} day${sinceMeet === 1 ? '' : 's'} since last meet`
+          : `${-sinceMeet} day${-sinceMeet === 1 ? '' : 's'} before last meet`
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs text-zinc-200">
       <div className="text-zinc-400">Day {Math.round(Number(label ?? 0))}</div>
@@ -1099,6 +1258,12 @@ function ProjectionTooltip({
       {row.piBand && row.piBand[0] !== row.piBand[1] && (
         <div className="text-zinc-500">
           PI: [{row.piBand[0].toFixed(1)}, {row.piBand[1].toFixed(1)}]
+        </div>
+      )}
+      {(row.date || sinceLabel) && (
+        <div className="mt-1 pt-1 border-t border-zinc-800 text-zinc-500">
+          {row.date && <div>{fmtDateLong(row.date)}</div>}
+          {sinceLabel && <div>{sinceLabel}</div>}
         </div>
       )}
     </div>

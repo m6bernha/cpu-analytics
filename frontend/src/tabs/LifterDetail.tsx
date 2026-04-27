@@ -414,7 +414,7 @@ export default function LifterDetail({
       </div>
 
       <div className="mb-3">
-        <MethodPill variant="lifter-lookup" />
+        <MethodPill variant="lifter-lookup" currentLifter={history.name} />
       </div>
 
       {nonSbdCount > 0 && (
