@@ -49,6 +49,7 @@ sys.path.insert(0, str(ROOT))
 
 from backend.app import athlete_projection as ap  # noqa: E402
 from backend.app.ipf_gl_points import (  # noqa: E402
+    GLP_BRACKET_LABELS,
     assign_glp_bracket,
     ipf_gl_points,
 )
@@ -87,12 +88,14 @@ DAYS_PER_YEAR: float = 365.25  # rescaling for numerical conditioning
 
 @dataclass(frozen=True)
 class CellFitOutcome:
-    cell_key: tuple[str, str, str]   # (age_division, glp_bracket, lift)
+    cell_key: tuple[str, str, str]   # (age_division, anchor_bracket, lift)
     n_lifters: int
     n_meets: int
     runtime_s: float
     converged: bool
     failure_mode: str | None         # None when converged
+    merged_from: tuple[str, ...]     # bracket labels combined; (anchor,) if no merge
+    is_global_fallback: bool         # True if division-global merge was applied
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -102,6 +105,8 @@ class CellFitOutcome:
             "runtime_s": round(self.runtime_s, 3),
             "converged": self.converged,
             "failure_mode": self.failure_mode,
+            "merged_from": list(self.merged_from),
+            "is_global_fallback": self.is_global_fallback,
         }
 
 
@@ -110,6 +115,7 @@ class PassResult:
     name: str
     min_meets: int
     n_lifters_sampled: int
+    merge_strategy: str = "none"
     cell_outcomes: list[CellFitOutcome] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
@@ -145,14 +151,23 @@ class PassResult:
         overall = (
             round(all_converged / all_attempted, 3) if all_attempted else None
         )
+        n_global_fallback = sum(
+            1 for o in self.cell_outcomes if o.is_global_fallback
+        )
+        n_merged = sum(
+            1 for o in self.cell_outcomes if len(o.merged_from) > 1
+        )
         return {
             "name": self.name,
             "min_meets": self.min_meets,
+            "merge_strategy": self.merge_strategy,
             "n_lifters_sampled": self.n_lifters_sampled,
             "fits": per_lift,
             "overall_convergence_rate": overall,
             "n_cells_attempted_total": all_attempted,
             "n_cells_converged_total": all_converged,
+            "n_cells_merged": n_merged,
+            "n_cells_global_fallback": n_global_fallback,
         }
 
 
@@ -256,6 +271,85 @@ def build_cell_partition(
     return partition
 
 
+def merge_partition_engine_c_ladder(
+    partition: dict[tuple[str, str], list[str]],
+    min_lifters: int = MIN_LIFTERS_PER_CELL,
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """Apply Engine C's bracket-merge ladder to the lifter partition.
+
+    Mirrors ``backend.app.athlete_projection._build_division_cells``: within
+    each age division, walk brackets low->high and merge sparse buckets
+    upward (then downward) until each merged group reaches ``min_lifters``.
+    A whole division below the floor collapses to one division-global cell.
+
+    Returns a dict keyed by (division, anchor_bracket) with payload:
+      ``lifters``       -- combined list of lifter names
+      ``merged_from``   -- tuple of bracket labels merged into this group
+      ``is_global``     -- True if the whole division was below the floor
+    """
+    out: dict[tuple[str, str], dict[str, Any]] = {}
+    brackets = list(GLP_BRACKET_LABELS)
+
+    for division in ap.AGE_DIVISIONS:
+        # Pull all lifters in this division across all brackets.
+        per_bracket: dict[str, list[str]] = {
+            b: list(partition.get((division, b), [])) for b in brackets
+        }
+        total_in_div = sum(len(v) for v in per_bracket.values())
+        if total_in_div == 0:
+            continue
+
+        # Whole-division fallback when the division is too small.
+        if total_in_div < min_lifters:
+            all_names: list[str] = []
+            for b in brackets:
+                all_names.extend(per_bracket[b])
+            out[(division, brackets[0])] = {
+                "lifters": all_names,
+                "merged_from": tuple(brackets),
+                "is_global": True,
+            }
+            continue
+
+        # Bracket-level ladder: low -> high, then high -> low for shortfalls.
+        assigned = [False] * len(brackets)
+        for i in range(len(brackets)):
+            if assigned[i]:
+                continue
+            merged_labels = [brackets[i]]
+            accumulated: list[str] = list(per_bracket[brackets[i]])
+
+            j = i + 1
+            while len(accumulated) < min_lifters and j < len(brackets):
+                if assigned[j]:
+                    j += 1
+                    continue
+                accumulated.extend(per_bracket[brackets[j]])
+                merged_labels.append(brackets[j])
+                assigned[j] = True
+                j += 1
+
+            k = i - 1
+            while len(accumulated) < min_lifters and k >= 0:
+                if assigned[k]:
+                    k -= 1
+                    continue
+                accumulated = list(per_bracket[brackets[k]]) + accumulated
+                merged_labels.insert(0, brackets[k])
+                assigned[k] = True
+                k -= 1
+
+            assigned[i] = True
+            anchor = merged_labels[0]
+            out[(division, anchor)] = {
+                "lifters": accumulated,
+                "merged_from": tuple(merged_labels),
+                "is_global": False,
+            }
+
+    return out
+
+
 # =============================================================================
 # MixedLM fit
 # =============================================================================
@@ -342,6 +436,8 @@ def run_cell(
     cell_lifters: list[str],
     cell: tuple[str, str],
     lift: str,
+    merged_from: tuple[str, ...] = (),
+    is_global: bool = False,
 ) -> CellFitOutcome | None:
     """Build the cell frame and fit. Returns None when the cell does not
     meet the lifter / meet floor (skipped, not failed)."""
@@ -368,6 +464,8 @@ def run_cell(
         runtime_s=runtime_s,
         converged=converged,
         failure_mode=failure_mode,
+        merged_from=merged_from if merged_from else (cell[1],),
+        is_global_fallback=is_global,
     )
 
 
@@ -381,46 +479,75 @@ def run_pass(
     name: str,
     min_meets: int,
     sample_size: int,
+    merge_strategy: str = "none",
     max_lifters: int | None = None,
 ) -> PassResult:
     logger.info("[%s] selecting lifters with >= %d meets", name, min_meets)
     df = select_lifters_with_floor(conn, min_meets=min_meets)
     if df.empty:
         logger.warning("[%s] no eligible lifters; pass skipped", name)
-        return PassResult(name=name, min_meets=min_meets, n_lifters_sampled=0)
+        return PassResult(
+            name=name, min_meets=min_meets, n_lifters_sampled=0,
+            merge_strategy=merge_strategy,
+        )
 
     n = sample_size if max_lifters is None else min(sample_size, max_lifters)
     lifter_names = sample_lifters(df, n=n)
     logger.info("[%s] sampled %d lifters", name, len(lifter_names))
 
     partition = build_cell_partition(df, lifter_names)
-    fittable_cells = [
-        (cell, lifters) for cell, lifters in partition.items()
-        if len(lifters) >= MIN_LIFTERS_PER_CELL
-    ]
-    logger.info(
-        "[%s] %d non-empty cells, %d clear the >= %d-lifter floor",
-        name, len(partition), len(fittable_cells), MIN_LIFTERS_PER_CELL,
-    )
+
+    if merge_strategy == "engine-c-ladder":
+        merged = merge_partition_engine_c_ladder(
+            partition, min_lifters=MIN_LIFTERS_PER_CELL,
+        )
+        # Treat each merged cell as one fit; "fittable" floor already met by
+        # the ladder unless the whole division was still below floor (kept
+        # but marked is_global -- expected to converge poorly).
+        fittable_cells = [
+            (cell, payload["lifters"], payload["merged_from"], payload["is_global"])
+            for cell, payload in merged.items()
+        ]
+        logger.info(
+            "[%s] %d raw cells -> %d merged cells via engine-c-ladder",
+            name, len(partition), len(merged),
+        )
+    elif merge_strategy == "none":
+        fittable_cells = [
+            (cell, lifters, (cell[1],), False)
+            for cell, lifters in partition.items()
+            if len(lifters) >= MIN_LIFTERS_PER_CELL
+        ]
+        logger.info(
+            "[%s] %d non-empty cells, %d clear the >= %d-lifter floor",
+            name, len(partition), len(fittable_cells), MIN_LIFTERS_PER_CELL,
+        )
+    else:
+        raise ValueError(f"unknown merge_strategy: {merge_strategy!r}")
 
     outcomes: list[CellFitOutcome] = []
-    for (cell, cell_lifters) in fittable_cells:
+    for (cell, cell_lifters, merged_from, is_global) in fittable_cells:
         for lift in LIFT_KEYS:
-            outcome = run_cell(df, cell_lifters, cell, lift)
+            outcome = run_cell(
+                df, cell_lifters, cell, lift,
+                merged_from=merged_from, is_global=is_global,
+            )
             if outcome is None:
                 continue
             outcomes.append(outcome)
             logger.info(
-                "[%s] cell=%s lift=%s n_lifters=%d n_meets=%d "
+                "[%s] cell=%s lift=%s n_lifters=%d n_meets=%d merged_from=%s "
                 "runtime=%.1fs converged=%s failure=%s",
                 name, cell, lift, outcome.n_lifters, outcome.n_meets,
-                outcome.runtime_s, outcome.converged, outcome.failure_mode,
+                outcome.merged_from, outcome.runtime_s, outcome.converged,
+                outcome.failure_mode,
             )
 
     return PassResult(
         name=name,
         min_meets=min_meets,
         n_lifters_sampled=len(lifter_names),
+        merge_strategy=merge_strategy,
         cell_outcomes=outcomes,
     )
 
@@ -510,9 +637,13 @@ def run_probe(
     input_path: Path,
     output_path: Path,
     which_pass: str = "both",
+    merge_strategy: str = "none",
     max_lifters: int | None = None,
 ) -> dict[str, Any]:
-    logger.info("Loading parquet: %s", input_path)
+    logger.info(
+        "Loading parquet: %s (merge_strategy=%s)",
+        input_path, merge_strategy,
+    )
     conn = load_parquet_into_duckdb(input_path)
 
     passes_to_run: list[tuple[str, int]] = []
@@ -528,12 +659,13 @@ def run_probe(
             name=name,
             min_meets=min_meets,
             sample_size=SAMPLE_SIZE,
+            merge_strategy=merge_strategy,
             max_lifters=max_lifters,
         )
         pass_results.append(result)
 
     artifact = {
-        "probe_version": 1,
+        "probe_version": 2,
         "ran_at": datetime.now(timezone.utc).isoformat(),
         "git_sha": get_git_sha(),
         "config": {
@@ -543,6 +675,7 @@ def run_probe(
             "maxiter": MAXITER,
             "slow_fit_threshold_s": SLOW_FIT_THRESHOLD_S,
             "seed": SEED,
+            "merge_strategy": merge_strategy,
         },
         "passes": [p.as_dict() for p in pass_results],
         "decision_gate": derive_verdict(pass_results),
@@ -579,6 +712,17 @@ def main() -> None:
         help="Which sample pass(es) to run.",
     )
     p.add_argument(
+        "--merge-strategy",
+        choices=("none", "engine-c-ladder"),
+        default="none",
+        help=(
+            "Cell-merge strategy. 'none' fits each (division, bracket) cell "
+            "as-is (baseline). 'engine-c-ladder' merges sparse brackets "
+            "within a division until each merged cell hits the lifter "
+            "floor, mirroring _build_division_cells in production code."
+        ),
+    )
+    p.add_argument(
         "--max-lifters",
         type=int,
         default=None,
@@ -594,6 +738,7 @@ def main() -> None:
         input_path=args.input,
         output_path=args.output,
         which_pass=args.which_pass,
+        merge_strategy=args.merge_strategy,
         max_lifters=args.max_lifters,
     )
 
