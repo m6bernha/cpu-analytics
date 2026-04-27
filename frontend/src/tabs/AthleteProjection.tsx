@@ -37,6 +37,7 @@ import {
 import { useUrlState } from '../lib/useUrlState'
 import { ShareButton } from '../lib/ShareButton'
 import { MethodPill } from '../components/MethodPill'
+import { Banner } from '../components/Banner'
 
 const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
 
@@ -860,24 +861,24 @@ function ResultPanel({
   const warningBanners = (
     <div className="flex flex-col gap-2 mb-3">
       {data.meta?.small_n_warning && (
-        <Banner tone="amber">
+        <Banner tone="warning">
           Fewer than 5 meets in this lifter's history. Projection is directionally
           informative only. Server clamped horizon to 6 months.
         </Banner>
       )}
       {data.meta?.long_horizon_warning && horizon > 12 && (
-        <Banner tone="amber">
+        <Banner tone="warning">
           Horizons past 12 months widen fast. Treat the 18-month band as the
           outer limit of plausibility, not a forecast.
         </Banner>
       )}
       {data.horizon_capped && !data.meta?.small_n_warning && (
-        <Banner tone="zinc">
+        <Banner tone="info">
           Horizon capped server-side to {data.horizon_months} months.
         </Banner>
       )}
       {(data.outlier_lifts ?? []).length > 0 && (
-        <Banner tone="amber">
+        <Banner tone="warning">
           Most recent meet appears anomalous on{' '}
           <span className="font-medium">
             {(data.outlier_lifts ?? []).join(', ')}
@@ -886,7 +887,7 @@ function ResultPanel({
         </Banner>
       )}
       {data.engine === 'mixed_effects' && data.meta?.engine_d_available === false && (
-        <Banner tone="zinc">
+        <Banner tone="info">
           Advanced (MixedLM) engine wiring is still in progress. Numbers shown
           here are the Simple engine fallback.
         </Banner>
@@ -1038,24 +1039,6 @@ function ResultPanel({
         regionalsQt={regionalsQt}
         nationalsQt={nationalsQt}
       />
-    </div>
-  )
-}
-
-function Banner({
-  tone,
-  children,
-}: {
-  tone: 'amber' | 'zinc'
-  children: React.ReactNode
-}) {
-  const cls =
-    tone === 'amber'
-      ? 'border-orange-900/40 bg-orange-950/20 text-orange-300'
-      : 'border-zinc-800 bg-zinc-900/40 text-zinc-300'
-  return (
-    <div className={`p-3 border ${cls} rounded text-sm max-w-3xl`}>
-      {children}
     </div>
   )
 }

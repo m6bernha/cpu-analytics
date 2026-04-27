@@ -9,6 +9,8 @@ Cursors share the catalog and parquet views but have independent result sets.
 
 from __future__ import annotations
 
+import logging
+import os
 from contextlib import contextmanager
 from pathlib import Path
 from threading import Lock
@@ -18,6 +20,8 @@ import duckdb
 
 from .data_loader import ensure_parquets
 from .qt_data_loader import ensure_qt_current_csv
+
+log = logging.getLogger(__name__)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -62,13 +66,37 @@ def _ensure_base_conn() -> duckdb.DuckDBPyConnection:
         # live_data_available=false.
         live_path = ensure_qt_current_csv(QT_CURRENT_CSV)
         if live_path is not None:
-            c.execute(
-                "CREATE VIEW qt_current AS "
-                f"SELECT * FROM read_csv_auto('{live_path.as_posix()}', header=True)"
-            )
-            _qt_current_available = True
+            try:
+                c.execute(
+                    "CREATE VIEW qt_current AS "
+                    f"SELECT * FROM read_csv_auto('{live_path.as_posix()}', header=True)"
+                )
+                _qt_current_available = True
+                log.info("qt_current view registered from %s", live_path)
+            except duckdb.Error as e:
+                _qt_current_available = False
+                log.warning(
+                    "qt_current view registration skipped: duckdb_error: %s",
+                    e,
+                )
         else:
             _qt_current_available = False
+            # Surface a one-line summary at WARN so operators see this
+            # in Render boot logs without grepping. The detailed reason
+            # (download failed / validation failed / URL unset) is
+            # already logged by ensure_qt_current_csv at the appropriate
+            # level just above this branch.
+            reason = (
+                "url_unset"
+                if not os.environ.get("QT_CURRENT_CSV_URL")
+                else "download_or_validation_failed"
+            )
+            log.warning(
+                "qt_current view registration skipped: %s "
+                "(see prior log lines for details). Live QT endpoints "
+                "will run in degraded mode.",
+                reason,
+            )
         _base_conn = c
     return _base_conn
 
