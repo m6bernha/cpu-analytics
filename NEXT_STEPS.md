@@ -9,6 +9,108 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-27 (Session B: Engine D MixedLM probe) -- COMPLETE, VERDICT: rescope
+
+Resume-next-session plan v2 at
+`C:\Users\Matthias\.claude\plans\resume-next-session-read-cached-bumblebee.md`.
+Path A (probe-first) per prior plan-mode decision. New file
+`data/probe_mixedlm_convergence.py`; artifact at
+`data/processed/mixedlm_convergence_probe.json` (gitignored).
+
+**What ran.** Two passes against the Canada+IPF parquet:
+
+| Pass | Floor | Lifters sampled | Cells with >=20 lifters | Cells fit (S/B/D) | Converged |
+|---|---|---|---|---|---|
+| p1_min15_meets | >=15 SBD meets | 139 (only 139 exist with that floor) | 0 / 77 | 0 | n/a |
+| p2_min5_meets  | >= 5 SBD meets | 200                                  | 1 / 77 (Open, 80-90) | 3 | 1/3 |
+
+The single fittable cell (Open, 80-90, n=31 lifters, 281 meets) converged
+on deadlift but not squat or bench (`did_not_converge` warning).
+
+**What this actually means -- not "Engine D is dead."** The probe asked:
+"does per-cell MixedLM converge cleanly enough to be production?" The
+result tells us a stricter, more useful thing: *the Canada+IPF dataset
+is too sparse to support per-cell MixedLM at all without Engine C's
+existing cell-merge fallback.* 200 lifters across 77 cells is ~2.6
+lifters per cell on average; only the densest cell (Open, 80-90) clears
+the 20-lifter floor. The 33% convergence rate on a single cell is not a
+trustworthy verdict -- it is a sample size of 3.
+
+**Three follow-up paths** (deferred, not scoped this session per
+"stop, write up findings" plan rule):
+
+1. **Re-probe with Engine C's merge ladder applied.** Merge sparse cells
+   upward/downward within division before fitting (mirrors
+   `_fit_cohort_cells` lines 483-589 of `backend/app/athlete_projection.py`).
+   Likely yields ~10-20 fittable merged cells per lift. This is the
+   *correct* probe for Engine D's intended ship architecture.
+2. **Re-probe against global OpenIPF, not Canada+IPF.** Density goes
+   from ~3 to ~50+ lifters per cell. Tells us whether per-cell MixedLM
+   is fundamentally tractable on sufficient data.
+3. **Pivot to a global-pooled MixedLM** (one fit per lift, fixed
+   effects for cohort cell, random effects per lifter). One model
+   instead of ~30. Matches the academic literature on athlete projection
+   better and avoids the cell-density problem entirely.
+
+**Recommendation.** Path 1 is the cheapest re-probe (~30 min of code
+changes to the probe harness, same runtime budget). Path 3 is the more
+defensible model design but a bigger lift. Either way, *do not* flip
+MethodPill `disabled: false` on the current evidence -- the probe did
+not give Engine D a fair shake.
+
+Build: backend `pytest -q` 326 passed, 1 skipped (probe is offline, no
+backend changes). Frontend untouched.
+
+Multi-arc plan status (post-Session B):
+- Arc 1-3, 7: SHIPPED 2026-04-26
+- Arc-X (SW3): defensive logging shipped 2026-04-27, bug resolved on prod
+- P4 Banner cleanup: SHIPPED 2026-04-27
+- Arc 5 (Engine D): probe v1 ran, **needs re-probe with cell merging
+  OR a global-pooled re-design**; not blocked, not killed
+- Arc 6 (athlete cards): queued for Session C (workshop, ~2 hr)
+
+---
+
+## Session plan -- 2026-04-27 (Session A: Banner + SW3 diagnostic) -- ALL SHIPPED
+
+Resume-next-session plan v1 at
+`C:\Users\Matthias\.claude\plans\resume-next-session-read-cached-bumblebee.md`.
+Sequenced as A (P1 + P4 polish), B (Engine D probe), C (athlete cards
+workshop). Single commit for Session A.
+
+1. **Session A combined commit** -- SHIPPED `f825fc0`. Two items, one
+   commit, pushed clean to `main`.
+   - **P4**: Promoted `Banner` from inline definition in
+     `frontend/src/tabs/AthleteProjection.tsx` to a shared component at
+     `frontend/src/components/Banner.tsx`. Renamed prop union
+     `tone: 'amber' | 'zinc'` -> `'warning' | 'info'` for semantic
+     clarity (the `'amber'` path was rendering orange classes already
+     per the locked color tokens). Five callsites updated. Three new
+     vitest cases at `Banner.test.tsx`. No visual change.
+   - **P1 (SW3 diagnostic)**: `backend/app/data.py` now wraps the
+     DuckDB `CREATE VIEW qt_current` in try/except (a malformed CSV no
+     longer crashes boot) and emits a one-line WARN at startup naming
+     the failure path: `url_unset` / `download_or_validation_failed` /
+     `duckdb_error`. Defensive instrumentation -- live backend
+     currently reports `live_data_available: true`, so the bug
+     Matthias reported earlier was almost certainly a transient
+     cold-start race before the GHA published `qt_current.csv` to the
+     `data-latest` release on 2026-04-22.
+
+Build: `npm run build` green (637 modules, 1.28s). Frontend tests:
+`npx vitest run` 16/16 (was 13, +3 Banner). Backend tests:
+`pytest -q` 326 passed, 1 skipped, no regressions.
+
+Multi-arc plan status (post-Session A):
+- Arc 1-3, 7: SHIPPED 2026-04-26
+- Arc-X (SW3): defensive logging shipped 2026-04-27; bug appears
+  resolved on production, log will surface any future regression
+- P4 Banner cleanup: SHIPPED 2026-04-27
+- Arc 5 (Engine D): queued for Session B (probe-first, ~4-6 hr)
+- Arc 6 (athlete cards): queued for Session C (workshop, ~2 hr)
+
+---
+
 ## Session plan -- 2026-04-26 (Arc 1: sweep the deck) -- ALL SHIPPED
 
 Plan-mode v1 audit + execution session. Three commits to main, CI green,

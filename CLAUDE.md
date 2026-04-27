@@ -172,14 +172,15 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  314 backend tests (174 baseline + 47 Engine C + 23 IPF-GL + ~70 QT
-  scraper fixtures) covering progression, lifters, projection, athlete
-  projection, QT (federal + provincial scrapers), manual entry, security,
-  weight class Hypothesis, and concurrency. Always use `python -m pytest`,
-  NOT plain `pytest`, or the `backend.app` imports fail with
-  `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 13 Vitest unit tests (3 useUrlState
-  key collisions + 10 MethodPill cross-nav picker). Runs in jsdom, ~2 s.
+  326 backend tests (174 baseline + 47 Engine C + 23 IPF-GL + ~70 QT
+  scraper fixtures + 12 added in subsequent rounds), 1 skipped, covering
+  progression, lifters, projection, athlete projection, QT (federal +
+  provincial scrapers), manual entry, security, weight class Hypothesis,
+  and concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
+  the `backend.app` imports fail with `ModuleNotFoundError`.
+- `cd frontend && npm run test` -- 16 Vitest unit tests (3 useUrlState
+  key collisions + 10 MethodPill cross-nav picker + 3 Banner tone
+  classes). Runs in jsdom, ~2 s.
 - `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
   also runs in CI via the `e2e` job (Arc 7, commit `166c5ff`) with
   `continue-on-error: true` until the suite is hardened. Requires
@@ -282,7 +283,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**314 pytest + 13 Vitest + 6 Playwright passing.** Pytest covers
+**326 pytest + 16 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

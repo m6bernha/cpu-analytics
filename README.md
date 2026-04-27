@@ -204,10 +204,10 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 ### Tests
 
 ```bash
-# Backend tests (314 passing)
+# Backend tests (326 passing, 1 skipped)
 .venv/Scripts/python -m pytest backend/tests/ -v
 
-# Frontend unit tests (13 Vitest passing — useUrlState + MethodPill)
+# Frontend unit tests (16 Vitest passing — useUrlState + MethodPill + Banner)
 cd frontend && npm run test
 
 # Frontend E2E smoke (6 Playwright tests, also run in CI; first local

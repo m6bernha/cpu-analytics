@@ -236,12 +236,15 @@ details.
 
 ## Testing
 
-- **Backend**: pytest + Hypothesis property tests. 158 tests passing.
-  Covers progression aggregation, lifter search, PR detection, manual-
-  entry validation, QT coverage, concurrency (32 parallel threads
-  against DuckDB), and weight-class canonicalization.
+- **Backend**: pytest + Hypothesis property tests. 326 tests passing,
+  1 skipped. Covers progression aggregation, lifter search, PR
+  detection, manual-entry validation, QT coverage (federal + 6
+  provincial scrapers), athlete projection (Engine C + IPF-GL),
+  concurrency (32 parallel threads against DuckDB), and weight-class
+  canonicalization.
 - **Frontend**: Vite production build + strict TypeScript serve as the
-  gate. No runtime test suite yet (tracked in `NEXT_STEPS.md`).
+  primary gate. 16 Vitest unit tests (useUrlState + MethodPill +
+  Banner) and 6 Playwright E2E smoke tests, all running in CI.
 - **CI**: `.github/workflows/ci.yml` runs both on every push and PR in
   parallel, target wall-clock under 3 minutes. Branch protection on
   `main` requires the frontend check to pass.
