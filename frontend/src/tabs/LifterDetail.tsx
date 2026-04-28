@@ -9,7 +9,7 @@
 // warn INEFFECTIVE_DYNAMIC_IMPORT. Matches the existing CompareView split
 // convention.
 
-import { useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Area,
@@ -26,6 +26,9 @@ import {
 } from 'recharts'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
 import { MethodPill } from '../components/MethodPill'
+import { AthleteCard } from '../components/AthleteCard'
+import { ShareButton } from '../lib/ShareButton'
+import { exportCardToPng } from '../lib/exportCard'
 
 // ---------- Class-change badge with hover tooltip ----------
 //
@@ -185,6 +188,15 @@ export default function LifterDetail({
   const [viewModeLocal, setViewModeLocal] = useState<'total' | 'per_lift'>('total')
   const era = eraProp ?? eraLocal
   const setEra = setEraProp ?? setEraLocal
+
+  // Ref for the AthleteCard root, captured by exportCardToPng() when the
+  // user clicks the Download PNG button. The card mounts above the chart;
+  // the ref is forwarded to the card's outer div via React 19 ref-as-prop.
+  const cardRef = useRef<HTMLDivElement>(null)
+  const handleExportCard = async () => {
+    const safeName = history.name.replace(/[^a-zA-Z0-9_-]+/g, '_')
+    await exportCardToPng(cardRef.current, `${safeName}-card.png`)
+  }
   const viewMode = viewModeProp ?? viewModeLocal
   const setViewMode = setViewModeProp ?? setViewModeLocal
 
@@ -340,6 +352,22 @@ export default function LifterDetail({
           ))}
         </div>
       )}
+
+      {/* Athlete card -- shareable visual summary, ADR 0001 */}
+      <section className="mb-6">
+        <AthleteCard ref={cardRef} lifter={history} />
+        <div className="mt-2 flex justify-center gap-2 max-w-sm mx-auto">
+          <ShareButton ariaLabel="Copy shareable link to this lifter" />
+          <button
+            type="button"
+            onClick={handleExportCard}
+            className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            aria-label="Download athlete card as PNG"
+          >
+            Download PNG
+          </button>
+        </div>
+      </section>
 
       {/* QT proximity: how far from each qualifying standard */}
       {regionalsQt != null && history.best_total_kg != null && (

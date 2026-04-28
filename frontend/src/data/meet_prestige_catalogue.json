@@ -1,0 +1,19 @@
+[
+  { "pattern": "^(canadian )?nationals?$", "tier": "national", "weight": 100 },
+  { "pattern": "^canadian (national )?championships?$", "tier": "national", "weight": 100 },
+  { "pattern": "^national championships?$", "tier": "national", "weight": 100 },
+  { "pattern": "^cpu nationals?$", "tier": "national", "weight": 100 },
+
+  { "pattern": "^(western|central|eastern) canadian", "tier": "regional", "weight": 50 },
+  { "pattern": "^western canadians$", "tier": "regional", "weight": 50 },
+  { "pattern": "^cpu regionals?", "tier": "regional", "weight": 50 },
+
+  { "pattern": "provincials?$", "tier": "provincial", "weight": 30 },
+  { "pattern": "provincial championships?$", "tier": "provincial", "weight": 30 },
+  { "pattern": "powerlifting union provincial", "tier": "provincial", "weight": 30 },
+  { "pattern": "open and masters provincials?$", "tier": "provincial", "weight": 30 },
+
+  { "pattern": "(open|classic|invitational)$", "tier": "local", "weight": 10 },
+  { "pattern": "(fall|winter|spring|summer) (classic|open)", "tier": "local", "weight": 10 },
+  { "pattern": "championships?$", "tier": "local", "weight": 5 }
+]
