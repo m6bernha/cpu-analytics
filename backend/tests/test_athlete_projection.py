@@ -20,11 +20,14 @@ import backend.app.athlete_projection as ap
 
 @pytest.fixture(scope="module")
 def precomputed(test_conn):
-    """Populate module-level cohort + K-M tables from the test parquet."""
+    """Populate module-level cohort + K-M + MixedLM tables from the test parquet."""
     ap.precompute_tables()
     yield
     ap._COHORT = {}
     ap._KM = {}
+    ap._MIXEDLM = {}
+    ap._MIXEDLM_CONVERGED_PCT = 0.0
+    ap._ENGINE_D_GLOBAL_AVAILABLE = False
     ap._PRECOMPUTED = False
 
 
@@ -648,3 +651,270 @@ class TestSerializedTables:
         # 100 KB ceiling guards against an accidental pickle of the full
         # DataFrame or similar.
         assert size_kb < 100, f"artifact {size_kb:.1f} KB is implausibly large"
+
+
+# =============================================================================
+# Engine D (MixedLM) -- B-2 wiring 2026-04-29
+# =============================================================================
+
+
+class TestMixedLMCellSerialization:
+    def test_round_trip_preserves_mixedlm_cells(self, precomputed, tmp_path):
+        """serialize_tables -> load_serialized_tables preserves MixedLM
+        fit parameters and merged-alias identity for `_MIXEDLM`."""
+        path = tmp_path / "tables.json"
+        mixedlm_before = dict(ap._MIXEDLM)
+        pct_before = ap._MIXEDLM_CONVERGED_PCT
+        # Synthetic fixture is small; the test fixture's lifters may not
+        # produce any MixedLM cells. Skip if so -- the cohort serialization
+        # tests already prove the round-trip mechanics.
+        if not mixedlm_before:
+            pytest.skip("synthetic fixture produced no MixedLM cells")
+
+        ap.serialize_tables(path)
+        ap._MIXEDLM = {}
+        ap._MIXEDLM_CONVERGED_PCT = 0.0
+
+        stats = ap.load_serialized_tables(path)
+        assert stats["mixedlm_cells"] == len(mixedlm_before)
+        assert ap._MIXEDLM_CONVERGED_PCT == pytest.approx(pct_before)
+
+        for key, before in mixedlm_before.items():
+            after = ap._MIXEDLM[key]
+            assert after.division == before.division
+            assert after.glp_bracket == before.glp_bracket
+            assert after.lift == before.lift
+            assert after.converged == before.converged
+            assert after.failure_mode == before.failure_mode
+            assert after.fixed_slope_kg_per_year == pytest.approx(
+                before.fixed_slope_kg_per_year, rel=1e-9, abs=1e-12,
+            )
+            assert after.random_slope_var == pytest.approx(
+                before.random_slope_var, rel=1e-9, abs=1e-12,
+            )
+            assert after.residual_var == pytest.approx(
+                before.residual_var, rel=1e-9, abs=1e-12,
+            )
+            assert after.merged_from == before.merged_from
+            assert after.is_global_fallback == before.is_global_fallback
+
+
+def _make_mixedlm_cell(
+    division: str = "Open",
+    glp_bracket: str = "<60",
+    lift: str = "squat",
+    converged: bool = True,
+    fixed_slope: float = 12.0,
+    random_slope_var: float = 16.0,
+    residual_var: float = 100.0,
+) -> ap.MixedLMCell:
+    """Build a synthetic MixedLMCell for runtime-path tests."""
+    return ap.MixedLMCell(
+        division=division,
+        glp_bracket=glp_bracket,
+        lift=lift,
+        n_lifters=25,
+        n_meets=120,
+        converged=converged,
+        failure_mode=None if converged else "did_not_converge",
+        fixed_intercept=400.0,
+        fixed_slope_kg_per_year=fixed_slope,
+        random_intercept_var=900.0,
+        random_slope_var=random_slope_var,
+        random_cov=0.0,
+        residual_var=residual_var,
+        merged_from=(),
+        is_global_fallback=False,
+    )
+
+
+class TestMixedLMVirtualCohortCell:
+    def test_synthesis_converts_year_to_day(self):
+        """Virtual cohort cell emitted from MixedLMCell uses kg/day units
+        (fixed_slope_kg_per_year / 365.25)."""
+        ml = _make_mixedlm_cell(fixed_slope=36.525, random_slope_var=4.0)
+        virtual = ap._mixedlm_to_virtual_cohort_cell(ml)
+        # 36.525 kg/year ~= 0.1 kg/day
+        assert virtual.slope_kg_per_day == pytest.approx(0.1, rel=1e-9)
+        # sqrt(4) = 2 kg/year of random slope std -> 2 / 365.25 kg/day
+        assert virtual.residual_std == pytest.approx(2.0 / 365.25, rel=1e-9)
+        assert virtual.division == ml.division
+        assert virtual.glp_bracket == ml.glp_bracket
+        assert virtual.lift == ml.lift
+
+
+class TestEngineDRuntime:
+    """End-to-end Engine D dispatch using a known lifter from the fixture.
+
+    Strategy: pick any lifter Engine C can project; fake the MixedLM table
+    to control which lifts converge vs fall back. Keeps tests fast and
+    deterministic without depending on the synthetic fixture's MixedLM
+    convergence (which the fixture is too small to reliably produce).
+    """
+
+    def _pick_lifter(self, precomputed) -> tuple[str, str]:
+        """Find a lifter the fixture can project; return (name, age_division)."""
+        # _COHORT is populated by precomputed; iterate a handful of names
+        # from the cohort history and find one that shrinkage_projection
+        # accepts.
+        cursor = ap.get_cursor()
+        df = cursor.execute(
+            "SELECT DISTINCT Name FROM openipf "
+            "WHERE Country='Canada' AND ParentFederation='IPF' "
+            "AND Event='SBD' AND TotalKg IS NOT NULL "
+            "AND BodyweightKg IS NOT NULL AND Age IS NOT NULL "
+            "LIMIT 50",
+        ).df()
+        for name in df["Name"].tolist():
+            result = ap.shrinkage_projection(name, horizon_months=12)
+            if result is not None:
+                return name, result.age_division
+        pytest.skip("no fixture lifter projectable through Engine C")
+
+    def test_all_fallback_when_no_mixedlm_cells(self, precomputed):
+        """Empty `_MIXEDLM` -> all 3 lifts fall back, not partial."""
+        name, _ = self._pick_lifter(precomputed)
+        # Save + clear MixedLM, then restore in finally.
+        saved = dict(ap._MIXEDLM)
+        ap._MIXEDLM = {}
+        try:
+            result = ap.mixed_effects_projection(name, horizon_months=12)
+        finally:
+            ap._MIXEDLM = saved
+        assert result is not None
+        assert result.engine == "mixed_effects"
+        meta = result.meta
+        assert set(meta["engine_d_fallback_lifts"]) == set(ap.LIFT_KEYS)
+        assert meta["engine_d_partial"] is False
+        assert meta["engine_d_available"] is False
+
+    def test_partial_when_one_lift_did_not_converge(self, precomputed):
+        """Two converged + one non-converged -> engine_d_partial=True,
+        fallback_lifts contains exactly the non-converged lift."""
+        name, division = self._pick_lifter(precomputed)
+        result_c = ap.shrinkage_projection(name, horizon_months=12)
+        bracket = (result_c.meta or {}).get("lifter_bracket", {}).get("bracket")
+        assert bracket is not None, "fixture lifter has no resolved bracket"
+
+        # Build a synthetic MixedLM table where deadlift fails.
+        saved = dict(ap._MIXEDLM)
+        saved_pct = ap._MIXEDLM_CONVERGED_PCT
+        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
+        for lift in ap.LIFT_KEYS:
+            synth[(division, bracket, lift)] = _make_mixedlm_cell(
+                division=division,
+                glp_bracket=bracket,
+                lift=lift,
+                converged=(lift != "deadlift"),
+            )
+        ap._MIXEDLM = synth
+        ap._MIXEDLM_CONVERGED_PCT = 0.95
+        ap._ENGINE_D_GLOBAL_AVAILABLE = True
+        try:
+            result = ap.mixed_effects_projection(name, horizon_months=12)
+        finally:
+            ap._MIXEDLM = saved
+            ap._MIXEDLM_CONVERGED_PCT = saved_pct
+            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+
+        assert result is not None
+        meta = result.meta
+        assert meta["engine_d_partial"] is True
+        assert meta["engine_d_fallback_lifts"] == ("deadlift",)
+        assert meta["engine_d_available"] is True
+        assert "fell back" in (meta["engine_d_note"] or "").lower()
+
+    def test_all_converged_clears_engine_d_available(self, precomputed):
+        """All 3 lifts converged AND global gate on -> engine_d_available=True
+        with no fallbacks reported."""
+        name, division = self._pick_lifter(precomputed)
+        result_c = ap.shrinkage_projection(name, horizon_months=12)
+        bracket = (result_c.meta or {}).get("lifter_bracket", {}).get("bracket")
+        assert bracket is not None
+
+        saved = dict(ap._MIXEDLM)
+        saved_pct = ap._MIXEDLM_CONVERGED_PCT
+        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
+        for lift in ap.LIFT_KEYS:
+            synth[(division, bracket, lift)] = _make_mixedlm_cell(
+                division=division,
+                glp_bracket=bracket,
+                lift=lift,
+                converged=True,
+            )
+        ap._MIXEDLM = synth
+        ap._MIXEDLM_CONVERGED_PCT = 0.95
+        ap._ENGINE_D_GLOBAL_AVAILABLE = True
+        try:
+            result = ap.mixed_effects_projection(name, horizon_months=12)
+        finally:
+            ap._MIXEDLM = saved
+            ap._MIXEDLM_CONVERGED_PCT = saved_pct
+            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+
+        assert result is not None
+        meta = result.meta
+        assert meta["engine_d_partial"] is False
+        assert meta["engine_d_fallback_lifts"] == ()
+        assert meta["engine_d_available"] is True
+
+    def test_global_gate_off_keeps_engine_d_unavailable(self, precomputed):
+        """Even with all cells converged, if the global gate is off the
+        per-response flag stays False (frontend would hide the toggle)."""
+        name, division = self._pick_lifter(precomputed)
+        result_c = ap.shrinkage_projection(name, horizon_months=12)
+        bracket = (result_c.meta or {}).get("lifter_bracket", {}).get("bracket")
+        assert bracket is not None
+
+        saved = dict(ap._MIXEDLM)
+        saved_pct = ap._MIXEDLM_CONVERGED_PCT
+        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
+        for lift in ap.LIFT_KEYS:
+            synth[(division, bracket, lift)] = _make_mixedlm_cell(
+                division=division,
+                glp_bracket=bracket,
+                lift=lift,
+                converged=True,
+            )
+        ap._MIXEDLM = synth
+        ap._MIXEDLM_CONVERGED_PCT = 0.5
+        ap._ENGINE_D_GLOBAL_AVAILABLE = False
+        try:
+            result = ap.mixed_effects_projection(name, horizon_months=12)
+        finally:
+            ap._MIXEDLM = saved
+            ap._MIXEDLM_CONVERGED_PCT = saved_pct
+            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+
+        assert result.meta["engine_d_available"] is False
+        # But it still ran with the synthetic cells, so partial=False
+        # and no lifts fell back -- gate flips the response flag, not the
+        # per-lift dispatch.
+        assert result.meta["engine_d_fallback_lifts"] == ()
+
+
+class TestProjectionEnginesEndpoint:
+    def test_endpoint_returns_expected_shape(self, precomputed):
+        """GET /api/athlete/projection-engines returns shrinkage always-on
+        and mixed_effects gated on the global flag."""
+        from fastapi.testclient import TestClient
+        from backend.app.main import app
+
+        with TestClient(app) as client:
+            r = client.get("/api/athlete/projection-engines")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["shrinkage"] == {"available": True}
+        assert "available" in body["mixed_effects"]
+        assert "convergence_rate" in body["mixed_effects"]
+        assert "n_cells" in body["mixed_effects"]
+        assert isinstance(body["mixed_effects"]["available"], bool)
+
+
+class TestSchemaVersionBumped:
+    def test_schema_version_is_two(self):
+        """B-2 bumped the artifact schema; old v1 artifacts must be rejected."""
+        assert ap.SERIALIZED_TABLES_SCHEMA_VERSION == 2

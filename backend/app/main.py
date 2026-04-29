@@ -93,7 +93,9 @@ async def lifespan(_app: FastAPI):
                     print(
                         f"[startup] athlete_projection tables: loaded from disk "
                         f"cohort_cells={stats['cohort_cells']} "
-                        f"km={stats['km_tables']} elapsed_ms={load_ms:.0f}"
+                        f"km={stats['km_tables']} "
+                        f"mixedlm_cells={stats.get('mixedlm_cells', 0)} "
+                        f"elapsed_ms={load_ms:.0f}"
                     )
                 except Exception as exc:
                     print(
@@ -108,8 +110,18 @@ async def lifespan(_app: FastAPI):
                 print(
                     f"[startup] athlete_projection tables: fitted "
                     f"cohort_cells={stats['cohort_cells']} "
-                    f"km={stats['km_tables']} elapsed_ms={precompute_ms:.0f}"
+                    f"km={stats['km_tables']} "
+                    f"mixedlm_cells={stats.get('mixedlm_cells', 0)} "
+                    f"elapsed_ms={precompute_ms:.0f}"
                 )
+            # Engine D global gate: log the convergence rate + flag for
+            # operators. The flag is already set by load/precompute; this
+            # line is the operator-visible signal in Render logs.
+            mixedlm_pct = stats.get("mixedlm_converged_pct", 0.0) or 0.0
+            print(
+                f"[startup] engine_d gate: rate={mixedlm_pct:.3f} "
+                f"available={athlete_proj_mod.is_engine_d_globally_available()}"
+            )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
         if n_meets == 0 or n_qt == 0:
@@ -599,9 +611,10 @@ def api_athlete_projection(
 ) -> dict[str, Any]:
     """Per-lift projection for a named lifter.
 
-    `engine=shrinkage` is the shipping default. `engine=mixed_effects` is
-    an advanced toggle that currently delegates to shrinkage and stamps
-    meta.engine_d_available=false until the MixedLM wiring lands.
+    `engine=shrinkage` is the shipping default. `engine=mixed_effects`
+    activates Engine D (MixedLM-derived cohort term, per-lift Engine C
+    fallback when a cell did not converge) when the global gate is on.
+    Frontend availability is exposed via /api/athlete/projection-engines.
     """
     if engine == "mixed_effects":
         result = athlete_proj_mod.mixed_effects_projection(
@@ -620,3 +633,23 @@ def api_athlete_projection(
     payload = athlete_proj_mod.to_response_dict(result)
     payload["found"] = True
     return _clean(payload)
+
+
+@app.get("/api/athlete/projection-engines")
+def api_projection_engines() -> dict[str, Any]:
+    """Expose which projection engines are currently available to clients.
+
+    Engine C (`shrinkage`) is always available. Engine D (`mixed_effects`)
+    is gated on the live precompute clearing >= 90% MixedLM convergence
+    rate (see `ENGINE_D_GLOBAL_GATE_THRESHOLD` in athlete_projection.py).
+    Frontend uses this to decide whether to show the Simple/Advanced
+    engine toggle on the Athlete Projection tab.
+    """
+    return {
+        "shrinkage": {"available": True},
+        "mixed_effects": {
+            "available": athlete_proj_mod.is_engine_d_globally_available(),
+            "convergence_rate": athlete_proj_mod.get_mixedlm_converged_pct(),
+            "n_cells": len(athlete_proj_mod._MIXEDLM),
+        },
+    }
