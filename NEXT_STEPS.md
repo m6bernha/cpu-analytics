@@ -9,6 +9,65 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-29 (Engine D B-2 + probe-gate refinement) -- WIRED, gate locked at 90% so toggle hidden
+
+Three-phase landing per
+`~/.claude/plans/resume-next-session-read-cached-bumblebee.md`.
+
+| Phase | Commit | Outcome |
+|---|---|---|
+| A -- P3 probe gate refactor | `ef7996e` | `derive_verdict` now clears when "best clears AND no fail-band". Verdict text changes; numeric outcome on existing N=200 probe data unchanged (Pass 1 still 50% fail). |
+| B -- backend MixedLM wiring | `3c3b0c9` | New `MixedLMCell` dataclass + `_fit_mixedlm_cells` + per-lift Engine C fallback + `_ENGINE_D_GLOBAL_AVAILABLE` flag + `/api/athlete/projection-engines` endpoint. Schema bumped 1->2. 9 new pytest cases (334 total +8 net). |
+| C -- frontend ungate | `0201622` | `fetchProjectionEngines()` + `useQuery` in AthleteProjection. `engineDAvailable` threaded through `SelectorPanel` to gate `<EngineToggle>`. `MethodPill` gets the prop, overrides `disabled` + reason. Vitest 53. |
+
+**Live state.** `curl
+https://cpu-analytics-backend.onrender.com/api/athlete/projection-engines`
+returns `{shrinkage: {available: true}, mixed_effects: {available:
+false, convergence_rate: 0.7126, n_cells: 231}}`. Backend
+auto-redeployed on Phase B push and is serving the v2 endpoint.
+Engine D toggle is correctly hidden in the frontend.
+
+**Why the toggle is still hidden.** The live full-scale precompute
+lands at 71-72% convergence vs the N=200 probe's 91.7%. See memory
+`feedback_probe_sample_vs_full_scale.md`. Wiring is correct; the
+production data just doesn't clear the 90% bar yet.
+
+**Open follow-ups.**
+
+- **P4 -- Phase D operational** (~10 min). Trigger `gh workflow run
+  refresh-data.yml --ref main` to publish a fresh schema-v2
+  artifact. Render auto-redeploys; cold-start drops from 90s
+  (live fit) to ~2s (disk load). Engine D stays hidden until the
+  live fit improves OR the gate threshold is tuned.
+
+- **P5 -- gate threshold / RE structure tuning**. Two paths to
+  unhide Engine D:
+  - **Lower the gate** -- change
+    `ENGINE_D_GLOBAL_GATE_THRESHOLD = 0.90` to e.g. 0.70 in
+    `backend/app/athlete_projection.py`. Quick, but accepts
+    Engine D in a regime where 30% of cells silently fall back to
+    Engine C without operator awareness.
+  - **Simplify the model** -- drop the random slope (random
+    intercept only) in `_fit_one_mixedlm_cell`. Easier
+    convergence, less interesting model (Engine D becomes "Engine
+    C with a multilevel-fit cohort intercept"). Probably the
+    right answer for v1; revisit RE-slope when sample density
+    grows.
+
+- Visual QA of Engine D when it ungates is still pending; same
+  10-row checklist applies once a lifter actually projects under
+  Engine D.
+
+Multi-arc plan status (post-2026-04-29):
+- Arc 1-3, 7: SHIPPED 2026-04-26
+- Arc-X (SW3): defensive logging shipped 2026-04-27, bug resolved
+- P4 Banner cleanup: SHIPPED 2026-04-27
+- Arc 5 (Engine D): **WIRED 2026-04-29**, gate currently locks
+  toggle hidden at 71% convergence; tuning is the next move
+- Arc 6 (athlete cards): SHIPPED 2026-04-28, visual QA backlogged
+
+---
+
 ## Session plan -- 2026-04-28 (Session D: athlete cards implementation) -- SHIPPED, Phase 6 QA backlogged
 
 Session D landed the athlete-cards feature per ADR
