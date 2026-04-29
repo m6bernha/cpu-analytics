@@ -557,63 +557,76 @@ def run_pass(
 # =============================================================================
 
 
+def _gate(rate: float | None) -> str:
+    """Map a convergence rate into a band label.
+
+    Bands:
+      pass    -- >= 90% (production-ready)
+      mixed   -- 70-89% (worth a closer look)
+      fail    -- <70%   (catastrophic, kill-candidate)
+      no_data -- pass produced no fittable cells (informational, not a fail)
+    """
+    if rate is None:
+        return "no_data"
+    if rate >= 0.90:
+        return "pass"
+    if rate >= 0.70:
+        return "mixed"
+    return "fail"
+
+
 def derive_verdict(passes: list[PassResult]) -> dict[str, Any]:
-    rates: dict[str, float | None] = {}
-    for p in passes:
-        d = p.as_dict()
-        rates[p.name] = d["overall_convergence_rate"]
+    """Compute the probe verdict from per-pass convergence rates.
 
-    p1 = rates.get("p1_min15_meets")
-    p2 = rates.get("p2_min5_meets")
+    Gate rule (refactored 2026-04-28): clear when the best pass clears AND
+    no pass is in the fail band. Kill only when any pass fails. Mixed
+    otherwise. ``no_data`` is treated as informational rather than fail --
+    a pass with zero fittable cells is a sample-size signal, not a model
+    signal.
+    """
+    rates: dict[str, float | None] = {
+        p.name: p.as_dict()["overall_convergence_rate"] for p in passes
+    }
+    bands: dict[str, str] = {name: _gate(rate) for name, rate in rates.items()}
+    band_set = set(bands.values())
 
-    def gate(rate: float | None) -> str:
-        if rate is None:
-            return "no_data"
-        if rate >= 0.90:
-            return "pass"
-        if rate >= 0.70:
-            return "mixed"
-        return "fail"
-
-    p1_band = gate(p1)
-    p2_band = gate(p2)
-
-    if p1_band == "pass" and p2_band == "pass":
-        verdict = "B-2_cleared"
-        recommendation = (
-            "Engine D probe PASSED both passes. Session B-2 cleared to wire "
-            "MixedLM into mixed_effects_projection and flip MethodPill "
-            "disabled: false."
-        )
-    elif p1_band == "pass" and p2_band == "mixed":
-        verdict = "B-2_blocked_p2_mixed"
-        recommendation = (
-            "Engine D probe MIXED -- clean on mature lifters, weak on "
-            "realistic floor. Regularized-GLM fallback scoping needed before "
-            "B-2."
-        )
-    elif p1_band == "fail" or p2_band == "fail":
+    if "fail" in band_set:
         verdict = "engine_d_kill_candidate"
         recommendation = (
-            "Engine D probe FAILED. Recommend killing Engine D -- MethodPill "
-            "copy change to 'discontinued -- Engine C is the production "
-            "model' should be scheduled."
+            "Engine D probe FAILED. At least one pass converged below 70%. "
+            "Recommend killing Engine D -- MethodPill copy change to "
+            "'discontinued -- Engine C is the production model' should "
+            "be scheduled."
+        )
+    elif "pass" in band_set:
+        verdict = "B-2_cleared"
+        recommendation = (
+            "Engine D probe CLEARED. Best pass >= 90% with no pass in the "
+            "fail band. Session B-2 cleared to wire MixedLM into "
+            "mixed_effects_projection."
+        )
+    elif "mixed" in band_set:
+        verdict = "B-2_blocked_mixed"
+        recommendation = (
+            "Engine D probe MIXED -- best pass landed in the 70-89% band "
+            "with no clear pass. Tighten the sample or revisit cohort "
+            "definition before B-2."
         )
     else:
         verdict = "ambiguous"
         recommendation = (
-            "Probe outcome did not match a canned verdict; review "
-            "per-pass numbers manually."
+            "Probe outcome did not match a canned verdict; every pass "
+            "produced no_data. Review sampling and re-run."
         )
 
-    return {
-        "p1_overall": p1,
-        "p2_overall": p2,
-        "p1_band": p1_band,
-        "p2_band": p2_band,
+    out: dict[str, Any] = {
         "verdict": verdict,
         "recommendation": recommendation,
     }
+    for name, rate in rates.items():
+        out[f"{name}_overall"] = rate
+        out[f"{name}_band"] = bands[name]
+    return out
 
 
 # =============================================================================
@@ -743,10 +756,12 @@ def main() -> None:
     )
 
     gate = artifact["decision_gate"]
-    logger.info(
-        "Verdict: %s (p1=%s p2=%s)",
-        gate["verdict"], gate["p1_overall"], gate["p2_overall"],
+    rate_summary = ", ".join(
+        f"{key.removesuffix('_overall')}={gate[key]}"
+        for key in gate
+        if key.endswith("_overall")
     )
+    logger.info("Verdict: %s (%s)", gate["verdict"], rate_summary)
     logger.info("Recommendation: %s", gate["recommendation"])
 
 

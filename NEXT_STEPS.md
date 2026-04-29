@@ -9,6 +9,62 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-04-28 (Session D: athlete cards implementation) -- SHIPPED, Phase 6 QA backlogged
+
+Session D landed the athlete-cards feature per ADR
+`docs/adr/0001-athlete-cards-design.md`. Single commit `84829da`,
+frontend-only, 11 files / +680 / -2. CI run `25083818801` overall
+conclusion `success` (E2E job non-blocking per existing
+`continue-on-error: true`). Backend untouched.
+
+**What landed.**
+
+| Layer | New files |
+|---|---|
+| Vendored catalogue | `frontend/src/data/meet_prestige_catalogue.json` (14 regex patterns, five tiers) |
+| Tier styling | `frontend/src/lib/colors.ts` (`TIER_TOKENS` keyed by tier) |
+| Tier resolver | `frontend/src/lib/meetTier.ts` (`resolveMeetTier` + `resolveHighestTier`) + 24-case test |
+| Component | `frontend/src/components/AthleteCard.tsx` (3:4 portrait, 3 callouts, inline-SVG sparkline) + 12-case test |
+| PNG export | `frontend/src/lib/exportCard.ts` (dynamic-import wrapper around `html-to-image`) |
+| Mount | `frontend/src/tabs/LifterDetail.tsx` edit (card + Share + Download PNG row above the chart) |
+
+**Test deltas:** Vitest 16 -> 52 (+36). Pytest unchanged at 326 + 1
+skip. No new Playwright cases (LifterDetail not unit-tested due to
+Recharts/jsdom complexity; smoke suite covers the route).
+
+**Bundle deltas:**
+- main: 340 -> 345.7 KB (+5.7 KB, well under the 350 KB cap;
+  most of the delta is Tailwind CSS picking up new tier classes)
+- LifterDetail lazy chunk: 14.1 -> 19.7 KB (+5.5 KB AthleteCard)
+- New `es-8-*.js` 12.5 KB chunk: html-to-image, sliced by Vite via
+  the dynamic `import()` in `exportCard.ts`
+- Recharts shared chunk: unchanged (sparkline is inline SVG, not Recharts)
+
+**Phase 6 (visual QA) backlogged.** 10-row checklist driven by
+Matthias from phone + desktop, three tier-diverse lifters per the
+plan at
+`~/.claude/plans/resume-next-session-read-cached-bumblebee.md`
+Phase 6 section. Outstanding until run; site is live at
+https://cpu-analytics.vercel.app right now.
+
+**Next sessions on deck (unchanged from previous sitrep):**
+- Engine D B-2 wiring (~3-4 hr): wire MixedLM in
+  `mixed_effects_projection`, fall back to Engine C per-cell on
+  non-converge, gate `engine_d_available=True` on live precompute
+  >= 90%. Probe v2 cleared 91.7% on Pass 2 (2026-04-27).
+- Probe-gate refinement: `derive_verdict` should clear when
+  "best pass clears AND no pass is fail-band" (today triggers
+  kill on any 70% pass even if another pass clears 90%).
+
+Multi-arc plan status (post-Session D):
+- Arc 1-3, 7: SHIPPED 2026-04-26
+- Arc-X (SW3): defensive logging shipped 2026-04-27, bug resolved
+- P4 Banner cleanup: SHIPPED 2026-04-27
+- Arc 5 (Engine D): probe v2 cleared 91.7% Pass 2, B-2 wiring queued
+- **Arc 6 (athlete cards): SHIPPED 2026-04-28**, visual QA backlogged
+
+---
+
 ## Session plan -- 2026-04-27 (Session C: athlete cards workshop ADR) -- COMPLETE
 
 Pre-code workshop session per the resume plan. Resolves the two LL3

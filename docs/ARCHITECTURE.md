@@ -243,8 +243,9 @@ details.
   concurrency (32 parallel threads against DuckDB), and weight-class
   canonicalization.
 - **Frontend**: Vite production build + strict TypeScript serve as the
-  primary gate. 16 Vitest unit tests (useUrlState + MethodPill +
-  Banner) and 6 Playwright E2E smoke tests, all running in CI.
+  primary gate. 52 Vitest unit tests (useUrlState + MethodPill +
+  Banner + meetTier + AthleteCard) and 6 Playwright E2E smoke tests,
+  all running in CI.
 - **CI**: `.github/workflows/ci.yml` runs both on every push and PR in
   parallel, target wall-clock under 3 minutes. Branch protection on
   `main` requires the frontend check to pass.

@@ -178,7 +178,7 @@ specifically, not the first meet of any kind.
   provincial scrapers), manual entry, security, weight class Hypothesis,
   and concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
   the `backend.app` imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 16 Vitest unit tests (3 useUrlState
+- `cd frontend && npm run test` -- 52 Vitest unit tests (3 useUrlState
   key collisions + 10 MethodPill cross-nav picker + 3 Banner tone
   classes). Runs in jsdom, ~2 s.
 - `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
@@ -283,7 +283,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**326 pytest + 16 Vitest + 6 Playwright passing.** Pytest covers
+**326 pytest + 52 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

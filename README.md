@@ -104,7 +104,7 @@ how hard is it about to get" in one view.
 | Data pipeline | GitHub Actions weekly cron + pandas preprocess |
 | Backend hosting | Render.com (free tier, Docker, `render.yaml` blueprint) |
 | Frontend hosting | Vercel Hobby (auto-deploy on push to `main`) |
-| Tests | pytest + Hypothesis (314 passing) + Vitest (13 passing) + Playwright (6 smoke, in CI as `continue-on-error`); Vite build as frontend gate |
+| Tests | pytest + Hypothesis (326 passing) + Vitest (52 passing) + Playwright (6 smoke, in CI as `continue-on-error`); Vite build as frontend gate |
 | CI | GitHub Actions build-gate on every push and PR |
 | Uptime | UptimeRobot HEAD ping + GHA cron keepalive |
 
@@ -207,7 +207,7 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 # Backend tests (326 passing, 1 skipped)
 .venv/Scripts/python -m pytest backend/tests/ -v
 
-# Frontend unit tests (16 Vitest passing — useUrlState + MethodPill + Banner)
+# Frontend unit tests (52 Vitest passing — useUrlState + MethodPill + Banner + meetTier + AthleteCard)
 cd frontend && npm run test
 
 # Frontend E2E smoke (6 Playwright tests, also run in CI; first local
