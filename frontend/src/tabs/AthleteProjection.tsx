@@ -26,6 +26,7 @@ import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
   fetchAthleteProjection,
   fetchLifterSearch,
+  fetchProjectionEngines,
   fetchQtLiveCoverage,
   fetchQtLiveFilters,
   type AthleteProjectionEngine,
@@ -187,6 +188,19 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     staleTime: 5 * 60 * 1000,
   })
 
+  // Engine D global gate. Backend reports which engines are available
+  // (`/api/athlete/projection-engines`). Used to decide whether to mount
+  // the Simple/Advanced toggle. Cheap query, long staleTime -- the gate
+  // only flips on Render redeploy after a data refresh.
+  const enginesQuery = useQuery({
+    queryKey: ['projection-engines'],
+    queryFn: fetchProjectionEngines,
+    enabled: isActive,
+    staleTime: 10 * 60 * 1000,
+  })
+  const engineDAvailable: boolean =
+    enginesQuery.data?.mixed_effects?.available ?? false
+
   // Live QT feed: the effective_year list populates the year picker; per-
   // (sex, level) coverage fetches resolve the actual Regionals / Nationals
   // QT kg for the lifter's class. Filter fetch is cheap and shared across
@@ -313,6 +327,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
         effectiveYear={effectiveYear}
         setQtYear={setQtYear}
         qtLiveAvailable={qtLiveAvailable}
+        engineDAvailable={engineDAvailable}
       />
 
       {!selected && (
@@ -389,6 +404,7 @@ function SelectorPanel({
   effectiveYear,
   setQtYear,
   qtLiveAvailable,
+  engineDAvailable,
 }: {
   selected: LifterSearchResult | null
   query: string
@@ -409,6 +425,7 @@ function SelectorPanel({
   effectiveYear: number | null
   setQtYear: (y: number) => void
   qtLiveAvailable: boolean
+  engineDAvailable: boolean
 }) {
   return (
     <section
@@ -443,7 +460,9 @@ function SelectorPanel({
         {/* Engine D (MixedLM) is not yet wired. The toggle renders only when
             the backend reports engine_d_available=true. Until then we ship
             Simple-only to avoid a toggle that silently falls back. */}
-        {false && <EngineToggle engine={engine} setEngine={setEngine} />}
+        {engineDAvailable && (
+          <EngineToggle engine={engine} setEngine={setEngine} />
+        )}
         <HorizonSelect
           horizon={horizon}
           setHorizon={setHorizon}

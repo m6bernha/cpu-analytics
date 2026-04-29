@@ -41,11 +41,20 @@ describe('MethodPill', () => {
     expect(menu.textContent).toMatch(/Engine D/i)
   })
 
-  it('marks Engine D as disabled with a coming-soon note', () => {
+  it('marks Engine D as disabled when engineDAvailable=false (default)', () => {
     render(<MethodPill variant="athlete-projection" />)
     fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
     const menu = screen.getByRole('menu')
-    expect(menu.textContent).toMatch(/Not yet wired/i)
+    expect(menu.textContent).toMatch(/below 90% convergence/i)
+  })
+
+  it('does not show the disabled hint when engineDAvailable=true', () => {
+    render(
+      <MethodPill variant="athlete-projection" engineDAvailable={true} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    const menu = screen.getByRole('menu')
+    expect(menu.textContent).not.toMatch(/below 90% convergence/i)
   })
 
   it('renders the active variant with no nav link, and the other as a link', () => {

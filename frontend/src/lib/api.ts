@@ -294,6 +294,29 @@ export function fetchQtLiveCoverage(
   )
 }
 
+// ---------- Projection engines availability ----------
+//
+// Backend exposes which projection engines are currently safe to render.
+// Engine C (`shrinkage`) is always on. Engine D (`mixed_effects`) is
+// gated on the live precompute clearing >= 90% MixedLM convergence rate;
+// the frontend uses this to decide whether to mount the engine toggle on
+// AthleteProjection.tsx.
+
+export type ProjectionEngines = {
+  shrinkage: { available: boolean }
+  mixed_effects: {
+    available: boolean
+    convergence_rate?: number
+    n_cells?: number
+  }
+}
+
+export function fetchProjectionEngines(): Promise<ProjectionEngines> {
+  return getJson<ProjectionEngines>(
+    `${API_BASE}/api/athlete/projection-engines`,
+  )
+}
+
 // ---------- Lifter history ----------
 
 export type LifterMeet = {

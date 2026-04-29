@@ -48,13 +48,13 @@ const METHOD_OPTIONS: MethodOption[] = [
   {
     key: 'engine-d',
     label: 'Engine D — MixedLM',
-    short: 'coming soon',
+    short: 'multilevel fit',
     description:
-      'Mixed-effects linear model treating each lifter as a random intercept ' +
-      'around the cohort fixed effect. Wired but gated until the convergence ' +
-      'probe consistently clears 90%.',
-    disabled: true,
-    disabledReason: 'Not yet wired — convergence probe pending.',
+      'Mixed-effects linear model that derives the cohort slope from a ' +
+      'multilevel fit (random intercept + slope per lifter). Falls back ' +
+      'per-lift to Engine C when a cell did not converge in the ' +
+      'precompute. Available only when the live precompute clears 90%.',
+    // disabled is set per-render from the engineDAvailable prop.
   },
 ]
 
@@ -84,13 +84,31 @@ function buildHref(target: 'linear' | 'engine-c', lifter?: string | null): strin
 export function MethodPill({
   variant,
   currentLifter,
+  engineDAvailable = false,
 }: {
   variant: MethodPillVariant
   currentLifter?: string | null
+  engineDAvailable?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   const { label } = COPY[variant]
+
+  // Engine D entry's disabled state is driven by the live availability
+  // gate, not hardcoded. When the backend reports `mixed_effects.available
+  // === false`, the entry shows in the popover but is non-actionable with
+  // a "convergence below 90%" hint.
+  const options: MethodOption[] = METHOD_OPTIONS.map((opt) =>
+    opt.key === 'engine-d'
+      ? {
+          ...opt,
+          disabled: !engineDAvailable,
+          disabledReason: engineDAvailable
+            ? undefined
+            : 'Live precompute below 90% convergence.',
+        }
+      : opt,
+  )
 
   useEffect(() => {
     if (!open) return
@@ -133,7 +151,7 @@ export function MethodPill({
           <div className="text-zinc-500 text-[10px] uppercase tracking-wide px-2 pt-1 pb-2">
             Projection method
           </div>
-          {METHOD_OPTIONS.map((opt) => {
+          {options.map((opt) => {
             const isActive = opt.matchesVariant === variant
             const isNav =
               !opt.disabled && !isActive && opt.matchesVariant !== undefined
