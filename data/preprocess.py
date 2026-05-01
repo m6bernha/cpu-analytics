@@ -73,7 +73,7 @@ KEEP_COLUMNS = [
 ]
 
 
-def preprocess_openipf(src: Path, dst: Path) -> int:
+def preprocess_openipf(src: Path, dst: Path, apply_scope_filter: bool = True) -> int:
     print(f"[openipf] reading {src}")
     if not src.exists():
         raise FileNotFoundError(f"OpenIPF CSV not found: {src}")
@@ -117,9 +117,14 @@ def preprocess_openipf(src: Path, dst: Path) -> int:
     # ParentFederation covers all IPF-sanctioned meets (CPU domestic +
     # IPF international). Country=Canada covers Canadian lifters at any
     # IPF meet, including internationals.
-    before = len(df)
-    df = df[(df["Country"] == "Canada") & (df["ParentFederation"] == "IPF")].copy()
-    print(f"[openipf] filtered to Canada+IPF: kept {len(df)} of {before} rows ({100*len(df)/before:.1f}%)")
+    # apply_scope_filter=False is opt-in for one-off backtests against
+    # the full global OpenIPF dataset (e.g. About-page MAPE table).
+    if apply_scope_filter:
+        before = len(df)
+        df = df[(df["Country"] == "Canada") & (df["ParentFederation"] == "IPF")].copy()
+        print(f"[openipf] filtered to Canada+IPF: kept {len(df)} of {before} rows ({100*len(df)/before:.1f}%)")
+    else:
+        print(f"[openipf] scope filter SKIPPED (apply_scope_filter=False); keeping all {len(df):,} rows")
 
     df["Sex"] = df["Sex"].astype(str).str.upper().str.strip()
     # Vectorized canonicalization: ~30x faster than the row-wise apply on the
@@ -203,17 +208,62 @@ def preprocess_athlete_projection_tables(
 
 
 def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Preprocess OpenIPF CSV + QT CSV into parquet for the app",
+    )
+    parser.add_argument(
+        "--no-scope-filter",
+        action="store_true",
+        help=(
+            "Skip the Country=Canada AND ParentFederation=IPF filter and "
+            "write the unfiltered global parquet. Used for the About-page "
+            "global-OpenIPF backtest. Default output path becomes "
+            "data/processed/openipf_global.parquet, and the "
+            "athlete_projection_tables artifact is skipped (scope-bound)."
+        ),
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help=(
+            "Override output parquet path. Defaults to "
+            "data/processed/openipf.parquet (or openipf_global.parquet "
+            "with --no-scope-filter)."
+        ),
+    )
+    args = parser.parse_args()
+
     openipf_csv = Path(os.environ.get("OPENIPF_CSV", DEFAULT_OPENIPF_CSV))
     qt_csv = Path(os.environ.get("QT_CSV", DEFAULT_QT_CSV))
 
-    openipf_parquet = PROCESSED_DIR / "openipf.parquet"
-    openipf_rows = preprocess_openipf(openipf_csv, openipf_parquet)
+    if args.output is not None:
+        openipf_parquet = args.output
+    elif args.no_scope_filter:
+        openipf_parquet = PROCESSED_DIR / "openipf_global.parquet"
+    else:
+        openipf_parquet = PROCESSED_DIR / "openipf.parquet"
+
+    openipf_rows = preprocess_openipf(
+        openipf_csv,
+        openipf_parquet,
+        apply_scope_filter=not args.no_scope_filter,
+    )
     qt_rows = preprocess_qt(qt_csv, PROCESSED_DIR / "qt_standards.parquet")
 
-    proj_tables_path = PROCESSED_DIR / "athlete_projection_tables.json"
-    proj_stats = preprocess_athlete_projection_tables(
-        openipf_parquet, proj_tables_path,
-    )
+    if not args.no_scope_filter:
+        proj_tables_path = PROCESSED_DIR / "athlete_projection_tables.json"
+        proj_stats = preprocess_athlete_projection_tables(
+            openipf_parquet, proj_tables_path,
+        )
+    else:
+        proj_stats = None
+        print(
+            "[proj] athlete_projection_tables skipped (--no-scope-filter "
+            "mode is for global backtests; tables are scoped to Canada+IPF)"
+        )
 
     print()
     print(f"done. openipf={openipf_rows:,} rows  qt={qt_rows} rows")
