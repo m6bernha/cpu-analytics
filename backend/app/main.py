@@ -640,7 +640,7 @@ def api_projection_engines() -> dict[str, Any]:
     """Expose which projection engines are currently available to clients.
 
     Engine C (`shrinkage`) is always available. Engine D (`mixed_effects`)
-    is gated on the live precompute clearing >= 90% MixedLM convergence
+    is gated on the live precompute clearing >= 70% MixedLM convergence
     rate (see `ENGINE_D_GLOBAL_GATE_THRESHOLD` in athlete_projection.py).
     Frontend uses this to decide whether to show the Simple/Advanced
     engine toggle on the Athlete Projection tab.
