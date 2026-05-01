@@ -9,6 +9,38 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-05-01 (backlog trio: env cleanup + Engine D RE refactor + global backtest) -- SHIPPED
+
+Backlog trio plan from `~/.claude/plans/backlog-trio-2026-04-30.md`
+landed end-to-end. Plus Render auto-redeployed Item 2 mid-session and
+the production gate flipped from 71.26% → 100% convergence without
+manual data-refresh trigger (the schema-mismatch fallback path
+worked: backend rejected v2 artifact under v3 code, did a live fit
+with the simpler RE structure, hit 100%, gate cleared).
+
+| Item | Effort | Commit | Outcome |
+|---|---|---|---|
+| 1. Local env cleanup | 5 min | n/a | `pip install -r backend/requirements.txt` (statsmodels + 17 deps), `npm install` (vitest + @testing-library + html-to-image). Local pytest 334/334 + Vitest 53/53 now green. |
+| 2. Engine D RE refactor (P5 path 2) | ~1.5 hr | `24e12d7` | `re_formula="~years_from_first"` -> `"~1"`. Dropped `random_slope_var`/`random_cov` from MixedLMCell + serialized JSON shape. Synthesis uses `sqrt(residual_var) / 365.25` instead of slope std. Schema bump 2 -> 3. Probe formula mirrored. Production live convergence: **100%** (93/93 fittable cells, vs 71.26% with the random-slope model). |
+| 3a. preprocess `--no-scope-filter` flag | 10 min | `6b71b93` | Opt-in flag emits `openipf_global.parquet` and skips the scope-bound athlete_projection_tables artifact. Production data pipeline unaffected. |
+| 3b. Global-OpenIPF backtest | 2 hr wall-clock | `d6c366b` | Replaced 50-lifter Canadian sample with 1,830-lifter global numbers in `frontend/src/data/backtest_results.json`. All Engine C ship gates PASS: 6mo MAPE 4.48% (limit 6.0%), 12mo 5.27% (limit 12.0%), log-linear margin +2.42pp at 12mo (limit +2.0pp). Gompertz beats Engine C at every horizon globally; flagged as future revisit signal but not v1-blocking. |
+
+**Production verification:**
+- `/api/athlete/projection-engines` returns `mixed_effects.available: true, convergence_rate: 1.0, n_cells: 231`.
+- `/api/health`, `/api/ready` both 200.
+- Data-refresh GHA run `25228470622` succeeded; v3 artifact published to `data-latest` so future Render cold-starts skip the live MixedLM fit.
+- Branch protection bypassed twice (admin) on the three pushes; CI green for all three SHAs (`77a00eb`, `6b71b93`, `d6c366b`).
+
+**Memory updated:**
+- `~/.claude/projects/.../memory/feedback_probe_sample_vs_full_scale.md` — added 2026-05-01 resolution showing the full arc: probe overestimated (91.7%), production undershot under random-slope (71.26%), simpler model resolved both (100% convergence on fittable cells).
+
+**Open follow-ups:**
+- Arc 6 visual QA on the now-live Engine D toggle. 10-row checklist on phone + desktop, three tier-diverse lifters. User-driven.
+- Eyeball Engine D PI widths on real lifters; if too tight under the new synthesis (`residual_var` is per-meet noise, smaller than previous random-slope variance), consider blending in `random_intercept_var`. Wait for user signal before changing.
+- Backtest sees Gompertz beating Engine C globally. Worth a separate session to evaluate whether to swap the baseline. Not v1-blocking.
+
+---
+
 ## Session plan -- 2026-04-30 (sitrep + Engine D gate lowered to 0.70) -- SHIPPED
 
 Deep-dive audit (parallel: repo / backlog / infra) found everything
