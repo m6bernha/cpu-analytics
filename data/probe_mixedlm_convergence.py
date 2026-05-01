@@ -398,7 +398,7 @@ def fit_cell_mixedlm(cell_df: pd.DataFrame) -> tuple[bool, str | None]:
                 "lift_kg ~ years_from_first",
                 cell_df,
                 groups=cell_df["lifter_id"],
-                re_formula="~years_from_first",
+                re_formula="~1",
             )
             result = md.fit(method="lbfgs", maxiter=MAXITER)
 

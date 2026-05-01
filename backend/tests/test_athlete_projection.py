@@ -689,8 +689,8 @@ class TestMixedLMCellSerialization:
             assert after.fixed_slope_kg_per_year == pytest.approx(
                 before.fixed_slope_kg_per_year, rel=1e-9, abs=1e-12,
             )
-            assert after.random_slope_var == pytest.approx(
-                before.random_slope_var, rel=1e-9, abs=1e-12,
+            assert after.random_intercept_var == pytest.approx(
+                before.random_intercept_var, rel=1e-9, abs=1e-12,
             )
             assert after.residual_var == pytest.approx(
                 before.residual_var, rel=1e-9, abs=1e-12,
@@ -705,10 +705,13 @@ def _make_mixedlm_cell(
     lift: str = "squat",
     converged: bool = True,
     fixed_slope: float = 12.0,
-    random_slope_var: float = 16.0,
     residual_var: float = 100.0,
 ) -> ap.MixedLMCell:
-    """Build a synthetic MixedLMCell for runtime-path tests."""
+    """Build a synthetic MixedLMCell for runtime-path tests.
+
+    Post-P5-path-2 (random-intercept-only): no random_slope_var/random_cov
+    fields; cohort uncertainty in synthesis is derived from residual_var.
+    """
     return ap.MixedLMCell(
         division=division,
         glp_bracket=glp_bracket,
@@ -720,8 +723,6 @@ def _make_mixedlm_cell(
         fixed_intercept=400.0,
         fixed_slope_kg_per_year=fixed_slope,
         random_intercept_var=900.0,
-        random_slope_var=random_slope_var,
-        random_cov=0.0,
         residual_var=residual_var,
         merged_from=(),
         is_global_fallback=False,
@@ -730,13 +731,13 @@ def _make_mixedlm_cell(
 
 class TestMixedLMVirtualCohortCell:
     def test_synthesis_converts_year_to_day(self):
-        """Virtual cohort cell emitted from MixedLMCell uses kg/day units
-        (fixed_slope_kg_per_year / 365.25)."""
-        ml = _make_mixedlm_cell(fixed_slope=36.525, random_slope_var=4.0)
+        """Virtual cohort cell emitted from MixedLMCell uses kg/day units.
+        Post-P5-path-2 the cohort std is sqrt(residual_var) / 365.25."""
+        ml = _make_mixedlm_cell(fixed_slope=36.525, residual_var=4.0)
         virtual = ap._mixedlm_to_virtual_cohort_cell(ml)
         # 36.525 kg/year ~= 0.1 kg/day
         assert virtual.slope_kg_per_day == pytest.approx(0.1, rel=1e-9)
-        # sqrt(4) = 2 kg/year of random slope std -> 2 / 365.25 kg/day
+        # sqrt(4) = 2 kg of per-meet residual std -> 2 / 365.25 kg/day equivalent
         assert virtual.residual_std == pytest.approx(2.0 / 365.25, rel=1e-9)
         assert virtual.division == ml.division
         assert virtual.glp_bracket == ml.glp_bracket
@@ -915,6 +916,6 @@ class TestProjectionEnginesEndpoint:
 
 
 class TestSchemaVersionBumped:
-    def test_schema_version_is_two(self):
-        """B-2 bumped the artifact schema; old v1 artifacts must be rejected."""
-        assert ap.SERIALIZED_TABLES_SCHEMA_VERSION == 2
+    def test_schema_version_is_three(self):
+        """P5 path 2 bumped the artifact schema; old v1/v2 artifacts must be rejected."""
+        assert ap.SERIALIZED_TABLES_SCHEMA_VERSION == 3

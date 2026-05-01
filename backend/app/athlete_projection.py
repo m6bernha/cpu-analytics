@@ -152,20 +152,23 @@ class MixedLMCell:
     Engine D wiring (2026-04-29). The cell pools all lifters whose latest
     meet falls in (division, anchor_bracket) after applying Engine C's
     bracket-merge ladder, then fits ``lift_kg ~ years_from_first`` with
-    random intercept + slope per lifter.
+    random intercept per lifter (no random slope, P5 path 2 simplification
+    landed 2026-05-01). Every lifter shares the cohort slope; only their
+    starting level is allowed to vary.
 
     The runtime path (`mixed_effects_projection`) treats this cell as a
     drop-in replacement for `GlpCohortCell` -- ``fixed_slope_kg_per_year``
     becomes the cohort term in the existing shrinkage projection math,
-    converted to kg/day. Per-lifter BLUPs are intentionally not stored;
-    the random-slope component is captured via ``random_slope_var`` and
-    feeds the prediction-interval inflation. When ``converged`` is False,
-    the runtime path falls back to the matching `GlpCohortCell` for that
-    lift instead of using the (untrustworthy) failed fit's parameters.
+    converted to kg/day. Per-lifter BLUPs are intentionally not stored.
+    Cohort uncertainty is now derived from ``residual_var`` (per-meet
+    noise around the cohort line) rather than the previous random-slope
+    variance, since intercept-only models have no per-lifter slope
+    variance to capture. When ``converged`` is False, the runtime path
+    falls back to the matching `GlpCohortCell` for that lift instead of
+    using the (untrustworthy) failed fit's parameters.
 
-    Variances are stored in (kg/year)^2 for slope-related fields and kg^2
-    for residual; conversion to per-day at runtime divides by 365.25^2 or
-    365.25 as appropriate.
+    Variances are stored in (kg)^2; conversion to per-day at runtime
+    divides by 365.25 as appropriate.
     """
 
     division: str
@@ -178,8 +181,6 @@ class MixedLMCell:
     fixed_intercept: float              # kg
     fixed_slope_kg_per_year: float
     random_intercept_var: float         # (kg)^2
-    random_slope_var: float             # (kg/year)^2
-    random_cov: float                   # (kg)(kg/year)
     residual_var: float                 # (kg)^2
     merged_from: tuple[str, ...]        # all bracket labels combined; empty if no merge
     is_global_fallback: bool
@@ -228,7 +229,9 @@ _PRECOMPUTED: bool = False
 # the fitting algorithm changes in a way that makes old artifacts wrong.
 # A backend that sees a mismatched version falls back to live precompute.
 # v1 -> v2 (2026-04-29): added mixedlm_cells for Engine D B-2.
-SERIALIZED_TABLES_SCHEMA_VERSION: int = 2
+# v2 -> v3 (2026-05-01): random_slope_var/random_cov dropped from MixedLMCell
+# (P5 path 2: random-intercept-only model).
+SERIALIZED_TABLES_SCHEMA_VERSION: int = 3
 
 # Production gate: Engine D is exposed to clients only when the live
 # precompute clears this convergence rate across all fittable cells.
@@ -329,8 +332,6 @@ def _tables_to_dict() -> dict[str, Any]:
                 "fixed_intercept": cell.fixed_intercept,
                 "fixed_slope_kg_per_year": cell.fixed_slope_kg_per_year,
                 "random_intercept_var": cell.random_intercept_var,
-                "random_slope_var": cell.random_slope_var,
-                "random_cov": cell.random_cov,
                 "residual_var": cell.residual_var,
                 "merged_from": list(cell.merged_from),
                 "is_global_fallback": cell.is_global_fallback,
@@ -467,8 +468,6 @@ def load_serialized_tables(path: "Path") -> dict[str, int]:
                 fixed_intercept=float(row["fixed_intercept"]),
                 fixed_slope_kg_per_year=float(row["fixed_slope_kg_per_year"]),
                 random_intercept_var=float(row["random_intercept_var"]),
-                random_slope_var=float(row["random_slope_var"]),
-                random_cov=float(row["random_cov"]),
                 residual_var=float(row["residual_var"]),
                 merged_from=merged_from,
                 is_global_fallback=bool(row["is_global_fallback"]),
@@ -847,8 +846,6 @@ def _fit_mixedlm_cells(
                     fixed_intercept=0.0,
                     fixed_slope_kg_per_year=0.0,
                     random_intercept_var=0.0,
-                    random_slope_var=0.0,
-                    random_cov=0.0,
                     residual_var=0.0,
                     merged_from=tuple(bracket_order),
                     is_global_fallback=True,
@@ -924,8 +921,6 @@ def _fit_mixedlm_cells(
                         fixed_intercept=0.0,
                         fixed_slope_kg_per_year=0.0,
                         random_intercept_var=0.0,
-                        random_slope_var=0.0,
-                        random_cov=0.0,
                         residual_var=0.0,
                         merged_from=merged_from,
                         is_global_fallback=False,
@@ -1003,7 +998,7 @@ def _fit_one_mixedlm_cell(
                 "lift_kg ~ years_from_first",
                 cell_df,
                 groups=cell_df["lifter_id"],
-                re_formula="~years_from_first",
+                re_formula="~1",
             )
             result = md.fit(method="lbfgs", maxiter=_MIXEDLM_MAXITER)
     except np.linalg.LinAlgError:
@@ -1045,15 +1040,14 @@ def _fit_one_mixedlm_cell(
     except Exception:  # noqa: BLE001
         fixed_intercept, fixed_slope = 0.0, 0.0
 
+    # With re_formula="~1" the cov_re matrix is 1x1 (intercept variance only).
     cov_re_arr = (
         np.asarray(result.cov_re) if result.cov_re is not None else None
     )
-    if cov_re_arr is not None and cov_re_arr.size >= 4:
-        ri_var = float(cov_re_arr[0, 0])
-        rs_var = float(cov_re_arr[1, 1])
-        rcov = float(cov_re_arr[0, 1])
+    if cov_re_arr is not None and cov_re_arr.size >= 1:
+        ri_var = float(cov_re_arr.flatten()[0])
     else:
-        ri_var, rs_var, rcov = 0.0, 0.0, 0.0
+        ri_var = 0.0
 
     try:
         residual_var = float(result.scale)
@@ -1071,8 +1065,6 @@ def _fit_one_mixedlm_cell(
         fixed_intercept=fixed_intercept,
         fixed_slope_kg_per_year=fixed_slope,
         random_intercept_var=ri_var,
-        random_slope_var=rs_var,
-        random_cov=rcov,
         residual_var=residual_var,
         merged_from=merged_from,
         is_global_fallback=False,
@@ -1099,8 +1091,6 @@ def _failed_mixedlm_cell(
         fixed_intercept=0.0,
         fixed_slope_kg_per_year=0.0,
         random_intercept_var=0.0,
-        random_slope_var=0.0,
-        random_cov=0.0,
         residual_var=0.0,
         merged_from=merged_from,
         is_global_fallback=False,
@@ -1803,24 +1793,28 @@ def _mixedlm_to_virtual_cohort_cell(
     The runtime path treats Engine D as "Engine C with MixedLM-derived
     cohort numbers": only `slope_kg_per_day` and `residual_std` are read
     by `_project_single_lift`, so wrapping the MixedLM fixed slope and
-    random-slope std in the existing dataclass lets the projection math
+    a per-day std in the existing dataclass lets the projection math
     stay shared. Conversion:
       slope_kg_per_day = fixed_slope_kg_per_year / 365.25
-      residual_std     = sqrt(random_slope_var) / 365.25
-    The std reflects "how much an individual lifter's slope is expected
-    to differ from the cohort mean," which is what the Engine C PI
-    formula expects (`seg_sigma_cohort * km_mult * t_offset`).
+      residual_std     = sqrt(residual_var) / 365.25
+    Post-P5-path-2 the model is random-intercept-only, so there is no
+    per-lifter slope variance to draw from. ``residual_var`` (per-meet
+    noise around the cohort line, in kg^2) is the remaining cohort
+    uncertainty, mapped to a per-day equivalent so the existing Engine C
+    PI formula `seg_sigma_cohort * km_mult * t_offset` stays usable.
+    PIs are tighter than the v1 random-slope synthesis; that reflects
+    the simpler model's narrower assumptions.
     """
     slope_per_day = ml_cell.fixed_slope_kg_per_year / _DAYS_PER_YEAR
-    rs_std_per_year = float(np.sqrt(max(ml_cell.random_slope_var, 0.0)))
-    rs_std_per_day = rs_std_per_year / _DAYS_PER_YEAR
+    residual_std_kg = float(np.sqrt(max(ml_cell.residual_var, 0.0)))
+    residual_std_per_day = residual_std_kg / _DAYS_PER_YEAR
     return GlpCohortCell(
         division=ml_cell.division,
         glp_bracket=ml_cell.glp_bracket,
         lift=ml_cell.lift,
         n_lifters=ml_cell.n_lifters,
         slope_kg_per_day=slope_per_day,
-        residual_std=rs_std_per_day,
+        residual_std=residual_std_per_day,
         merged_from=ml_cell.merged_from,
         is_global_fallback=ml_cell.is_global_fallback,
     )
