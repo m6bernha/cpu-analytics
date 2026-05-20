@@ -789,6 +789,12 @@ individual projection math.
 
 ## P0 -- Live site monitoring
 
+**Current state as of 2026-05-19:** No open P0 or P1 items. Working tree clean,
+0 open GitHub issues, 0 open PRs. Last code commit 2026-05-13. Engines C + D
+both live since 2026-05-01 (random-intercept-only refactor, 100% convergence).
+CI green across last 20 runs. Weekly data refresh + QT scraper on schedule.
+Audit script: see `~/.claude/plans/project-audit-and-status-majestic-pretzel.md`.
+
 ### Data refresh workflow -- VERIFIED HEALTHY 2026-04-21
 
 Latest Run #7 (manually triggered) completed Success in 39 s total
@@ -814,26 +820,17 @@ manually:
 
 ## P1 -- Open bugs / polish still outstanding
 
-### Per-lift progression ignores three filters — SHIPPED (partial, WIP)
+### Per-lift progression ignores three filters — SHIPPED
 
-Chat A completed the code. The main.py portion landed in commit `e7432f5`
-(which was actually Chat B's QT Squeeze commit; a concurrent hook sweep
-captured Chat A's staged main.py). The remaining files are sitting in the
-working tree, uncommitted:
-
-- `backend/app/progression.py` (compute_lift_progression accepts the three
-  new params with age baseline recomputation)
-- `backend/tests/test_progression.py` (8 new tests in TestLiftProgressionFilters)
-- `backend/tests/conftest.py` (Ella E fixture for same_class_only)
-- `frontend/src/lib/api.ts` (LiftProgressionQuery fields)
-- `frontend/src/tabs/Progression.tsx` (query threading + age_category removal)
-
-Verified: local smoke test showed n_lifters 10082 -> 5305 (same_class_only),
-5936 (max_gap_months=12), 1048 (age_category=Open). npm run build clean.
-
-Next action: commit these files in a coherent "feat(progression): per-lift
-filter plumbing + frontend age_category removal" commit and push.
-THIS COMMIT ALSO FIXES THE LIVE-SITE AGE_CATEGORY ERROR.
+Commit `98cbdef` ("feat(progression): per-lift filter plumbing + frontend
+age_category cleanup (fixes live site)"). `compute_lift_progression` in
+`backend/app/progression.py` accepts `age_category`, `max_gap_months`,
+`same_class_only` with age-baseline recomputation. `Progression.tsx`
+threads them through the per-lift query. The earlier WIP entry described
+work split across multiple parallel chats that converged into this single
+commit — see `~/.claude/rules/common/parallel-chat-isolation.md` for the
+post-mortem of the staging confusion. Live-site `age_category` filter
+error fixed by the same commit.
 
 ### LifterDetail Recharts static import defeats the CompareView split — SHIPPED
 
@@ -1299,6 +1296,52 @@ Expand the existing methodology `<details>` block to cover:
 
 ## P5 -- Engineering debt
 
+### QT_OVERRIDES consumer is not wired (discovered 2026-05-19)
+
+`backend/app/data_static/qt_by_division.py:35-43` ships `QT_OVERRIDES`
+as a dict of `division -> None` with six TODOs pointing at
+powerlifting.ca for the data. The popular assumption is that populating
+those six DataFrames flips the "using_open_fallback" amber banner off
+for those divisions in QT Squeeze. **It does not.**
+
+`compute_blocks` in `backend/app/qt.py:319-387` always calls
+`compute_coverage(..., age_filter="open")` regardless of the requested
+division. Lines 342-346 explicitly say so:
+
+```python
+# Future: when QT_OVERRIDES[division] is populated, swap the threshold
+# table here and switch the Division filter on the denominator. For now
+# everything resolves to the Open view.
+_ = has_age_specific_qt(division)  # noqa: F841 -- forward-compatible hook
+_ = QT_OVERRIDES  # noqa: F841 -- keep the import live for future wiring
+```
+
+Result: even with `QT_OVERRIDES["Master 1"]` populated, the QT Squeeze
+tab still shows Open numbers for Master 1. The `meta.using_open_fallback`
+flag would correctly flip to False, but the data underneath wouldn't
+change.
+
+**Scope to fully ship division-aware QT:**
+
+1. **Wire the consumer in `qt.py:compute_blocks`** — when
+   `has_age_specific_qt(division)` is True, pass `age_filter=division`
+   (or equivalent) to `compute_coverage`, AND swap the threshold table
+   to `QT_OVERRIDES[division]`. Need to check what `age_filter` values
+   `compute_coverage` accepts (currently only `"open"` is wired).
+2. **Confirm the denominator + thresholds both shift** — pct values must
+   reflect (division-specific lifters meeting division-specific QT),
+   not Open lifters meeting division-specific QT.
+3. **Populate `QT_OVERRIDES`** — either Path A (extend `data/scrapers/cpu.py`
+   to emit per-division rows from the CPU PDFs' 8-column tables) or
+   Path B (hand-transcribe from powerlifting.ca per the docstring).
+4. **Tests** — exercise both `using_open_fallback: True` and `False`
+   paths, ensure non-Open denominator + thresholds round-trip correctly.
+
+Source plan: `~/.claude/plans/project-audit-and-status-majestic-pretzel.md`
+(Task 2). Pre-implementation read landed this finding 2026-05-19;
+implementation deferred so the scope can be re-baselined in a focused
+session.
+
 ### Hypothesis property tests for canonical_weight_class — SHIPPED
 
 Commit `cb7038e`. 19 property tests in
@@ -1611,19 +1654,15 @@ Two small UX fixes shipped in a single commit, plus the fallout:
 
 Verified live on cpu-analytics.vercel.app. Frontend CI green on the push.
 
-### NEW P1: Backend pytest CI broken since the workflow landed
+### Backend pytest CI -- SHIPPED
 
-CI job "Backend (pytest)" fails with
-`ModuleNotFoundError: No module named 'backend'` on every run. Not a
-regression from 24dadb5, pre-existing since the ci.yml landed in `12cbb46`.
-
-**Root cause**: `.github/workflows/ci.yml` runs `pytest backend/tests/`.
-The plain `pytest` shell entrypoint does NOT prepend cwd to `sys.path`,
-so `from backend.app import ...` imports in the tests fail. The fix is
-`python -m pytest backend/tests/` (python prepends cwd).
-
-Tests pass locally because `.venv/Scripts/python -m pytest ...` is what
-Matthias runs. CI was using the shortcut form.
+Commit `6893105` ("fix(ci): python -m pytest + docs sync for UX polish wave").
+`.github/workflows/ci.yml:74` now invokes `python -m pytest backend/tests/ -v`
+with an explicit comment explaining that the `python -m` prefix prepends cwd
+to `sys.path` so `from backend.app import ...` resolves. Without `-m`, the
+plain `pytest` entrypoint produced `ModuleNotFoundError: No module named
+'backend'`. The Backend (pytest) job is now a required status check on `main`
+(closed 2026-04-21 per the Branch protection section above).
 
 ### 3rd instance of parallel-chat commit hygiene lapse
 
@@ -1694,19 +1733,15 @@ Production Render picked up the fresh parquet at next cold-start via the
 data-latest release; the self-heal now catches future schema drift
 automatically.
 
-### CI workflow never landed (Issue 8 reopened)
+### CI workflow -- SHIPPED
 
-The UX chat reported shipping `.github/workflows/ci.yml` but it does not
-exist on local main. Only `keepalive.yml` and `refresh-data.yml` are in
-`.github/workflows/`. This means:
-- No regression guard on the 4 unpushed commits or the upcoming WIP commit.
-- The branch-protection rule in the Chrome Wave 1 task will have nothing
-  to require.
-
-Fix: separate focused chat to write ci.yml. Not urgent enough to block the
-live-site hotfix, but should land within the next 2-3 commits.
-
-Files: `.github/workflows/ci.yml` (new).
+Commit `12cbb46` ("ci: add build-gate workflow + caching + action bumps")
+landed `.github/workflows/ci.yml` with three parallel jobs: Frontend
+(tsc + build), Backend (pytest), and E2E (Playwright smoke, marked
+`continue-on-error: true`). Triggers on push and PR to `main`. Both
+Frontend and Backend are required status checks per branch protection
+(see the Branch protection section above). E2E job added later as Arc 7
+(`166c5ff`) and env-var pinning enforcement added as `1ceed93`.
 
 ---
 
