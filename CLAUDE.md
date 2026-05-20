@@ -128,6 +128,7 @@ specifically, not the first meet of any kind.
 - **Percentile scope MUST match cohort.** `_compute_percentile` now uses a `self_best` CTE scoped to the same sex/class/equipment/country/IPF/SBD filters as the `bests` CTE. The earlier bug selected the lifter's global SBD max, which would rank out-of-scope totals against an in-scope cohort.
 - **DuckDB cursor per request.** `data.py` exposes `get_cursor()` and `with_cursor()` (context manager). The base connection holds the `:memory:` DB and parquet views; every request handler gets its own cursor. DuckDB's parent connection is not safe for concurrent `execute()` calls. `get_conn()` is a deprecated alias. `qt.py` helpers (`_load_scope`, `_load_qt_standards`, `_load_best_totals_per_era`) take the cursor as first arg so a single cursor covers the whole computation.
 - **QT blocks always returns 4 keys** (`M_Nationals`, `M_Regionals`, `F_Nationals`, `F_Regionals`), even when `groupby` yields none for a combo. Backend initializes the dict with empty lists before iterating.
+- **`QT_OVERRIDES` is imported but not consumed.** `backend/app/data_static/qt_by_division.py` ships a `QT_OVERRIDES` dict keyed by division → DataFrame, with six TODO `None` entries pointing at powerlifting.ca. `backend/app/qt.py:compute_blocks` imports the dict and calls `has_age_specific_qt()` for the `using_open_fallback` flag, but lines 342-346 are explicit forward-compatible hooks (`_ = QT_OVERRIDES  # noqa`) that never read the data. The function always returns the Open view regardless of division. Populating `QT_OVERRIDES` alone will flip the amber banner off but will NOT change the underlying numbers. Wiring requires extending `compute_coverage` to accept non-Open `age_filter` values AND swapping the threshold table. Captured in `NEXT_STEPS.md` under P5 (discovered 2026-05-19).
 - **TotalKg can be null** in LifterMeet. DQ / bombed / bench-only meets may have null totals. Frontend guards with `!= null` before arithmetic; backend `_safe_best` returns None on empty.
 - **Per-lift cohort progression** requires all three lift columns non-null, so this view is SBD-only in practice. A bench-only meet row cannot contribute because the SQL's `WHERE Best3SquatKg IS NOT NULL AND Best3BenchKg IS NOT NULL AND Best3DeadliftKg IS NOT NULL` excludes it. For individual lifter per-lift view, partial events DO contribute to whichever lift(s) they provide, because the frontend renders each lift as an independent Line with `connectNulls`.
 - **Projection date math uses UTC.** `new Date(iso)` + `setDate()` drifts across DST. All date arithmetic uses `Date.UTC` to match the `fmtDate` ISO-parse convention elsewhere.
@@ -172,15 +173,14 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  326 backend tests (174 baseline + 47 Engine C + 23 IPF-GL + ~70 QT
-  scraper fixtures + 12 added in subsequent rounds), 1 skipped, covering
-  progression, lifters, projection, athlete projection, QT (federal +
-  provincial scrapers), manual entry, security, weight class Hypothesis,
-  and concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
+  334 backend tests, 1 skipped, ~68 s, covering progression, lifters,
+  projection, athlete projection (Engine C + D), QT (federal + provincial
+  scrapers), manual entry, security, weight class Hypothesis, and
+  concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
   the `backend.app` imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 52 Vitest unit tests (3 useUrlState
-  key collisions + 10 MethodPill cross-nav picker + 3 Banner tone
-  classes). Runs in jsdom, ~2 s.
+- `cd frontend && npm run test` -- 53 Vitest unit tests (useUrlState
+  key collisions + MethodPill cross-nav picker + Banner tone classes +
+  meet-tier resolver + AthleteCard). Runs in jsdom, ~4 s.
 - `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
   also runs in CI via the `e2e` job (Arc 7, commit `166c5ff`) with
   `continue-on-error: true` until the suite is hardened. Requires
@@ -283,7 +283,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**326 pytest + 52 Vitest + 6 Playwright passing.** Pytest covers
+**334 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and
