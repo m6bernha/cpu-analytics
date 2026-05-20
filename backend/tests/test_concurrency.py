@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 
-from backend.app.qt import get_qt_standards, compute_blocks
+from backend.app.qt import get_qt_standards
 from backend.app.lifters import search_lifters
 from backend.app.data import get_cursor
 
@@ -18,11 +18,6 @@ from backend.app.data import get_cursor
 def _run_qt_standards(_: int) -> int:
     df = get_qt_standards()
     return len(df)
-
-
-def _run_qt_blocks(_: int) -> int:
-    blocks = compute_blocks(country="Canada", federation="CPU")
-    return sum(len(v) for v in blocks.values())
 
 
 def _run_search(_: int) -> int:
@@ -41,15 +36,13 @@ class TestConcurrency:
             results = list(ex.map(_run_qt_standards, range(32)))
         assert all(r > 0 for r in results)
 
-    def test_32_parallel_qt_blocks(self, test_conn):
-        with ThreadPoolExecutor(max_workers=32) as ex:
-            results = list(ex.map(_run_qt_blocks, range(32)))
-        # All returns non-negative. Empty result (0) is fine for synthetic data.
-        assert all(r >= 0 for r in results)
-
     def test_32_parallel_mixed_queries(self, test_conn):
         """Most realistic: mix of different query types hitting in parallel."""
-        tasks = [_run_qt_standards, _run_qt_blocks, _run_search, _run_simple_count] * 8
+        # Three distinct query types replicated to fill 32 worker slots. The
+        # qt_standards path is doubled so the parquet-backed cursor sees the
+        # most concurrent pressure (the original site of the No-open-result-set
+        # crash this suite regresses against).
+        tasks = [_run_qt_standards, _run_search, _run_simple_count, _run_qt_standards] * 8
         with ThreadPoolExecutor(max_workers=32) as ex:
             futures = [ex.submit(t, i) for i, t in enumerate(tasks)]
             # .result() re-raises any exception from the thread

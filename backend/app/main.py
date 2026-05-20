@@ -434,56 +434,13 @@ def api_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
     return _clean(build_manual_trajectory(req))
 
 
-@app.get("/api/qt/blocks")
-def api_qt_blocks(
-    request: Request,
-    response: Response,
-    country: str = Query("Canada"),
-    federation: str = Query("CPU"),
-    equipment: str = Query("Raw"),
-    tested: str = Query("Yes"),
-    event: str = Query("SBD"),
-    division: str = Query("Open", description="Age division for QT view."),
-) -> Any:
-    """Four-block view for the QT tab, scoped by age division.
-
-    Returns keys F_Regionals, F_Nationals, M_Regionals, M_Nationals, each a
-    list of {weight_class, pct_pre2025, pct_2025, pct_2027_today}. Plus a
-    `meta` key with the selected division and a `using_open_fallback` flag
-    the frontend reads to decide whether to show the "Open values shown,
-    age-specific coming" banner.
-    """
-    from .data_static.qt_by_division import has_age_specific_qt
-
-    cached = _maybe_304(request, response)
-    if cached is not None:
-        return cached
-    blocks = qt_mod.compute_blocks(
-        country=country,
-        federation=federation,
-        equipment=equipment,
-        tested=tested,
-        event=event,
-        division=division,
-    )
-    return _clean(
-        {
-            **blocks,
-            "meta": {
-                "division": division,
-                "using_open_fallback": not has_age_specific_qt(division),
-            },
-        }
-    )
-
-
 # =========================================================================
 # Live-scrape QT endpoints (2026+)
 #
 # These serve the qualifying totals scraped weekly from powerlifting.ca
 # (see data/scrapers/cpu.py and .github/workflows/qt_refresh.yml). The
-# older /api/qt/coverage and /api/qt/blocks endpoints above keep serving
-# the historical pre-2025 / 2025 values from qt_standards.parquet.
+# older /api/qt/coverage endpoint above keeps serving the historical
+# pre-2025 / 2025 values from qt_standards.parquet.
 # =========================================================================
 
 

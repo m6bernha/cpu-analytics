@@ -858,7 +858,10 @@ Bonus shipped in same commit: age-division dropdown (Sub-Junior through
 Master 4), `/api/qt/blocks?division=` param, `using_open_fallback` meta
 flag, amber banner when non-Open selected. Data still uses Open values
 until `backend/app/data_static/qt_by_division.py` QT_OVERRIDES TODO map
-is populated from powerlifting.ca.
+is populated from powerlifting.ca. **(Note 2026-05-19: the four-block
+view + `/api/qt/blocks` endpoint + `qt_by_division.py` were all retired
+as dead code; the live QT panel reads from `/api/qt/live/coverage` which
+is already division-aware via the cpu.py scraper.)**
 
 ### Compare chart short-career blowout + tooltip gaps — SHIPPED
 
@@ -959,9 +962,10 @@ Backend (SHIPPED):
   `qt_current=<N> rows` or `qt_current=UNAVAILABLE`.
 * 10 new qt.py tests under `TestLoadLiveQt`, `TestGetLiveQtFilters`,
   `TestComputeLiveCoverage`. Total suite: 214 pytest.
-* Historical 4-block view (`/api/qt/coverage`, `/api/qt/blocks`, the
-  vendored `qualifying_totals_canpl.csv`) is **untouched**. Both data
-  paths coexist.
+* Historical 4-block view (`/api/qt/coverage` + the vendored
+  `qualifying_totals_canpl.csv`) is **untouched**. Both data paths
+  coexist. **(Note 2026-05-19: `/api/qt/blocks` retired as dead code;
+  `/api/qt/coverage` still serves the historical pre-2025/2025 view.)**
 
 Frontend MVP (SHIPPED):
 
@@ -1295,52 +1299,6 @@ Expand the existing methodology `<details>` block to cover:
 ---
 
 ## P5 -- Engineering debt
-
-### QT_OVERRIDES consumer is not wired (discovered 2026-05-19)
-
-`backend/app/data_static/qt_by_division.py:35-43` ships `QT_OVERRIDES`
-as a dict of `division -> None` with six TODOs pointing at
-powerlifting.ca for the data. The popular assumption is that populating
-those six DataFrames flips the "using_open_fallback" amber banner off
-for those divisions in QT Squeeze. **It does not.**
-
-`compute_blocks` in `backend/app/qt.py:319-387` always calls
-`compute_coverage(..., age_filter="open")` regardless of the requested
-division. Lines 342-346 explicitly say so:
-
-```python
-# Future: when QT_OVERRIDES[division] is populated, swap the threshold
-# table here and switch the Division filter on the denominator. For now
-# everything resolves to the Open view.
-_ = has_age_specific_qt(division)  # noqa: F841 -- forward-compatible hook
-_ = QT_OVERRIDES  # noqa: F841 -- keep the import live for future wiring
-```
-
-Result: even with `QT_OVERRIDES["Master 1"]` populated, the QT Squeeze
-tab still shows Open numbers for Master 1. The `meta.using_open_fallback`
-flag would correctly flip to False, but the data underneath wouldn't
-change.
-
-**Scope to fully ship division-aware QT:**
-
-1. **Wire the consumer in `qt.py:compute_blocks`** — when
-   `has_age_specific_qt(division)` is True, pass `age_filter=division`
-   (or equivalent) to `compute_coverage`, AND swap the threshold table
-   to `QT_OVERRIDES[division]`. Need to check what `age_filter` values
-   `compute_coverage` accepts (currently only `"open"` is wired).
-2. **Confirm the denominator + thresholds both shift** — pct values must
-   reflect (division-specific lifters meeting division-specific QT),
-   not Open lifters meeting division-specific QT.
-3. **Populate `QT_OVERRIDES`** — either Path A (extend `data/scrapers/cpu.py`
-   to emit per-division rows from the CPU PDFs' 8-column tables) or
-   Path B (hand-transcribe from powerlifting.ca per the docstring).
-4. **Tests** — exercise both `using_open_fallback: True` and `False`
-   paths, ensure non-Open denominator + thresholds round-trip correctly.
-
-Source plan: `~/.claude/plans/project-audit-and-status-majestic-pretzel.md`
-(Task 2). Pre-implementation read landed this finding 2026-05-19;
-implementation deferred so the scope can be re-baselined in a focused
-session.
 
 ### Hypothesis property tests for canonical_weight_class — SHIPPED
 

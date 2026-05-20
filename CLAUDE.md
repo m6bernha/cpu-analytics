@@ -127,8 +127,6 @@ specifically, not the first meet of any kind.
 - **Search metadata shows LATEST meet.** The `search_lifters` SQL sorts Date DESC so rn=1 is the most recent meet. LatestEquipment, LatestWeightClass, LatestMeetDate are now actually latest.
 - **Percentile scope MUST match cohort.** `_compute_percentile` now uses a `self_best` CTE scoped to the same sex/class/equipment/country/IPF/SBD filters as the `bests` CTE. The earlier bug selected the lifter's global SBD max, which would rank out-of-scope totals against an in-scope cohort.
 - **DuckDB cursor per request.** `data.py` exposes `get_cursor()` and `with_cursor()` (context manager). The base connection holds the `:memory:` DB and parquet views; every request handler gets its own cursor. DuckDB's parent connection is not safe for concurrent `execute()` calls. `get_conn()` is a deprecated alias. `qt.py` helpers (`_load_scope`, `_load_qt_standards`, `_load_best_totals_per_era`) take the cursor as first arg so a single cursor covers the whole computation.
-- **QT blocks always returns 4 keys** (`M_Nationals`, `M_Regionals`, `F_Nationals`, `F_Regionals`), even when `groupby` yields none for a combo. Backend initializes the dict with empty lists before iterating.
-- **`QT_OVERRIDES` is imported but not consumed.** `backend/app/data_static/qt_by_division.py` ships a `QT_OVERRIDES` dict keyed by division → DataFrame, with six TODO `None` entries pointing at powerlifting.ca. `backend/app/qt.py:compute_blocks` imports the dict and calls `has_age_specific_qt()` for the `using_open_fallback` flag, but lines 342-346 are explicit forward-compatible hooks (`_ = QT_OVERRIDES  # noqa`) that never read the data. The function always returns the Open view regardless of division. Populating `QT_OVERRIDES` alone will flip the amber banner off but will NOT change the underlying numbers. Wiring requires extending `compute_coverage` to accept non-Open `age_filter` values AND swapping the threshold table. Captured in `NEXT_STEPS.md` under P5 (discovered 2026-05-19).
 - **TotalKg can be null** in LifterMeet. DQ / bombed / bench-only meets may have null totals. Frontend guards with `!= null` before arithmetic; backend `_safe_best` returns None on empty.
 - **Per-lift cohort progression** requires all three lift columns non-null, so this view is SBD-only in practice. A bench-only meet row cannot contribute because the SQL's `WHERE Best3SquatKg IS NOT NULL AND Best3BenchKg IS NOT NULL AND Best3DeadliftKg IS NOT NULL` excludes it. For individual lifter per-lift view, partial events DO contribute to whichever lift(s) they provide, because the frontend renders each lift as an independent Line with `connectNulls`.
 - **Projection date math uses UTC.** `new Date(iso)` + `setDate()` drifts across DST. All date arithmetic uses `Date.UTC` to match the `fmtDate` ISO-parse convention elsewhere.
@@ -141,7 +139,7 @@ specifically, not the first meet of any kind.
 - **accessibility:** nav has `role="tablist"` with `aria-selected`; search inputs have `aria-label`.
 - **Parquet is Canada + IPF scoped at preprocess time.** `data/preprocess.py` applies `Country=='Canada' & ParentFederation=='IPF'` before writing the parquet. The app never serves anything outside that scope (see `scope.py`). This shrinks the parquet ~15-20x vs. publishing the full OpenIPF export. The Canada+IPF pool is ~5,400 lifters.
 - **QT coverage aggregates in SQL.** `qt._load_best_totals_per_era` does `GROUP BY Sex, WeightClass, Name` with `MAX(CASE WHEN Date < <cutoff> THEN TotalKg END)` columns per era + 24-month window. compute_coverage reads that small frame and does only the QT-threshold comparison in pandas. Do not regress to pulling the full scope into pandas.
-- **`compute_blocks` and `get_filters` are lru_cached.** Results only change on parquet refresh (which triggers a container restart). maxsize is small (1-8); every new cache entry costs memory.
+- **`get_filters` is lru_cached.** Result only changes on parquet refresh (which triggers a container restart). maxsize is small; every new cache entry costs memory.
 - **`/api/health` accepts GET and HEAD.** UptimeRobot free plan is HEAD-only. Use `@app.api_route(methods=["GET", "HEAD"])` for any new probe-style endpoint.
 - **`/api/ready` is a real readiness probe.** Runs `SELECT 1` via `get_cursor()`. Returns 503 if the parquet views are broken. `/api/health` is liveness only and doesn't touch DuckDB.
 - **Request timing middleware** logs `[req] METHOD /path STATUS <ms>` on every request. Crashes log `CRASH in <ms>ms`. Visible in Render logs.
@@ -173,7 +171,7 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  334 backend tests, 1 skipped, ~68 s, covering progression, lifters,
+  325 backend tests, 1 skipped, ~67 s, covering progression, lifters,
   projection, athlete projection (Engine C + D), QT (federal + provincial
   scrapers), manual entry, security, weight class Hypothesis, and
   concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
@@ -270,11 +268,11 @@ actually reaches production.
 
 **Production reliability overhaul (2026-04-16, G1-G5):**
 - G1: Per-request DuckDB cursors eliminate "No open result set" concurrency
-  crashes. New `get_cursor()` and `with_cursor()`. 4 regression tests with
+  crashes. New `get_cursor()` and `with_cursor()`. 3 regression tests with
   32 parallel threads.
 - G2: Parquet filtered to Canada+IPF at preprocess (15-20x shrink). QT
-  coverage aggregates in SQL. `compute_blocks` and `get_filters` cached.
-  psutil RSS logged at startup.
+  coverage aggregates in SQL. `get_filters` cached. psutil RSS logged at
+  startup.
 - G3: `/api/health` accepts HEAD (fixes UptimeRobot). New `/api/ready`
   readiness probe.
 - G4: Frontend error cards + retry + skeletons + QueryClient retry/backoff
@@ -283,7 +281,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**334 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
+**325 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

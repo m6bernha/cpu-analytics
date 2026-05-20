@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 
 from .data import get_cursor, is_qt_current_available
-from .data_static.qt_by_division import QT_OVERRIDES, has_age_specific_qt
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
 
@@ -309,82 +308,6 @@ def compute_coverage(
 
 def get_qt_standards() -> pd.DataFrame:
     return _load_qt_standards(get_cursor())
-
-
-# =========================
-# BLOCK VIEW (Open-only, 3 cols)
-# =========================
-
-@lru_cache(maxsize=16)
-def compute_blocks(
-    country: str = DEFAULT_COUNTRY,
-    federation: str = "CPU",
-    equipment: str = "Raw",
-    tested: str = "Yes",
-    event: str = "SBD",
-    division: str = "Open",
-) -> dict:
-    """Return the four-block spreadsheet view for a given age division.
-
-    Columns per row:
-      - weight_class
-      - pct_pre2025:  lifters in pre-2025 era meeting QT_pre2025
-      - pct_2025:     lifters in 2025-2026 era meeting QT_2025
-      - pct_2027_today: lifters in 2025-2026 era meeting QT_2027 (hypothetical)
-
-    For v1, only Open has real QT thresholds. Other divisions fall back to
-    Open values (denominator and thresholds both Open) until the
-    powerlifting.ca/qualifying-standards table is transcribed into
-    `data_static.qt_by_division.QT_OVERRIDES`. The API response wraps this
-    result with a `meta.using_open_fallback` flag so the frontend can show
-    a "Open values shown, age-specific coming" banner.
-    """
-    # Future: when QT_OVERRIDES[division] is populated, swap the threshold
-    # table here and switch the Division filter on the denominator. For now
-    # everything resolves to the Open view.
-    _ = has_age_specific_qt(division)  # noqa: F841 -- forward-compatible hook
-    _ = QT_OVERRIDES  # noqa: F841 -- keep the import live for future wiring
-    full = compute_coverage(
-        country=country,
-        federation=federation,
-        equipment=equipment,
-        tested=tested,
-        event=event,
-        age_filter="open",
-    )
-
-    slim = full[
-        [
-            "Sex",
-            "Level",
-            "WeightClass",
-            "Pct_AllEra_pre2025",
-            "Pct_AllEra_2025",
-            "Pct_HypotheticalSqueeze_2027_using_2025era",
-        ]
-    ].rename(
-        columns={
-            "Pct_AllEra_pre2025": "pct_pre2025",
-            "Pct_AllEra_2025": "pct_2025",
-            "Pct_HypotheticalSqueeze_2027_using_2025era": "pct_2027_today",
-        }
-    )
-
-    # Always return all four block keys so the frontend can iterate
-    # BLOCK_ORDER without crashing on undefined.map.
-    blocks: dict = {
-        "M_Nationals": [],
-        "M_Regionals": [],
-        "F_Nationals": [],
-        "F_Regionals": [],
-    }
-    for (sex, level), group in slim.groupby(["Sex", "Level"], observed=True):
-        key = f"{sex}_{level}"
-        blocks[key] = group[
-            ["WeightClass", "pct_pre2025", "pct_2025", "pct_2027_today"]
-        ].to_dict(orient="records")
-
-    return blocks
 
 
 # =========================

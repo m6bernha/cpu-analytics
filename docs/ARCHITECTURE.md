@@ -54,7 +54,6 @@ readers who want the depth.
       |    GET  /api/filters               enumerated dropdowns    |
       |    GET  /api/progression           cohort aggregation      |
       |    GET  /api/progression/per-lift  per-lift cohort view    |
-      |    GET  /api/qt/blocks             4-block QT coverage     |
       |    GET  /api/qt/coverage           single-cut coverage     |
       |    GET  /api/qt/standards          QT table data           |
       |    GET  /api/lifter/search         name search             |
@@ -115,10 +114,9 @@ Two layers:
 1. **DuckDB view caching.** Parquet reads are column-pruned and
    predicate-pushed, so a "give me all M 83kg SBD Open meets" query
    scans only the relevant columns.
-2. **Python `lru_cache`** on `compute_blocks` and `get_filters`. Cache
-   entries are small, and results only change on parquet refresh (which
-   triggers a Render container restart). `maxsize` is intentionally
-   small (1-8) to cap memory.
+2. **Python `lru_cache`** on `get_filters`. Cache entries are small, and
+   the result only changes on parquet refresh (which triggers a Render
+   container restart). `maxsize` is intentionally small to cap memory.
 
 ### Lifespan warmup
 

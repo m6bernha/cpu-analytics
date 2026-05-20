@@ -11,7 +11,6 @@ import pytest
 
 from backend.app.qt import (
     apply_time_window,
-    compute_blocks,
     compute_coverage,
     era_window_for_standard,
     get_qt_standards,
@@ -87,54 +86,6 @@ class TestComputeCoverage:
         import pytest
         with pytest.raises(ValueError):
             compute_coverage(age_filter="junior")
-
-
-class TestComputeBlocks:
-    def test_always_returns_four_keys(self, test_conn):
-        """Regression test: blocks must always include all four combos."""
-        blocks = compute_blocks(
-            country="Canada", federation="CPU", equipment="Raw",
-            tested="Yes", event="SBD",
-        )
-        assert set(blocks.keys()) == {
-            "M_Nationals", "M_Regionals", "F_Nationals", "F_Regionals",
-        }
-
-    def test_empty_filter_still_has_keys(self, test_conn):
-        """With a filter that matches nothing, all four keys are still []."""
-        blocks = compute_blocks(
-            country="Canada", federation="CPU", equipment="Single-ply",
-            tested="Yes", event="SBD",
-        )
-        for k in ["M_Nationals", "M_Regionals", "F_Nationals", "F_Regionals"]:
-            assert isinstance(blocks[k], list)
-
-    def test_division_param_accepted(self, test_conn):
-        """Non-Open division is accepted (falls back to Open numbers for v1)."""
-        blocks = compute_blocks(
-            country="Canada", federation="CPU", equipment="Raw",
-            tested="Yes", event="SBD", division="Junior",
-        )
-        assert set(blocks.keys()) == {
-            "M_Nationals", "M_Regionals", "F_Nationals", "F_Regionals",
-        }
-
-
-class TestAgeDivisionFallback:
-    def test_open_reports_no_override(self):
-        """Open has no override -- the base qt_standards parquet IS the Open table."""
-        from backend.app.data_static.qt_by_division import has_age_specific_qt
-        assert has_age_specific_qt("Open") is False
-
-    def test_non_open_reports_no_override(self):
-        """Every non-Open division falls back until powerlifting.ca is transcribed."""
-        from backend.app.data_static.qt_by_division import has_age_specific_qt
-        for d in ["Sub-Junior", "Junior", "Master 1", "Master 2", "Master 3", "Master 4"]:
-            assert has_age_specific_qt(d) is False, f"{d} should fall back"
-
-    def test_unknown_division_reports_no_override(self):
-        from backend.app.data_static.qt_by_division import has_age_specific_qt
-        assert has_age_specific_qt("Youth 1") is False
 
 
 class TestLifterBestTotalsEdgeCases:
@@ -286,38 +237,6 @@ class TestComputeCoverageEdgeCases:
         df = compute_coverage(age_filter="open")
         assert (df["Sex"] == "M").any()
         assert (df["Sex"] == "F").any()
-
-
-class TestComputeBlocksEdgeCases:
-    def test_weight_classes_sorted_within_block(self, test_conn):
-        """Within each block the WeightClass list is in ascending order."""
-        blocks = compute_blocks(
-            country="Canada", federation="CPU", equipment="Raw",
-            tested="Yes", event="SBD",
-        )
-
-        def wc_key(s: str) -> float:
-            if s.endswith("+"):
-                return float(s.rstrip("+")) + 0.5
-            return float(s)
-
-        for k, rows in blocks.items():
-            if len(rows) <= 1:
-                continue
-            wcs = [r["WeightClass"] for r in rows]
-            keys = [wc_key(w) for w in wcs]
-            assert keys == sorted(keys), f"{k} not sorted: {wcs}"
-
-    def test_record_shape(self, test_conn):
-        """Each row has the expected 4 keys."""
-        blocks = compute_blocks(
-            country="Canada", federation="CPU", equipment="Raw",
-            tested="Yes", event="SBD",
-        )
-        expected_keys = {"WeightClass", "pct_pre2025", "pct_2025", "pct_2027_today"}
-        for rows in blocks.values():
-            for row in rows:
-                assert set(row.keys()) == expected_keys
 
 
 # -------------------------------------------------------------------------

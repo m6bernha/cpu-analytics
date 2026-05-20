@@ -147,9 +147,9 @@ The data pipeline caches at multiple levels:
    refreshes. Render downloads on cold start, caches on disk, uses local
    disk for the life of the container.
 2. **DuckDB column-pruning.** Queries read only the columns they need.
-3. **Python `lru_cache`** on `compute_blocks` and `get_filters`. Results
-   only change on parquet refresh -> container restart, so the cache is
-   safe without invalidation.
+3. **Python `lru_cache`** on `get_filters`. Result only changes on
+   parquet refresh -> container restart, so the cache is safe without
+   invalidation.
 
 ## Data quality notes
 

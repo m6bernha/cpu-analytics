@@ -174,33 +174,6 @@ export function fetchLifterSearch(
   return getJson<LifterSearchResult[]>(`${API_BASE}/api/lifters/search?${params}`)
 }
 
-// ---------- QT blocks ----------
-
-export type QtBlockRow = {
-  WeightClass: string
-  pct_pre2025: number | null
-  pct_2025: number | null
-  pct_2027_today: number | null
-}
-
-export type QtBlocksMeta = {
-  division: string
-  using_open_fallback: boolean
-}
-
-export type QtBlocksResponse = {
-  F_Regionals: QtBlockRow[]
-  F_Nationals: QtBlockRow[]
-  M_Regionals: QtBlockRow[]
-  M_Nationals: QtBlockRow[]
-  meta?: QtBlocksMeta
-}
-
-export function fetchQtBlocks(division: string = 'Open'): Promise<QtBlocksResponse> {
-  const params = new URLSearchParams({ division })
-  return getJson<QtBlocksResponse>(`${API_BASE}/api/qt/blocks?${params}`)
-}
-
 // ---------- QT standards ----------
 
 export type QtStandardRow = {
