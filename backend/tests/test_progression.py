@@ -189,6 +189,53 @@ class TestDivisionFilter:
         assert result["n_lifters"] == 3
 
 
+class TestBodyweightBucketAxis:
+    """Regression tests for the 'Bodyweight bucket' x_axis option.
+
+    Bucket = floor(BodyweightKg / 10) * 10. Bob's 4 meets at 82.0/82.5/83.0/83.0
+    all fall in bucket 80. Carl's 2 meets at 92.0/93.0 all fall in bucket 90.
+    Mean DiffFromFirst per bucket:
+      - 80: (0 + 25 + 50 + 65) / 4 = 35.0
+      - 90: (0 + 130) / 2 = 65.0
+    Projection MUST be None (bodyweight is not a forward-in-time axis).
+    """
+
+    def test_bucket_axis_shape(self, test_conn):
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Bodyweight bucket",
+        )
+        assert result["x_axis"] == "Bodyweight bucket"
+        assert result["x_label"] == "Bodyweight (kg, 10-kg bucket)"
+        # Two buckets expected, sorted ascending
+        xs = [p["x"] for p in result["points"]]
+        assert xs == [80, 90]
+
+    def test_bucket_means_match_manual_calc(self, test_conn):
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Bodyweight bucket",
+        )
+        by_x = {p["x"]: p for p in result["points"]}
+        assert abs(by_x[80]["y"] - 35.0) < 0.01
+        assert abs(by_x[90]["y"] - 65.0) < 0.01
+
+    def test_bucket_projection_is_none(self, test_conn):
+        """Bodyweight bucket is ordinal; projection must short-circuit."""
+        result = compute_progression(
+            sex="M", equipment="Raw", tested="Yes", event="SBD",
+            country="Canada", parent_federation="IPF",
+            x_axis="Bodyweight bucket",
+            min_lifters_for_trend=1,
+        )
+        # With min_lifters_for_trend=1 the trendline computes (two buckets,
+        # one lifter each), but the projection MUST stay None because
+        # bodyweight is not a forward-in-time axis.
+        assert result["projection"] is None
+
+
 class TestLiftProgressionFilters:
     """Per-filter plumbing tests for compute_lift_progression.
 

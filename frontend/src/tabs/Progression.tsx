@@ -621,6 +621,16 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                   individual lifter trajectories.
                 </p>
                 <p>
+                  <span className="text-zinc-400 font-medium">X-axis options:</span> Time
+                  (Days/Weeks/Months/Years), Meet # (career-stage index),
+                  Career quartile (Q1-Q4 of each lifter's career span), and
+                  Bodyweight bucket (10 kg ranges of current bodyweight).
+                  The two ordinal axes (Career quartile, Bodyweight bucket)
+                  show a trendline but skip the forward projection: Q4 is
+                  the end of a career, and bodyweight is not a forward-in-time
+                  variable.
+                </p>
+                <p>
                   <span className="text-zinc-400 font-medium">Division filter:</span> CPU
                   age categories use canonical labels (Open, Sub-Junior, Junior,
                   Master 1-4). The backend accepts common historical variants via an alias

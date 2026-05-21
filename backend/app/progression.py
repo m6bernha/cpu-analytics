@@ -57,6 +57,10 @@ X_AXIS_COLS = {
         "CareerQuartile",
         "Career quartile (Q1 = first 25% of each lifter's meets)",
     ),
+    "Bodyweight bucket": (
+        "BodyweightBucket",
+        "Bodyweight (kg, 10-kg bucket)",
+    ),
 }
 
 
@@ -220,7 +224,7 @@ def compute_progression(
     # but the primary sort is Date which handles most cases.
     sql = f"""
         WITH filtered AS (
-            SELECT Name, Date, {val_col}, TotalKg, Age, MeetName, CanonicalWeightClass
+            SELECT Name, Date, {val_col}, TotalKg, BodyweightKg, Age, MeetName, CanonicalWeightClass
             FROM openipf
             {where_sql}
         ),
@@ -229,6 +233,7 @@ def compute_progression(
                 Name,
                 Date,
                 {val_col},
+                BodyweightKg,
                 Age,
                 CanonicalWeightClass,
                 ROW_NUMBER() OVER (PARTITION BY Name ORDER BY Date, TotalKg DESC NULLS LAST, MeetName) AS MeetNumber,
@@ -242,6 +247,7 @@ def compute_progression(
             Name,
             Age,
             {val_col} AS Value,
+            BodyweightKg,
             CanonicalWeightClass,
             MeetNumber,
             ClassCount,
@@ -378,6 +384,18 @@ def compute_progression(
     df["CareerQuartile"] = np.clip(
         np.floor(raw_q * 4).astype(int) + 1, 1, 4,
     )
+    # Bodyweight bucket: 10 kg bucket of the lifter's bodyweight at each
+    # meet (NOT starting bodyweight — this answers "what does avg progression
+    # look like at each bodyweight band a lifter passes through"). Rows
+    # missing BodyweightKg are dropped from the bucket axis only; they
+    # remain valid for time-based axes.
+    if x_axis == "Bodyweight bucket":
+        df = df[df["BodyweightKg"].notna() & (df["BodyweightKg"] > 0)]
+        if df.empty:
+            return _empty_response(x_axis, metric)
+        df["BodyweightBucket"] = (
+            (df["BodyweightKg"].astype(float) // 10) * 10
+        ).astype(int)
 
     x_col, x_label = X_AXIS_COLS[x_axis]
     grouped = (
@@ -418,6 +436,7 @@ def compute_progression(
             "Months": "month",
             "Years": "year",
             "Career quartile": "quartile",
+            "Bodyweight bucket": "10kg-bucket",
         }
         # Residual std for projection confidence band
         residuals = y_arr - y_pred
@@ -432,10 +451,13 @@ def compute_progression(
         }
 
     # Cohort projection: extend the trendline forward with confidence band.
-    # Skip for the "Career quartile" axis -- Q4 is by definition the end of a
-    # lifter's career, so extrapolating past it has no meaning.
+    # Skip for ordinal axes that don't represent forward-in-time motion:
+    #   - "Career quartile": Q4 is by definition the end of a lifter's career.
+    #   - "Bodyweight bucket": bodyweight is not a time variable; a lifter
+    #     can move up or down classes, so "next bucket" isn't a projection.
     projection = None
-    if trend is not None and x_axis != "Career quartile":
+    _ORDINAL_AXES = {"Career quartile", "Bodyweight bucket"}
+    if trend is not None and x_axis not in _ORDINAL_AXES:
         last_x = int(grouped["x"].max())
         project_steps = 4
         projection_points = []
