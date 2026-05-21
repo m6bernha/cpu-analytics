@@ -1339,6 +1339,56 @@ on every run (~30 s cold start tax per CI run, weighed against the
 ~6 smoke tests it catches). Revisit if the frontend sprouts a flaky
 interaction the unit tests miss.
 
+### Gompertz baseline evaluation -- v2 candidate
+
+Captured 2026-05-20 during the polish-sweep + Scout-MVP sprint
+(Stage 2a, plan `where-did-we-leave-elegant-sifakis.md`).
+
+Global-OpenIPF backtest (`frontend/src/data/backtest_results.json`,
+shipped 2026-05-01 in `d6c366b`) shows Gompertz consistently beating
+Engine C at every horizon, with the margin widening as horizon grows:
+
+| Horizon | Engine C MAPE | Gompertz MAPE | Gompertz win | Engine C sample | Gompertz sample |
+|---|---|---|---|---|---|
+| 3 mo | 3.95% | 3.65% | +0.30 pp | 1,100 | 837 (76%) |
+| 6 mo | 4.48% | 3.97% | +0.51 pp | 1,276 | 986 (77%) |
+| 12 mo | 5.27% | 4.42% | +0.85 pp | 1,169 | 875 (75%) |
+| 18 mo | 6.69% | 5.06% | +1.63 pp | 650 | 490 (75%) |
+
+Engine C still passes all current ship gates (6mo < 6.0%, 12mo < 12.0%,
+log_linear margin 12mo > 2.0pp) so this is **not blocking**; it is a
+v2 opportunity. The widening margin (0.30 -> 1.63 pp) suggests Gompertz
+could exceed the > 2 pp v2-ship threshold at 24mo+ horizons not yet
+measured.
+
+Open decisions before scoping the swap:
+
+1. **Coverage gap.** Gompertz requires `n >= 4` meets AND `curve_fit`
+   convergence; sample sizes are consistently ~25% smaller than Engine
+   C's. A pure swap leaves ~25% of fittable lifters without a baseline.
+   Mitigation: cascade Engine C -> Gompertz analogous to today's
+   Engine C -> Engine D fallback.
+2. **Precompute cost.** `curve_fit` (scipy non-linear least squares)
+   is materially slower than `np.polyfit`. Today's precompute is ~27 s
+   on the Canada+IPF pool. Per-lifter Gompertz fit would multiply that.
+   Measure on the full pool before committing.
+3. **Engine D portability.** Engine D's MixedLM is a random-intercept
+   linear model over (kg-per-year x time). Gompertz residuals are
+   nonlinear in time, so the MixedLM does not port trivially. v2 would
+   require re-deriving the cohort layer.
+4. **Ship gates.** Today's gates are written against Engine C
+   specifically. v2 needs Gompertz-aware ship gates (probably "Gompertz
+   beats Engine C by > X pp at horizons where it fits, AND Engine C
+   fallback still meets current gates for the uncovered fraction").
+
+Reference: `gompertz_predict` at `data/backtest_projection.py:196`,
+`shrinkage_projection` at `backend/app/athlete_projection.py`.
+
+Recommended next step: a separate session that re-runs the backtest
+with a 24mo (and 36mo) horizon added, then drafts the cascade design.
+Do not start without a numerical reading at 24mo+ -- the widening
+trend may not hold.
+
 ---
 
 ## P6 -- Strategic questions (not shippable without input)
