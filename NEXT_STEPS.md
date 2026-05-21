@@ -1392,6 +1392,48 @@ These are multi-session features with significant scope and design
 decisions that should only be picked up when Matthias is present to
 steer. Captured here so they are not lost.
 
+### Meet scouting report generator (Vireo-style)
+
+Pitch: a coach / athlete / meet director pastes a roster (or, later, a
+SimplMeet / LiftingCast URL) and the app generates a per-meet scouting
+report that mirrors the format Matthias hand-builds today for Vireo
+Powerlifting. Reference output:
+`C:\Users\matth\Downloads\Vireo Powerlifting — Sunny Daze 2026 Scouting Report.pdf`
+(80 men, 7 classes, IPF-GL-stratified projections, classes sorted by
+projected #1-vs-#2 gap, "homies" highlighted, unranked appendix). The
+core engine is a fan-out wrapper around the existing
+`/api/athlete/{name}/projection` so most of the heavy lifting (Engine C
++ D, IPF-GL brackets, age divisions, KM dropout PIs) is already shipped.
+
+**MVP scope locked 2026-05-19** (during plan capture):
+- Manual roster paste only (no scraper in v1).
+- HTML report rendered as a new cpu-analytics tab (browser-print is the
+  v1 PDF stopgap).
+- IPF-affiliated meets only -- CPU, OPA, the rest of the provincial IPF
+  affiliates. Non-IPF federations gated on the parked scope-expansion
+  decision below.
+
+Phased rollout:
+1. **MVP (~2-3 sessions)**: backend `scout.py` + `POST /api/scout/report`
+   + frontend `Scout.tsx` tab. Status classification (Rookie /
+   Developing / Established / Veteran / Frozen) derived from `n_meets +
+   tenure`.
+2. SimplMeet scraper (`data/scrapers/simplmeet.py`).
+3. LiftingCast scraper (`data/scrapers/liftingcast.py`).
+4. Native PDF export via Playwright screenshot OR the existing
+   `html-to-image` dep used by `exportCard.ts`.
+5. Per-user persistence (saved reports, shareable URLs) -- gated on
+   auth decision.
+6. Federation-scope expansion -- shared with the parked P7 below.
+
+Open decisions deferred to execution time: name-match fuzzy threshold,
+status-classification cutoffs, PI aggregation method (quadrature vs
+naive across S/B/D), homie-tagging UX, public vs private endpoint.
+
+Full plan with file paths, dataclass sketches, reusable-utility map,
+verification steps, and out-of-scope list:
+`~/.claude/plans/project-audit-and-status-majestic-pretzel.md`.
+
 ### ML-based projection engine (replaces or augments Engine C/D)
 
 Pitch: approach projections as a supervised ML problem instead of a
