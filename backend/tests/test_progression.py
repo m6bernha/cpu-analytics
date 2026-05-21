@@ -235,6 +235,21 @@ class TestBodyweightBucketAxis:
         # bodyweight is not a forward-in-time axis.
         assert result["projection"] is None
 
+    def test_per_lift_with_unsupported_axis_degrades(self, test_conn):
+        """Per-lift function only derives time-based axes; Career quartile
+        and Bodyweight bucket would crash on the groupby without a guard.
+        Pre-existing gap, hardened in this commit so the toggle doesn't
+        500 when a user combines per_lift=true with an ordinal axis.
+        """
+        for axis in ("Career quartile", "Bodyweight bucket"):
+            result = compute_lift_progression(
+                sex="M", equipment="Raw", event="SBD",
+                country="Canada", parent_federation="IPF",
+                x_axis=axis,
+            )
+            assert result["n_lifters"] == 0, f"axis={axis} should degrade"
+            assert result["lifts"] == {"squat": [], "bench": [], "deadlift": []}
+
 
 class TestLiftProgressionFilters:
     """Per-filter plumbing tests for compute_lift_progression.

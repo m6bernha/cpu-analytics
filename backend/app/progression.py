@@ -553,6 +553,17 @@ def compute_lift_progression(
     if x_axis not in X_AXIS_COLS:
         raise ValueError(f"Unknown x_axis: {x_axis}")
 
+    # The per-lift function only supports time-derived axes today. The ordinal
+    # axes (Career quartile, Bodyweight bucket) require additional derivation
+    # (career-span groupby OR a BodyweightKg SELECT) that this function does
+    # not perform. Degrade gracefully so the per-lift toggle doesn't crash
+    # when a user picks one of these axes; the frontend already gates
+    # axis-aware features off of the empty response shape. See plan
+    # where-did-we-leave-elegant-sifakis.md stage 2c for the support gap.
+    _UNSUPPORTED_PER_LIFT_AXES = {"Career quartile", "Bodyweight bucket"}
+    if x_axis in _UNSUPPORTED_PER_LIFT_AXES:
+        return _empty_lift_response(x_axis)
+
     clauses, params = _build_filter_clauses(
         sex, equipment, tested, event, federation, country, parent_federation,
         weight_class, division,
