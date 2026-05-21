@@ -130,6 +130,61 @@ bracket, or convergence changed after a data refresh), substitute via
 
 ---
 
+## PI-width baseline (2026-05-20)
+
+Measured during the polish-sweep + Scout-MVP sprint (Stage 2b, plan
+`where-did-we-leave-elegant-sifakis.md`). Twelve-month horizon. Sign-off:
+**OK — no widths exceed the 100 kg per-lift flag threshold; synthesis
+looks reasonable.**
+
+Method: `curl /api/athlete/<name>/projection?horizon_months=12&engine=<C|D>`
+on the live backend. Width = `upper_kg - lower_kg` of the last
+`projected_points` entry per lift. Quadrature sum =
+`2 * sqrt(sum((width/2)^2))` across S/B/D.
+
+| Lifter | Path | Engine | S | B | D | Sum | Quad |
+|---|---|---|---|---|---|---|---|
+| Mark Tobias | clean Engine D (Open, n=20, bracket 105-110, n_cell=22) | C | 35.7 | 27.6 | 34.4 | 97.7 | 56.7 |
+| Mark Tobias | (same) | D | 51.0 | 35.1 | 55.0 | 141.1 | 82.8 |
+| Bruce Markham | whole-cell fallback (M2, n=21, bracket 90-95 merged through >=120, n_cell=3) | C | 52.5 | 34.7 | 41.3 | 128.5 | 75.3 |
+| Bruce Markham | (same) | D | 52.5 | 34.7 | 41.3 | 128.5 | 75.3 |
+| Matthias Bernhard | sparse clean D (Jr, n=3, bracket 70-80, n_cell=156, small_n_warning=True) | C | 49.1 | 31.0 | 48.8 | 128.9 | 75.9 |
+| Matthias Bernhard | (same) | D | 38.8 | 21.1 | 42.8 | 102.7 | 61.5 |
+
+### Reading
+
+1. **Mark Tobias (clean D, data-rich).** Engine D *widens* PIs vs Engine C
+   by ~40-60% per lift. The MixedLM's per-meet noise (`residual_var`) for
+   this cell is materially larger than Engine C's per-lifter residual sigma.
+   Plausible — Engine C residuals are computed from one lifter's polyfit;
+   `residual_var` aggregates across the whole cohort cell. No flag.
+2. **Bruce Markham (whole-cell fallback).** Widths identical to Engine C
+   exactly. Confirms the fallback path returns the Engine C result
+   numerically untouched. `engine_d_note` reads "All lifts fell back to
+   Engine C: no converged MixedLM cell for this lifter's (division,
+   bracket)." Correct.
+3. **Matthias Bernhard (sparse clean D).** Engine D *narrows* widths vs
+   Engine C by ~20-30%. Cohort prior dominates for small-n lifters and
+   is tighter than the personal-polyfit residual. Resolves the
+   2026-05-01 follow-up concern from the opposite direction: not too
+   tight to flag (61.5 kg quadrature sum is reasonable for a 12-mo
+   projection), but worth noting that data-sparse lifters get the
+   biggest variance pull from the cohort.
+
+### Decision
+
+Synthesis is producing reasonable PIs across the three reference paths.
+No follow-up needed unless the Arc 6 walk surfaces a lifter where
+widths exceed the 100 kg per-lift flag threshold OR widths are
+visually degenerate (< 2 kg).
+
+The 2026-05-01 follow-up question ("blend in `random_intercept_var`")
+is **resolved**: the current synthesis is not too tight in aggregate.
+Re-open only if a future data refresh shows a per-lift width >100 kg
+on a healthy lifter.
+
+---
+
 ## After the walk
 
 - If all 30 cells (10 rows × 3 lifters) pass: append a one-line entry to
