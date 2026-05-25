@@ -1,0 +1,2127 @@
+{
+  "request": {
+    "meet_name": "Sunny Daze 2026",
+    "federation": "OPA",
+    "location": "Guelph, ON",
+    "meet_date": "2026-06-14",
+    "generator_name": "Matthias Bernhard",
+    "generator_brand": "Vireo Powerlifting",
+    "roster": [
+      {
+        "name": "Jason Villa",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Steve Magistrale",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Derek Poirier",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Sebastian Camargos",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Christian Santos",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Zachary Bauman",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Ralph Jose",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Hoi Leung",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Matthew Mattia",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Lorenzo San Juan",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Kevin Grant-Hose",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Glen Cormier",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Luke Jin",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Cameron Slama",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Matthew Wang",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Mark Smithson",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Myles Wong",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Leonard Ancheta",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Tariq Codrington",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jeremie Duckett",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Sean Reid",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Azeez Al-Shaikhli",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jaden Parker",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Josiah Rehkopf",
+        "is_homie": true,
+        "manual_override": null
+      },
+      {
+        "name": "Niko Nikolic",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Luke Capstick",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jolan Taylor",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Aaron Subang",
+        "is_homie": true,
+        "manual_override": null
+      },
+      {
+        "name": "Lucas Franchuk",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Amar Manoj",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Michael Salaveria",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Hayden Faus",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Hayden Siple",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jean Marco Bibat",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Daniel Remulla",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Samuel Leeson",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Samuel Zeng",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Matthias Bernhard",
+        "is_homie": true,
+        "manual_override": null
+      },
+      {
+        "name": "Braden Coldwell",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Patrick Amaya",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jhunren Baluyot",
+        "is_homie": true,
+        "manual_override": null
+      },
+      {
+        "name": "Kayden Bruce",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Abed Renjbal",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Aiden Chancay",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Alex Allen",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Anand Ghali",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Andrew Caico",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Asim Zaman",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Caleb Paquet",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Clyde Carruthers",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Edward Tolentino",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Ekoue Gaba",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Erwin Yango",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Evan Chan",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Henry Nguyen Nguyen",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "John Arscott",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "John Robert Damasco",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Jose Romero",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Josiah Mongru",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Justice Cormier",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Liam O'Neill",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Lorenz De Asis",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Matt Rife",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Michael Chang",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Michael Fishman",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Michael Van Hemmen",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Miguel Neto",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Nathan Luciw",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Nathan Maxwell",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Noah Lakhani",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Patrick Pow",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Prem Singh",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Robert Andrews",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Robert Smith",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Sam Kruschat",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Steven Caruso",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Tay Za Tun",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Tristian Huinink",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Viktor Kosenko",
+        "is_homie": false,
+        "manual_override": null
+      },
+      {
+        "name": "Xander Werner",
+        "is_homie": false,
+        "manual_override": null
+      }
+    ]
+  },
+  "horizon_days": 20,
+  "horizon_months": 1,
+  "generated_at": "2026-05-25",
+  "class_blocks": [
+    {
+      "weight_class": "120+",
+      "n_athletes": 3,
+      "projected_gap_kg": 3.9,
+      "athletes": [
+        {
+          "name": "Jason Villa",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "120+",
+          "n_meets": 3,
+          "best_total_kg": 695.0,
+          "squat_best_kg": 277.5,
+          "bench_best_kg": 165.0,
+          "deadlift_best_kg": 265.0,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 708.9,
+          "projected_pi_half_kg": 8.0,
+          "glp_score": 74.5,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Steve Magistrale",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M2",
+          "weight_class": "120+",
+          "n_meets": 41,
+          "best_total_kg": 905.0,
+          "squat_best_kg": 265.0,
+          "bench_best_kg": 165.0,
+          "deadlift_best_kg": 275.0,
+          "last_meet_date": "2026-03-14",
+          "days_since_last_meet": 72,
+          "projected_total_kg": 705.0,
+          "projected_pi_half_kg": 107.9,
+          "glp_score": 73.9,
+          "inline_tags": []
+        },
+        {
+          "name": "Derek Poirier",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "120+",
+          "n_meets": 3,
+          "best_total_kg": 565.0,
+          "squat_best_kg": 195.0,
+          "bench_best_kg": 155.0,
+          "deadlift_best_kg": 215.0,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 570.4,
+          "projected_pi_half_kg": 6.8,
+          "glp_score": 61.9,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "93",
+      "n_athletes": 9,
+      "projected_gap_kg": 5.5,
+      "athletes": [
+        {
+          "name": "Sebastian Camargos",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 9,
+          "best_total_kg": 685.0,
+          "squat_best_kg": 250.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 285.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 686.9,
+          "projected_pi_half_kg": 14.8,
+          "glp_score": 89.7,
+          "inline_tags": []
+        },
+        {
+          "name": "Christian Santos",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 8,
+          "best_total_kg": 670.0,
+          "squat_best_kg": 250.0,
+          "bench_best_kg": 160.0,
+          "deadlift_best_kg": 270.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 681.4,
+          "projected_pi_half_kg": 15.0,
+          "glp_score": 87.8,
+          "inline_tags": []
+        },
+        {
+          "name": "Zachary Bauman",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 657.5,
+          "squat_best_kg": 242.5,
+          "bench_best_kg": 155.0,
+          "deadlift_best_kg": 260.0,
+          "last_meet_date": "2025-08-24",
+          "days_since_last_meet": 274,
+          "projected_total_kg": 659.3,
+          "projected_pi_half_kg": 4.2,
+          "glp_score": 86.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Glen Cormier",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M3",
+          "weight_class": "93",
+          "n_meets": 23,
+          "best_total_kg": 692.5,
+          "squat_best_kg": 232.5,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 232.5,
+          "last_meet_date": "2024-03-21",
+          "days_since_last_meet": 795,
+          "projected_total_kg": 610.0,
+          "projected_pi_half_kg": 35.3,
+          "glp_score": 76.4,
+          "inline_tags": []
+        },
+        {
+          "name": "Ralph Jose",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 2,
+          "best_total_kg": 595.0,
+          "squat_best_kg": 228.8,
+          "bench_best_kg": 113.8,
+          "deadlift_best_kg": 248.8,
+          "last_meet_date": "2025-04-26",
+          "days_since_last_meet": 394,
+          "projected_total_kg": 592.8,
+          "projected_pi_half_kg": 3.1,
+          "glp_score": 78.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Hoi Leung",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M2",
+          "weight_class": "93",
+          "n_meets": 36,
+          "best_total_kg": 740.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 140.0,
+          "deadlift_best_kg": 230.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 575.1,
+          "projected_pi_half_kg": 73.6,
+          "glp_score": 74.0,
+          "inline_tags": []
+        },
+        {
+          "name": "Matthew Mattia",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Jr",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 565.0,
+          "squat_best_kg": 195.0,
+          "bench_best_kg": 120.0,
+          "deadlift_best_kg": 250.0,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 568.3,
+          "projected_pi_half_kg": 6.2,
+          "glp_score": 75.1,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Lorenzo San Juan",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Jr",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 542.5,
+          "squat_best_kg": 207.5,
+          "bench_best_kg": 125.0,
+          "deadlift_best_kg": 210.0,
+          "last_meet_date": "2025-11-29",
+          "days_since_last_meet": 177,
+          "projected_total_kg": 545.8,
+          "projected_pi_half_kg": 6.2,
+          "glp_score": 71.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Kevin Grant-Hose",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "M3",
+          "weight_class": "93",
+          "n_meets": 8,
+          "best_total_kg": 502.5,
+          "squat_best_kg": 192.5,
+          "bench_best_kg": 107.5,
+          "deadlift_best_kg": 200.0,
+          "last_meet_date": "2025-02-01",
+          "days_since_last_meet": 478,
+          "projected_total_kg": 500.3,
+          "projected_pi_half_kg": 17.3,
+          "glp_score": 61.3,
+          "inline_tags": []
+        }
+      ]
+    },
+    {
+      "weight_class": "74",
+      "n_athletes": 6,
+      "projected_gap_kg": 11.3,
+      "athletes": [
+        {
+          "name": "Luke Jin",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "Open",
+          "weight_class": "74",
+          "n_meets": 3,
+          "best_total_kg": 487.5,
+          "squat_best_kg": 182.5,
+          "bench_best_kg": 102.5,
+          "deadlift_best_kg": 207.5,
+          "last_meet_date": "2025-07-26",
+          "days_since_last_meet": 303,
+          "projected_total_kg": 493.7,
+          "projected_pi_half_kg": 4.9,
+          "glp_score": 71.8,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Cameron Slama",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 5,
+          "best_total_kg": 480.0,
+          "squat_best_kg": 187.5,
+          "bench_best_kg": 97.5,
+          "deadlift_best_kg": 195.0,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 482.4,
+          "projected_pi_half_kg": 17.5,
+          "glp_score": 67.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Matthew Wang",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 1,
+          "best_total_kg": 422.5,
+          "squat_best_kg": 147.5,
+          "bench_best_kg": 90.0,
+          "deadlift_best_kg": 185.0,
+          "last_meet_date": "2026-02-08",
+          "days_since_last_meet": 106,
+          "projected_total_kg": 427.4,
+          "projected_pi_half_kg": 6.0,
+          "glp_score": 65.1,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Mark Smithson",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 2,
+          "best_total_kg": 455.0,
+          "squat_best_kg": 138.8,
+          "bench_best_kg": 95.0,
+          "deadlift_best_kg": 162.5,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 401.5,
+          "projected_pi_half_kg": 11.4,
+          "glp_score": 67.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Myles Wong",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 1,
+          "best_total_kg": 395.0,
+          "squat_best_kg": 137.5,
+          "bench_best_kg": 87.5,
+          "deadlift_best_kg": 170.0,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 397.7,
+          "projected_pi_half_kg": 16.0,
+          "glp_score": 58.8,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Josiah Rehkopf",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "74",
+          "n_meets": 2,
+          "best_total_kg": 395.0,
+          "squat_best_kg": 123.8,
+          "bench_best_kg": 87.5,
+          "deadlift_best_kg": 176.2,
+          "last_meet_date": "2026-04-11",
+          "days_since_last_meet": 44,
+          "projected_total_kg": 388.8,
+          "projected_pi_half_kg": 2.3,
+          "glp_score": 61.2,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "120",
+      "n_athletes": 4,
+      "projected_gap_kg": 62.5,
+      "athletes": [
+        {
+          "name": "Leonard Ancheta",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "120",
+          "n_meets": 9,
+          "best_total_kg": 725.0,
+          "squat_best_kg": 275.0,
+          "bench_best_kg": 167.5,
+          "deadlift_best_kg": 282.5,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 726.7,
+          "projected_pi_half_kg": 13.6,
+          "glp_score": 84.7,
+          "inline_tags": []
+        },
+        {
+          "name": "Tariq Codrington",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "120",
+          "n_meets": 1,
+          "best_total_kg": 662.5,
+          "squat_best_kg": 235.0,
+          "bench_best_kg": 152.5,
+          "deadlift_best_kg": 275.0,
+          "last_meet_date": "2025-04-26",
+          "days_since_last_meet": 394,
+          "projected_total_kg": 664.2,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 77.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jeremie Duckett",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "120",
+          "n_meets": 2,
+          "best_total_kg": 620.0,
+          "squat_best_kg": 227.5,
+          "bench_best_kg": 148.8,
+          "deadlift_best_kg": 235.0,
+          "last_meet_date": "2025-10-04",
+          "days_since_last_meet": 233,
+          "projected_total_kg": 614.5,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 72.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Sean Reid",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "M1",
+          "weight_class": "120",
+          "n_meets": 1,
+          "best_total_kg": 490.0,
+          "squat_best_kg": 120.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 220.0,
+          "last_meet_date": "2018-03-24",
+          "days_since_last_meet": 2984,
+          "projected_total_kg": 491.1,
+          "projected_pi_half_kg": 4.3,
+          "glp_score": 60.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "105",
+      "n_athletes": 10,
+      "projected_gap_kg": 78.5,
+      "athletes": [
+        {
+          "name": "Niko Nikolic",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 9,
+          "best_total_kg": 810.5,
+          "squat_best_kg": 322.5,
+          "bench_best_kg": 192.5,
+          "deadlift_best_kg": 300.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 816.1,
+          "projected_pi_half_kg": 60.2,
+          "glp_score": 9.3,
+          "inline_tags": []
+        },
+        {
+          "name": "Luke Capstick",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 4,
+          "best_total_kg": 722.5,
+          "squat_best_kg": 265.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 320.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 737.6,
+          "projected_pi_half_kg": 10.2,
+          "glp_score": 88.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jolan Taylor",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 672.5,
+          "squat_best_kg": 252.5,
+          "bench_best_kg": 135.0,
+          "deadlift_best_kg": 292.5,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 682.1,
+          "projected_pi_half_kg": 9.5,
+          "glp_score": 83.6,
+          "inline_tags": []
+        },
+        {
+          "name": "Aaron Subang",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 655.0,
+          "squat_best_kg": 237.5,
+          "bench_best_kg": 162.5,
+          "deadlift_best_kg": 255.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 657.6,
+          "projected_pi_half_kg": 13.3,
+          "glp_score": 81.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Lucas Franchuk",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 23,
+          "best_total_kg": 717.5,
+          "squat_best_kg": 235.0,
+          "bench_best_kg": 157.5,
+          "deadlift_best_kg": 242.5,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 636.2,
+          "projected_pi_half_kg": 56.6,
+          "glp_score": 80.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Amar Manoj",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "105",
+          "n_meets": 3,
+          "best_total_kg": 617.5,
+          "squat_best_kg": 232.5,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 240.0,
+          "last_meet_date": "2025-06-01",
+          "days_since_last_meet": 358,
+          "projected_total_kg": 620.5,
+          "projected_pi_half_kg": 4.7,
+          "glp_score": 78.2,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Hayden Siple",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 590.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 140.0,
+          "deadlift_best_kg": 245.0,
+          "last_meet_date": "2017-06-10",
+          "days_since_last_meet": 3271,
+          "projected_total_kg": 591.7,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 74.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jean Marco Bibat",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 582.5,
+          "squat_best_kg": 225.0,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 212.5,
+          "last_meet_date": "2018-02-10",
+          "days_since_last_meet": 3026,
+          "projected_total_kg": 584.2,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 73.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Michael Salaveria",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Jr",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 560.0,
+          "squat_best_kg": 210.0,
+          "bench_best_kg": 132.5,
+          "deadlift_best_kg": 222.5,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 568.2,
+          "projected_pi_half_kg": 9.7,
+          "glp_score": 71.2,
+          "inline_tags": []
+        },
+        {
+          "name": "Hayden Faus",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 520.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 100.0,
+          "deadlift_best_kg": 215.0,
+          "last_meet_date": "2025-07-12",
+          "days_since_last_meet": 317,
+          "projected_total_kg": 521.1,
+          "projected_pi_half_kg": 3.2,
+          "glp_score": 65.5,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "66",
+      "n_athletes": 2,
+      "projected_gap_kg": 83.9,
+      "athletes": [
+        {
+          "name": "Azeez Al-Shaikhli",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Jr",
+          "weight_class": "66",
+          "n_meets": 4,
+          "best_total_kg": 515.0,
+          "squat_best_kg": 190.0,
+          "bench_best_kg": 107.5,
+          "deadlift_best_kg": 220.0,
+          "last_meet_date": "2024-09-14",
+          "days_since_last_meet": 618,
+          "projected_total_kg": 520.4,
+          "projected_pi_half_kg": 5.8,
+          "glp_score": 80.2,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jaden Parker",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Sub-Jr",
+          "weight_class": "66",
+          "n_meets": 5,
+          "best_total_kg": 430.0,
+          "squat_best_kg": 145.0,
+          "bench_best_kg": 77.5,
+          "deadlift_best_kg": 207.5,
+          "last_meet_date": "2025-08-24",
+          "days_since_last_meet": 274,
+          "projected_total_kg": 436.5,
+          "projected_pi_half_kg": 13.8,
+          "glp_score": 67.2,
+          "inline_tags": []
+        }
+      ]
+    },
+    {
+      "weight_class": "83",
+      "n_athletes": 8,
+      "projected_gap_kg": 102.5,
+      "athletes": [
+        {
+          "name": "Daniel Remulla",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "Open",
+          "weight_class": "83",
+          "n_meets": 23,
+          "best_total_kg": 685.5,
+          "squat_best_kg": 240.0,
+          "bench_best_kg": 212.5,
+          "deadlift_best_kg": 270.0,
+          "last_meet_date": "2026-03-14",
+          "days_since_last_meet": 72,
+          "projected_total_kg": 723.7,
+          "projected_pi_half_kg": 21.0,
+          "glp_score": 97.8,
+          "inline_tags": []
+        },
+        {
+          "name": "Samuel Leeson",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "83",
+          "n_meets": 3,
+          "best_total_kg": 617.5,
+          "squat_best_kg": 232.5,
+          "bench_best_kg": 140.0,
+          "deadlift_best_kg": 245.0,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 621.2,
+          "projected_pi_half_kg": 6.6,
+          "glp_score": 86.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Samuel Zeng",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Jr",
+          "weight_class": "83",
+          "n_meets": 4,
+          "best_total_kg": 602.5,
+          "squat_best_kg": 227.5,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 240.0,
+          "last_meet_date": "2026-02-08",
+          "days_since_last_meet": 106,
+          "projected_total_kg": 615.6,
+          "projected_pi_half_kg": 13.4,
+          "glp_score": 84.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Matthias Bernhard",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "83",
+          "n_meets": 3,
+          "best_total_kg": 535.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 112.5,
+          "deadlift_best_kg": 225.0,
+          "last_meet_date": "2025-10-05",
+          "days_since_last_meet": 232,
+          "projected_total_kg": 544.9,
+          "projected_pi_half_kg": 6.5,
+          "glp_score": 73.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Braden Coldwell",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "83",
+          "n_meets": 3,
+          "best_total_kg": 532.5,
+          "squat_best_kg": 175.0,
+          "bench_best_kg": 132.5,
+          "deadlift_best_kg": 227.5,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 538.1,
+          "projected_pi_half_kg": 11.5,
+          "glp_score": 73.9,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Patrick Amaya",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "83",
+          "n_meets": 1,
+          "best_total_kg": 497.5,
+          "squat_best_kg": 180.0,
+          "bench_best_kg": 112.5,
+          "deadlift_best_kg": 205.0,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 498.6,
+          "projected_pi_half_kg": 3.2,
+          "glp_score": 69.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jhunren Baluyot",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "83",
+          "n_meets": 1,
+          "best_total_kg": 490.0,
+          "squat_best_kg": 180.0,
+          "bench_best_kg": 105.0,
+          "deadlift_best_kg": 205.0,
+          "last_meet_date": "2026-04-11",
+          "days_since_last_meet": 44,
+          "projected_total_kg": 491.1,
+          "projected_pi_half_kg": 3.2,
+          "glp_score": 67.9,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Kayden Bruce",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Jr",
+          "weight_class": "83",
+          "n_meets": 1,
+          "best_total_kg": 462.5,
+          "squat_best_kg": 157.5,
+          "bench_best_kg": 110.0,
+          "deadlift_best_kg": 195.0,
+          "last_meet_date": "2026-03-29",
+          "days_since_last_meet": 57,
+          "projected_total_kg": 465.2,
+          "projected_pi_half_kg": 5.8,
+          "glp_score": 67.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    }
+  ],
+  "homies": [
+    {
+      "name": "Josiah Rehkopf",
+      "is_homie": true,
+      "is_manual": false,
+      "status_tag": "Rookie",
+      "division": "Open",
+      "weight_class": "74",
+      "n_meets": 2,
+      "best_total_kg": 395.0,
+      "squat_best_kg": 123.8,
+      "bench_best_kg": 87.5,
+      "deadlift_best_kg": 176.2,
+      "last_meet_date": "2026-04-11",
+      "days_since_last_meet": 44,
+      "projected_total_kg": 388.8,
+      "projected_pi_half_kg": 2.3,
+      "glp_score": 61.2,
+      "inline_tags": [
+        "small-N warning"
+      ]
+    },
+    {
+      "name": "Aaron Subang",
+      "is_homie": true,
+      "is_manual": false,
+      "status_tag": "Developing",
+      "division": "Open",
+      "weight_class": "105",
+      "n_meets": 5,
+      "best_total_kg": 655.0,
+      "squat_best_kg": 237.5,
+      "bench_best_kg": 162.5,
+      "deadlift_best_kg": 255.0,
+      "last_meet_date": "2025-10-17",
+      "days_since_last_meet": 220,
+      "projected_total_kg": 657.6,
+      "projected_pi_half_kg": 13.3,
+      "glp_score": 81.1,
+      "inline_tags": []
+    },
+    {
+      "name": "Matthias Bernhard",
+      "is_homie": true,
+      "is_manual": false,
+      "status_tag": "Rookie",
+      "division": "Jr",
+      "weight_class": "83",
+      "n_meets": 3,
+      "best_total_kg": 535.0,
+      "squat_best_kg": 205.0,
+      "bench_best_kg": 112.5,
+      "deadlift_best_kg": 225.0,
+      "last_meet_date": "2025-10-05",
+      "days_since_last_meet": 232,
+      "projected_total_kg": 544.9,
+      "projected_pi_half_kg": 6.5,
+      "glp_score": 73.6,
+      "inline_tags": [
+        "small-N warning"
+      ]
+    },
+    {
+      "name": "Jhunren Baluyot",
+      "is_homie": true,
+      "is_manual": false,
+      "status_tag": "Frozen",
+      "division": "Open",
+      "weight_class": "83",
+      "n_meets": 1,
+      "best_total_kg": 490.0,
+      "squat_best_kg": 180.0,
+      "bench_best_kg": 105.0,
+      "deadlift_best_kg": 205.0,
+      "last_meet_date": "2026-04-11",
+      "days_since_last_meet": 44,
+      "projected_total_kg": 491.1,
+      "projected_pi_half_kg": 3.2,
+      "glp_score": 67.9,
+      "inline_tags": [
+        "small-N warning"
+      ]
+    }
+  ],
+  "closest_battles": [
+    {
+      "weight_class": "120+",
+      "n_athletes": 3,
+      "projected_gap_kg": 3.9,
+      "athletes": [
+        {
+          "name": "Jason Villa",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "120+",
+          "n_meets": 3,
+          "best_total_kg": 695.0,
+          "squat_best_kg": 277.5,
+          "bench_best_kg": 165.0,
+          "deadlift_best_kg": 265.0,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 708.9,
+          "projected_pi_half_kg": 8.0,
+          "glp_score": 74.5,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Steve Magistrale",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M2",
+          "weight_class": "120+",
+          "n_meets": 41,
+          "best_total_kg": 905.0,
+          "squat_best_kg": 265.0,
+          "bench_best_kg": 165.0,
+          "deadlift_best_kg": 275.0,
+          "last_meet_date": "2026-03-14",
+          "days_since_last_meet": 72,
+          "projected_total_kg": 705.0,
+          "projected_pi_half_kg": 107.9,
+          "glp_score": 73.9,
+          "inline_tags": []
+        },
+        {
+          "name": "Derek Poirier",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "120+",
+          "n_meets": 3,
+          "best_total_kg": 565.0,
+          "squat_best_kg": 195.0,
+          "bench_best_kg": 155.0,
+          "deadlift_best_kg": 215.0,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 570.4,
+          "projected_pi_half_kg": 6.8,
+          "glp_score": 61.9,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "93",
+      "n_athletes": 9,
+      "projected_gap_kg": 5.5,
+      "athletes": [
+        {
+          "name": "Sebastian Camargos",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 9,
+          "best_total_kg": 685.0,
+          "squat_best_kg": 250.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 285.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 686.9,
+          "projected_pi_half_kg": 14.8,
+          "glp_score": 89.7,
+          "inline_tags": []
+        },
+        {
+          "name": "Christian Santos",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 8,
+          "best_total_kg": 670.0,
+          "squat_best_kg": 250.0,
+          "bench_best_kg": 160.0,
+          "deadlift_best_kg": 270.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 681.4,
+          "projected_pi_half_kg": 15.0,
+          "glp_score": 87.8,
+          "inline_tags": []
+        },
+        {
+          "name": "Zachary Bauman",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 657.5,
+          "squat_best_kg": 242.5,
+          "bench_best_kg": 155.0,
+          "deadlift_best_kg": 260.0,
+          "last_meet_date": "2025-08-24",
+          "days_since_last_meet": 274,
+          "projected_total_kg": 659.3,
+          "projected_pi_half_kg": 4.2,
+          "glp_score": 86.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Glen Cormier",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M3",
+          "weight_class": "93",
+          "n_meets": 23,
+          "best_total_kg": 692.5,
+          "squat_best_kg": 232.5,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 232.5,
+          "last_meet_date": "2024-03-21",
+          "days_since_last_meet": 795,
+          "projected_total_kg": 610.0,
+          "projected_pi_half_kg": 35.3,
+          "glp_score": 76.4,
+          "inline_tags": []
+        },
+        {
+          "name": "Ralph Jose",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "93",
+          "n_meets": 2,
+          "best_total_kg": 595.0,
+          "squat_best_kg": 228.8,
+          "bench_best_kg": 113.8,
+          "deadlift_best_kg": 248.8,
+          "last_meet_date": "2025-04-26",
+          "days_since_last_meet": 394,
+          "projected_total_kg": 592.8,
+          "projected_pi_half_kg": 3.1,
+          "glp_score": 78.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Hoi Leung",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "M2",
+          "weight_class": "93",
+          "n_meets": 36,
+          "best_total_kg": 740.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 140.0,
+          "deadlift_best_kg": 230.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 575.1,
+          "projected_pi_half_kg": 73.6,
+          "glp_score": 74.0,
+          "inline_tags": []
+        },
+        {
+          "name": "Matthew Mattia",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Jr",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 565.0,
+          "squat_best_kg": 195.0,
+          "bench_best_kg": 120.0,
+          "deadlift_best_kg": 250.0,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 568.3,
+          "projected_pi_half_kg": 6.2,
+          "glp_score": 75.1,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Lorenzo San Juan",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Jr",
+          "weight_class": "93",
+          "n_meets": 1,
+          "best_total_kg": 542.5,
+          "squat_best_kg": 207.5,
+          "bench_best_kg": 125.0,
+          "deadlift_best_kg": 210.0,
+          "last_meet_date": "2025-11-29",
+          "days_since_last_meet": 177,
+          "projected_total_kg": 545.8,
+          "projected_pi_half_kg": 6.2,
+          "glp_score": 71.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Kevin Grant-Hose",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "M3",
+          "weight_class": "93",
+          "n_meets": 8,
+          "best_total_kg": 502.5,
+          "squat_best_kg": 192.5,
+          "bench_best_kg": 107.5,
+          "deadlift_best_kg": 200.0,
+          "last_meet_date": "2025-02-01",
+          "days_since_last_meet": 478,
+          "projected_total_kg": 500.3,
+          "projected_pi_half_kg": 17.3,
+          "glp_score": 61.3,
+          "inline_tags": []
+        }
+      ]
+    },
+    {
+      "weight_class": "74",
+      "n_athletes": 6,
+      "projected_gap_kg": 11.3,
+      "athletes": [
+        {
+          "name": "Luke Jin",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "Open",
+          "weight_class": "74",
+          "n_meets": 3,
+          "best_total_kg": 487.5,
+          "squat_best_kg": 182.5,
+          "bench_best_kg": 102.5,
+          "deadlift_best_kg": 207.5,
+          "last_meet_date": "2025-07-26",
+          "days_since_last_meet": 303,
+          "projected_total_kg": 493.7,
+          "projected_pi_half_kg": 4.9,
+          "glp_score": 71.8,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Cameron Slama",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 5,
+          "best_total_kg": 480.0,
+          "squat_best_kg": 187.5,
+          "bench_best_kg": 97.5,
+          "deadlift_best_kg": 195.0,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 482.4,
+          "projected_pi_half_kg": 17.5,
+          "glp_score": 67.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Matthew Wang",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 1,
+          "best_total_kg": 422.5,
+          "squat_best_kg": 147.5,
+          "bench_best_kg": 90.0,
+          "deadlift_best_kg": 185.0,
+          "last_meet_date": "2026-02-08",
+          "days_since_last_meet": 106,
+          "projected_total_kg": 427.4,
+          "projected_pi_half_kg": 6.0,
+          "glp_score": 65.1,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Mark Smithson",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 2,
+          "best_total_kg": 455.0,
+          "squat_best_kg": 138.8,
+          "bench_best_kg": 95.0,
+          "deadlift_best_kg": 162.5,
+          "last_meet_date": "2025-12-06",
+          "days_since_last_meet": 170,
+          "projected_total_kg": 401.5,
+          "projected_pi_half_kg": 11.4,
+          "glp_score": 67.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Myles Wong",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Sub-Jr",
+          "weight_class": "74",
+          "n_meets": 1,
+          "best_total_kg": 395.0,
+          "squat_best_kg": 137.5,
+          "bench_best_kg": 87.5,
+          "deadlift_best_kg": 170.0,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 397.7,
+          "projected_pi_half_kg": 16.0,
+          "glp_score": 58.8,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Josiah Rehkopf",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Open",
+          "weight_class": "74",
+          "n_meets": 2,
+          "best_total_kg": 395.0,
+          "squat_best_kg": 123.8,
+          "bench_best_kg": 87.5,
+          "deadlift_best_kg": 176.2,
+          "last_meet_date": "2026-04-11",
+          "days_since_last_meet": 44,
+          "projected_total_kg": 388.8,
+          "projected_pi_half_kg": 2.3,
+          "glp_score": 61.2,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "120",
+      "n_athletes": 4,
+      "projected_gap_kg": 62.5,
+      "athletes": [
+        {
+          "name": "Leonard Ancheta",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "120",
+          "n_meets": 9,
+          "best_total_kg": 725.0,
+          "squat_best_kg": 275.0,
+          "bench_best_kg": 167.5,
+          "deadlift_best_kg": 282.5,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 726.7,
+          "projected_pi_half_kg": 13.6,
+          "glp_score": 84.7,
+          "inline_tags": []
+        },
+        {
+          "name": "Tariq Codrington",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "120",
+          "n_meets": 1,
+          "best_total_kg": 662.5,
+          "squat_best_kg": 235.0,
+          "bench_best_kg": 152.5,
+          "deadlift_best_kg": 275.0,
+          "last_meet_date": "2025-04-26",
+          "days_since_last_meet": 394,
+          "projected_total_kg": 664.2,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 77.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jeremie Duckett",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "120",
+          "n_meets": 2,
+          "best_total_kg": 620.0,
+          "squat_best_kg": 227.5,
+          "bench_best_kg": 148.8,
+          "deadlift_best_kg": 235.0,
+          "last_meet_date": "2025-10-04",
+          "days_since_last_meet": 233,
+          "projected_total_kg": 614.5,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 72.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Sean Reid",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "M1",
+          "weight_class": "120",
+          "n_meets": 1,
+          "best_total_kg": 490.0,
+          "squat_best_kg": 120.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 220.0,
+          "last_meet_date": "2018-03-24",
+          "days_since_last_meet": 2984,
+          "projected_total_kg": 491.1,
+          "projected_pi_half_kg": 4.3,
+          "glp_score": 60.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    },
+    {
+      "weight_class": "105",
+      "n_athletes": 10,
+      "projected_gap_kg": 78.5,
+      "athletes": [
+        {
+          "name": "Niko Nikolic",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Established",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 9,
+          "best_total_kg": 810.5,
+          "squat_best_kg": 322.5,
+          "bench_best_kg": 192.5,
+          "deadlift_best_kg": 300.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 816.1,
+          "projected_pi_half_kg": 60.2,
+          "glp_score": 9.3,
+          "inline_tags": []
+        },
+        {
+          "name": "Luke Capstick",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 4,
+          "best_total_kg": 722.5,
+          "squat_best_kg": 265.0,
+          "bench_best_kg": 150.0,
+          "deadlift_best_kg": 320.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 737.6,
+          "projected_pi_half_kg": 10.2,
+          "glp_score": 88.6,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jolan Taylor",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 672.5,
+          "squat_best_kg": 252.5,
+          "bench_best_kg": 135.0,
+          "deadlift_best_kg": 292.5,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 682.1,
+          "projected_pi_half_kg": 9.5,
+          "glp_score": 83.6,
+          "inline_tags": []
+        },
+        {
+          "name": "Aaron Subang",
+          "is_homie": true,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 655.0,
+          "squat_best_kg": 237.5,
+          "bench_best_kg": 162.5,
+          "deadlift_best_kg": 255.0,
+          "last_meet_date": "2025-10-17",
+          "days_since_last_meet": 220,
+          "projected_total_kg": 657.6,
+          "projected_pi_half_kg": 13.3,
+          "glp_score": 81.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Lucas Franchuk",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Veteran",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 23,
+          "best_total_kg": 717.5,
+          "squat_best_kg": 235.0,
+          "bench_best_kg": 157.5,
+          "deadlift_best_kg": 242.5,
+          "last_meet_date": "2025-08-16",
+          "days_since_last_meet": 282,
+          "projected_total_kg": 636.2,
+          "projected_pi_half_kg": 56.6,
+          "glp_score": 80.1,
+          "inline_tags": []
+        },
+        {
+          "name": "Amar Manoj",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Rookie",
+          "division": "Jr",
+          "weight_class": "105",
+          "n_meets": 3,
+          "best_total_kg": 617.5,
+          "squat_best_kg": 232.5,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 240.0,
+          "last_meet_date": "2025-06-01",
+          "days_since_last_meet": 358,
+          "projected_total_kg": 620.5,
+          "projected_pi_half_kg": 4.7,
+          "glp_score": 78.2,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Hayden Siple",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 590.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 140.0,
+          "deadlift_best_kg": 245.0,
+          "last_meet_date": "2017-06-10",
+          "days_since_last_meet": 3271,
+          "projected_total_kg": 591.7,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 74.4,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Jean Marco Bibat",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 582.5,
+          "squat_best_kg": 225.0,
+          "bench_best_kg": 145.0,
+          "deadlift_best_kg": 212.5,
+          "last_meet_date": "2018-02-10",
+          "days_since_last_meet": 3026,
+          "projected_total_kg": 584.2,
+          "projected_pi_half_kg": 4.4,
+          "glp_score": 73.3,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        },
+        {
+          "name": "Michael Salaveria",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Developing",
+          "division": "Jr",
+          "weight_class": "105",
+          "n_meets": 5,
+          "best_total_kg": 560.0,
+          "squat_best_kg": 210.0,
+          "bench_best_kg": 132.5,
+          "deadlift_best_kg": 222.5,
+          "last_meet_date": "2025-09-21",
+          "days_since_last_meet": 246,
+          "projected_total_kg": 568.2,
+          "projected_pi_half_kg": 9.7,
+          "glp_score": 71.2,
+          "inline_tags": []
+        },
+        {
+          "name": "Hayden Faus",
+          "is_homie": false,
+          "is_manual": false,
+          "status_tag": "Frozen",
+          "division": "Open",
+          "weight_class": "105",
+          "n_meets": 1,
+          "best_total_kg": 520.0,
+          "squat_best_kg": 205.0,
+          "bench_best_kg": 100.0,
+          "deadlift_best_kg": 215.0,
+          "last_meet_date": "2025-07-12",
+          "days_since_last_meet": 317,
+          "projected_total_kg": 521.1,
+          "projected_pi_half_kg": 3.2,
+          "glp_score": 65.5,
+          "inline_tags": [
+            "small-N warning"
+          ]
+        }
+      ]
+    }
+  ],
+  "unranked": [
+    "Abed Renjbal",
+    "Aiden Chancay",
+    "Alex Allen",
+    "Anand Ghali",
+    "Andrew Caico",
+    "Asim Zaman",
+    "Caleb Paquet",
+    "Clyde Carruthers",
+    "Edward Tolentino",
+    "Ekoue Gaba",
+    "Erwin Yango",
+    "Evan Chan",
+    "Henry Nguyen Nguyen",
+    "John Arscott",
+    "John Robert Damasco",
+    "Jose Romero",
+    "Josiah Mongru",
+    "Justice Cormier",
+    "Liam O'Neill",
+    "Lorenz De Asis",
+    "Matt Rife",
+    "Michael Chang",
+    "Michael Fishman",
+    "Michael Van Hemmen",
+    "Miguel Neto",
+    "Nathan Luciw",
+    "Nathan Maxwell",
+    "Noah Lakhani",
+    "Patrick Pow",
+    "Prem Singh",
+    "Robert Andrews",
+    "Robert Smith",
+    "Sam Kruschat",
+    "Steven Caruso",
+    "Tay Za Tun",
+    "Tristian Huinink",
+    "Viktor Kosenko",
+    "Xander Werner"
+  ],
+  "methodology": "Projections use Engine C (Bayesian shrinkage with IPF-GL-stratified cohort slopes) summed across squat, bench, and deadlift to horizon = meet day. 95% prediction intervals are quadrature-summed per lift (sqrt of sum of squared half-widths). Class ordering: ascending by projected #1-vs-#2 gap; stale lifters (>2 yr since last meet) are shown but excluded from the gap calc. Status tags derive from meet count and tenure days. Lifters not found in OpenIPF appear under the Unranked Field section. Coverage: Canadian IPF-affiliated meets only. Not affiliated with the CPU or IPF.",
+  "n_athletes_matched": 42
+}
