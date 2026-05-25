@@ -29,6 +29,7 @@ from .data import ATHLETE_PROJ_TABLES, OPENIPF_PARQUET, QT_PARQUET, get_cursor
 from .data_loader import ensure_athlete_proj_tables
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
+from .scout import ScoutMeetRequest, build_scout_report
 
 
 @asynccontextmanager
@@ -432,6 +433,22 @@ def api_lifter_history(name: str) -> dict[str, Any]:
 @app.post("/api/manual/trajectory")
 def api_manual_trajectory(req: ManualTrajectoryRequest) -> dict[str, Any]:
     return _clean(build_manual_trajectory(req))
+
+
+@app.post("/api/scout/report")
+def api_scout_report(req: ScoutMeetRequest) -> dict[str, Any]:
+    """Generate a Vireo-style meet scouting report from a roster.
+
+    Manual roster paste only (no SimplMeet/LiftingCast scrapers in v1).
+    Fans out to search_lifters() + shrinkage_projection() per athlete,
+    groups by canonical weight class, and sorts classes by ascending
+    projected #1-vs-#2 gap.
+
+    See `backend/app/scout.py` for the model definitions and
+    `NEXT_STEPS.md` P7 "Meet scouting report generator" for the
+    phased rollout plan.
+    """
+    return _clean(build_scout_report(req).model_dump())
 
 
 # =========================================================================

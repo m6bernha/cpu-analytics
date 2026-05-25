@@ -223,3 +223,44 @@ class TestClassGroupingAndGapSort:
         report = build_scout_report(req)
         assert "Nobody Here" in report.unranked
         assert report.n_athletes_matched == 2
+
+
+# =============================================================================
+# Endpoint smoke
+# =============================================================================
+
+
+class TestScoutEndpoint:
+    """Smoke-test the POST /api/scout/report route via FastAPI TestClient."""
+
+    def test_endpoint_returns_200_with_valid_payload(self, precomputed):
+        from fastapi.testclient import TestClient
+
+        from backend.app.main import app
+
+        client = TestClient(app)
+        payload = {
+            "meet_name": "Endpoint Smoke",
+            "federation": "CPU",
+            "location": "Test City",
+            "meet_date": "2027-06-01",
+            "generator_name": "Test",
+            "generator_brand": "Vireo",
+            "roster": [
+                {"name": "Bob B"},
+                {"name": "Nobody Inexistent"},
+            ],
+        }
+        response = client.post("/api/scout/report", json=payload)
+        assert response.status_code == 200, response.text
+        body = response.json()
+        # Top-level sections present
+        for key in (
+            "request", "horizon_days", "horizon_months", "generated_at",
+            "class_blocks", "homies", "closest_battles", "unranked",
+            "methodology", "n_athletes_matched",
+        ):
+            assert key in body, f"missing top-level key: {key}"
+        # Bob matched, Nobody unranked
+        assert body["n_athletes_matched"] == 1
+        assert "Nobody Inexistent" in body["unranked"]
