@@ -485,6 +485,110 @@ export function fetchAthleteProjection(
   )
 }
 
+// ---------------------------------------------------------------------------
+// Scout: POST /api/scout/report
+// ---------------------------------------------------------------------------
+
+export interface ScoutRosterEntry {
+  name: string
+  is_homie?: boolean
+  manual_override?: ScoutManualOverride | null
+}
+
+export interface ScoutManualOverride {
+  best_total_kg: number
+  squat_best_kg?: number | null
+  bench_best_kg?: number | null
+  deadlift_best_kg?: number | null
+  weight_class?: string | null
+  sex?: string | null
+  last_meet_date?: string | null
+}
+
+export interface ScoutMeetRequest {
+  meet_name: string
+  federation: string
+  location: string
+  meet_date: string
+  generator_name: string
+  generator_brand: string
+  roster: ScoutRosterEntry[]
+}
+
+export type ScoutStatusTag =
+  | 'Rookie' | 'Developing' | 'Established' | 'Veteran' | 'Frozen' | 'Unmatched'
+
+export interface ScoutAthleteRow {
+  name: string
+  is_homie: boolean
+  is_manual: boolean
+  status_tag: ScoutStatusTag
+  division: string | null
+  weight_class: string | null
+  n_meets: number | null
+  best_total_kg: number | null
+  squat_best_kg: number | null
+  bench_best_kg: number | null
+  deadlift_best_kg: number | null
+  last_meet_date: string | null
+  days_since_last_meet: number | null
+  projected_total_kg: number | null
+  projected_pi_half_kg: number | null
+  glp_score: number | null
+  inline_tags: string[]
+}
+
+export interface ScoutClassBlock {
+  weight_class: string | null
+  n_athletes: number
+  projected_gap_kg: number | null
+  athletes: ScoutAthleteRow[]
+}
+
+export interface ScoutMeetReport {
+  request: ScoutMeetRequest
+  horizon_days: number
+  horizon_months: number
+  generated_at: string
+  class_blocks: ScoutClassBlock[]
+  homies: ScoutAthleteRow[]
+  closest_battles: ScoutClassBlock[]
+  unranked: string[]
+  methodology: string
+  n_athletes_matched: number
+}
+
+export async function postScoutReport(req: ScoutMeetRequest): Promise<ScoutMeetReport> {
+  const res = await fetch(`${API_BASE}/api/scout/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    let detail = ''
+    try {
+      const body = await res.json()
+      if (body?.detail) {
+        if (typeof body.detail === 'string') {
+          detail = body.detail
+        } else if (Array.isArray(body.detail)) {
+          detail = body.detail
+            .map((d: { msg?: string; loc?: (string | number)[] }) =>
+              d?.msg ? `${d.msg}` : JSON.stringify(d),
+            )
+            .join('; ')
+        } else {
+          detail = JSON.stringify(body.detail)
+        }
+      }
+    } catch {
+      // not JSON
+    }
+    throw new Error(detail || `HTTP ${res.status} ${res.statusText}`)
+  }
+  return res.json()
+}
+
 export async function postManualTrajectory(req: ManualRequest): Promise<LifterHistory> {
   const res = await fetch(`${API_BASE}/api/manual/trajectory`, {
     method: 'POST',

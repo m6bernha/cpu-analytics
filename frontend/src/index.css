@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Scout tab: hide the form + chrome under browser-print so a coach can
+   File → Print → Save as PDF and get a clean single-page report. The
+   .scout-report block is preserved. v1 stopgap until native PDF export
+   ships (Scout plan Phase 4). */
+@media print {
+  header,
+  footer,
+  nav[role='tablist'],
+  .scout-form {
+    display: none !important;
+  }
+  body,
+  html,
+  main {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .scout-report,
+  .scout-report * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #999 !important;
+  }
+}
