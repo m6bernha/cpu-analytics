@@ -5,13 +5,14 @@ in this repo, then read `NEXT_STEPS.md` for the current backlog.
 
 ## What this is
 
-A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Four primary tabs in the nav, plus an About page accessible by direct URL while it's being finalized:
+A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Five primary tabs in the nav, plus an About page accessible by direct URL while it's being finalized:
 
-1. **Progression** — cohort average total change over time, filterable.
+1. **Progression** — cohort average total change over time, filterable. X-axis options: Meet # / Days / Weeks / Months / Years / Career quartile / Bodyweight bucket (the last two are ordinal — trendline computes but projection short-circuits).
 2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
 4. **QT Squeeze** — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
-5. **About** (hidden from primary nav as of 2026-04-26 until publish-ready) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Still linked from every other tab's methodology block; route resolves via `?tab=about`.
+5. **Scout (BETA)** — Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report`. v1 stopgap PDF is browser-print (the form hides under `@media print` via `frontend/src/index.css`).
+6. **About** (hidden from primary nav as of 2026-04-26 until publish-ready) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Still linked from every other tab's methodology block; route resolves via `?tab=about`.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 
@@ -166,16 +167,19 @@ specifically, not the first meet of any kind.
 - **Timedelta-to-days conversion.** Pandas 3.0 + numpy 2.4 on Python 3.14 refuse `(dates - first).astype("timedelta64[D]").astype(float)` -- the supported resolutions are s/ms/us/ns. Use `((dates - first) / np.timedelta64(1, "D")).astype(float)` instead. Both patterns appear historically; new code must use the division form. See `athlete_projection.py` for the pattern.
 - **Backtest is offline-only.** `data/backtest_projection.py` walks forward over lifters with >= 15 SBD Raw meets, holds out last 3, projects via Engine C, and reports MAPE at 3/6/12/18 months vs log-linear and Gompertz baselines. NOT imported by any production module, NOT in CI. Artifact at `data/backtest_results.json` is committed for the About page. Ship gates: Engine C MAPE < 6% at 6mo, < 12% at 12mo; Engine C must not lose by > 2pp to alternatives at 12mo. Baseline (50-lifter Canada+IPF sample, commit `32918ad`) passes all gates.
 - **Render env var pinning enforced in CI.** Every `os.environ.get("*_URL")` call in `backend/app/` must have its key pinned in `render.yaml` under `envVars`. Enforced by `scripts/check_env_var_pinning.py`, run in the backend CI job before pytest. The pattern matters because env vars set only in the Render dashboard get silently dropped on a Blueprint re-provision, which surfaces as the corresponding feature regressing to its empty state. Rule landed 2026-04-26 after `QT_CURRENT_CSV_URL` (and `ATHLETE_PROJ_TABLES_URL` three days earlier) shipped through that exact failure mode. Same-day fix path when the check fires: (1) add `- key: <NAME>` plus `value: <url>` to render.yaml envVars, (2) verify in the Render dashboard the live value matches, (3) commit. To intentionally exclude a var (local-dev-only, etc.), add it to `ALLOWLIST` in the script with an inline reason comment.
+- **Scout endpoint is a fan-out wrapper, not a new model.** `backend/app/scout.py` `build_scout_report` resolves each roster name via `search_lifters()` (exact case-insensitive match, top-1), then projects each match via `shrinkage_projection()` directly (no HTTP self-loop). Per-lift PIs are summed in quadrature across S/B/D: `sqrt(sum((upper-lower)^2/4))`. Status tags derive from `n_meets + tenure_days` per the locked cutoffs (Rookie / Developing / Established / Veteran / Frozen / Unmatched); see `classify_status()` for the exact ladder. Class blocks sort ascending by projected #1-vs-#2 gap, stale lifters (>2 yr since last meet) excluded from the gap calc but still shown. Do NOT replace the fan-out with a separate aggregate SQL — the projection math relies on `_load_lifter_history` + bracket logic that has to run per-lifter. If projection performance becomes an issue, the right fix is caching at the projection layer, not at the scout layer.
+- **Bodyweight bucket x-axis is ordinal, not time.** `backend/app/progression.py` `_ORDINAL_AXES = {"Career quartile", "Bodyweight bucket"}` gates the projection short-circuit — trendline still computes but the forward-projection band is skipped because a lifter doesn't progress through bodyweight buckets in time order (they can move up or down classes). Bucket derivation is `(BodyweightKg // 10) * 10`, requires non-null `BodyweightKg` (filtered out at the pandas step). Backend SELECT now always includes `BodyweightKg`. Frontend dropdown order: time axes first, then Career quartile, then Bodyweight bucket. The per-lift function rejects both ordinal axes with an `_empty_lift_response` because deriving them per-lift would need a separate SQL — a future session can backfill if needed.
 
 ## Pre-push checklist
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  325 backend tests, 1 skipped, ~67 s, covering progression, lifters,
-  projection, athlete projection (Engine C + D), QT (federal + provincial
-  scrapers), manual entry, security, weight class Hypothesis, and
-  concurrency. Always use `python -m pytest`, NOT plain `pytest`, or
-  the `backend.app` imports fail with `ModuleNotFoundError`.
+  348 backend tests, 1 skipped, ~65 s, covering progression (incl.
+  Bodyweight bucket + per-lift guard), lifters, projection, athlete
+  projection (Engine C + D), QT (federal + provincial scrapers), manual
+  entry, scout, security, weight class Hypothesis, and concurrency.
+  Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
+  imports fail with `ModuleNotFoundError`.
 - `cd frontend && npm run test` -- 53 Vitest unit tests (useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard). Runs in jsdom, ~4 s.

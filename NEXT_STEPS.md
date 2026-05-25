@@ -9,6 +9,46 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## Session plan -- 2026-05-25 (multi-item polish sweep + Meet Scout MVP) -- SHIPPED
+
+Long sprint to drain the backlog. Plan at
+`~/.claude/plans/where-did-we-leave-elegant-sifakis.md`. Eight commits
+pushed; pytest 325 -> 348, vitest 53/53, frontend builds clean. Main
+bundle 347 -> 362 KB (+15 KB raw, +3 KB gzip).
+
+| Item | Commit | Outcome |
+|---|---|---|
+| 1. Branch cleanup | (local only) | Deleted 5 stale branches locally. Remote deletion blocked by auto-classifier; user to clean via GitHub UI. |
+| 2a. Gompertz vs Engine C investigation | `bd4ab6f` | Read-only. Gompertz wins at every horizon (max +1.63pp at 18mo) -- below the v2-ship threshold but trend widens. Captured as new P5 entry "Gompertz baseline evaluation -- v2 candidate". |
+| 2b. Engine D PI-width eyeball | `8f9c89b` | 3 reference lifters (Mark Tobias / Bruce Markham / Matthias Bernhard). No widths >100 kg per lift. Synthesis is reasonable. 2026-05-01 "too tight?" follow-up resolved. |
+| 2c. Bodyweight bucket x-axis | `a4018d6`, `752085c` | New `x_axis="Bodyweight bucket"` on Progression (10 kg buckets). Projection short-circuits like Career quartile. Per-lift function hardened to degrade gracefully on unsupported ordinal axes (pre-existing Career quartile crash also fixed). 4 new tests. |
+| 3a. Scout backend | `27c0653` | New `backend/app/scout.py` (Pydantic models + `build_scout_report` fan-out). 18 tests, 333 -> 347 total pytest. Reuses search_lifters + shrinkage_projection. |
+| 3b. Scout endpoint | `3a98cce` | `POST /api/scout/report` in main.py + TestClient smoke test. 348 total pytest. |
+| 3c. Scout frontend | `2ba3a93` | New `frontend/src/tabs/Scout.tsx` + print-friendly CSS. App.tsx TABS gains 'scout' (beta). |
+| 3d. Live smoke vs Sunny Daze 2026 | `d1fa451` | POSTed 80-man roster to live endpoint. 42 matched / 38 unranked / 7 classes / 4 homies -- mirrors the reference PDF exactly. Verdict: production-ready. Artifacts: `docs/scout-smoke/sunny-daze-2026/`. |
+
+**Live:**
+- `https://cpu-analytics.vercel.app/?tab=scout` -- new Scout tab.
+- `https://cpu-analytics.vercel.app/?tab=progression&x_axis=Bodyweight%20bucket` -- new x-axis option.
+- `/api/scout/report` POST endpoint live.
+
+**Open follow-ups:**
+- Remote branch deletion: 5 branches (work/bw-glp-progression,
+  work/compare-cards, work/playwright-scaffold, work/vitest-useurlstate,
+  ci/claude-security-review) still exist on origin. Local deletion
+  shipped but remote was blocked by the auto-classifier. Delete via
+  GitHub UI or grant a Bash permission rule for `git push origin --delete`.
+- Scout v2 candidates: manual-override UI in the frontend form; native
+  PDF export via html-to-image (Phase 4 of the Scout plan); Sex column
+  in the response (for women's-only filters); per-class methodology
+  copy in the rendered report.
+- Per-lift progression bucket support: currently degrades to empty
+  when the per-lift toggle picks Career quartile or Bodyweight bucket.
+  A future session can backfill by lifting the derive block into a
+  shared helper.
+
+---
+
 ## Session plan -- 2026-05-01 (backlog trio: env cleanup + Engine D RE refactor + global backtest) -- SHIPPED
 
 Backlog trio plan from `~/.claude/plans/backlog-trio-2026-04-30.md`
@@ -1442,7 +1482,15 @@ These are multi-session features with significant scope and design
 decisions that should only be picked up when Matthias is present to
 steer. Captured here so they are not lost.
 
-### Meet scouting report generator (Vireo-style)
+### Meet scouting report generator (Vireo-style) -- MVP SHIPPED 2026-05-25
+
+**Phase 1 MVP shipped end-to-end** in the 2026-05-25 polish-sweep
+sprint. Live at `https://cpu-analytics.vercel.app/?tab=scout` with the
+endpoint at `POST /api/scout/report`. Live smoke against the 80-man
+Sunny Daze 2026 roster matched the reference PDF exactly
+(42 matched / 38 unranked / 7 classes / 4 homies). See sprint section
+"2026-05-25 polish sweep + Scout MVP" at the top of this file and
+artifacts at `docs/scout-smoke/sunny-daze-2026/`.
 
 Pitch: a coach / athlete / meet director pastes a roster (or, later, a
 SimplMeet / LiftingCast URL) and the app generates a per-meet scouting
