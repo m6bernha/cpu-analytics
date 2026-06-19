@@ -9,6 +9,36 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-06-19 -- Scout (BETA) pulled from public nav -- NEEDS MORE WORK before relaunch
+
+Scout was removed from the public navigation on 2026-06-19. It is no longer
+reachable by normal site visitors. This is a deliberate "take it down for
+now" pull, not a deletion -- all code and the backend endpoint are intact.
+
+**What changed:**
+- `frontend/src/tabs/App.tsx` `TABS` array no longer includes the `scout`
+  entry, so the tab button is gone from the header nav.
+- `scout` is still in `VALID_TABS`, so `https://cpu-analytics.vercel.app/?tab=scout`
+  still resolves for dev/testing. `Scout.tsx`, the `lib/api.ts` fetcher, the
+  `@media print` CSS, and the `POST /api/scout/report` backend endpoint are
+  all untouched and still live.
+
+**Reason for the pull:** _TBD -- fill in the specific defect / gap that
+triggered the takedown so the relaunch checklist is concrete._
+
+**To relaunch:** re-add `{ key: 'scout', label: 'Scout', beta: true }` to the
+`TABS` array in `frontend/src/App.tsx` (and drop the "pulled" notes from
+CLAUDE.md item 5, README intro, and docs/ARCHITECTURE.md). `npm run build`,
+then confirm the tab renders and `POST /api/scout/report` still returns.
+
+**Known Scout follow-ups to clear before (or as part of) relaunch** -- the
+v2 candidates already logged below: manual-override UI in the frontend form;
+native PDF export via html-to-image (Phase 4 of the Scout plan); Sex column
+in the response (for women's-only filters); per-class methodology copy in the
+rendered report. Plus whatever the takedown reason above turns out to be.
+
+---
+
 ## Session plan -- 2026-05-25 (multi-item polish sweep + Meet Scout MVP) -- SHIPPED
 
 Long sprint to drain the backlog. Plan at
@@ -28,7 +58,9 @@ bundle 347 -> 362 KB (+15 KB raw, +3 KB gzip).
 | 3d. Live smoke vs Sunny Daze 2026 | `d1fa451` | POSTed 80-man roster to live endpoint. 42 matched / 38 unranked / 7 classes / 4 homies -- mirrors the reference PDF exactly. Verdict: production-ready. Artifacts: `docs/scout-smoke/sunny-daze-2026/`. |
 
 **Live:**
-- `https://cpu-analytics.vercel.app/?tab=scout` -- new Scout tab.
+- `https://cpu-analytics.vercel.app/?tab=scout` -- new Scout tab. (Pulled
+  from the public nav 2026-06-19 pending more work; route still resolves. See
+  the 2026-06-19 section at the top of this file.)
 - `https://cpu-analytics.vercel.app/?tab=progression&x_axis=Bodyweight%20bucket` -- new x-axis option.
 - `/api/scout/report` POST endpoint live.
 

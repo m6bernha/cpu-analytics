@@ -16,16 +16,19 @@ import { useUrlState } from './lib/useUrlState'
 type TabKey = 'progression' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
 
 // Tab order: most-used analytics first, Projection as the new BETA feature,
-// Lifter Lookup for individual use, QT Squeeze, then Scout (BETA — new meet
-// report generator). About is intentionally hidden from the nav while it
-// isn't publish-ready (the route still resolves via ?tab=about for direct
-// dev access — see VALID_TABS below).
+// Lifter Lookup for individual use, then QT Squeeze.
+//
+// Scout (BETA) and About are intentionally hidden from the nav. Scout was
+// pulled from the public nav on 2026-06-19 pending more work before relaunch
+// (see NEXT_STEPS.md "Scout pulled from public nav"); About isn't
+// publish-ready yet. Both routes still resolve via ?tab=scout / ?tab=about
+// for direct dev access — see VALID_TABS below. To relaunch Scout, re-add its
+// entry here.
 const TABS: { key: TabKey; label: string; beta?: boolean }[] = [
   { key: 'progression', label: 'Progression' },
   { key: 'projection', label: 'Athlete Projection', beta: true },
   { key: 'lookup', label: 'Lifter Lookup' },
   { key: 'qt', label: 'QT Squeeze' },
-  { key: 'scout', label: 'Scout', beta: true },
 ]
 
 const VALID_TABS: TabKey[] = [

@@ -5,13 +5,13 @@ in this repo, then read `NEXT_STEPS.md` for the current backlog.
 
 ## What this is
 
-A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Five primary tabs in the nav, plus an About page accessible by direct URL while it's being finalized:
+A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Four primary tabs in the nav, plus Scout (BETA) and About pages reachable only by direct URL: Scout was pulled from the public nav on 2026-06-19 pending more work before relaunch (see NEXT_STEPS.md), and About is still being finalized.
 
 1. **Progression** — cohort average total change over time, filterable. X-axis options: Meet # / Days / Weeks / Months / Years / Career quartile / Bodyweight bucket (the last two are ordinal — trendline computes but projection short-circuits).
 2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
 4. **QT Squeeze** — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
-5. **Scout (BETA)** — Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report`. v1 stopgap PDF is browser-print (the form hides under `@media print` via `frontend/src/index.css`).
+5. **Scout (BETA)** — _Pulled from the primary nav on 2026-06-19, removed from public view pending more work before relaunch (flagged in NEXT_STEPS.md). The route still resolves via `?tab=scout` for dev, and the `POST /api/scout/report` backend endpoint stays live. To relaunch, re-add the `scout` entry to the `TABS` array in `frontend/src/App.tsx`._ Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report`. v1 stopgap PDF is browser-print (the form hides under `@media print` via `frontend/src/index.css`).
 6. **About** (hidden from primary nav as of 2026-04-26 until publish-ready) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Still linked from every other tab's methodology block; route resolves via `?tab=about`.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.

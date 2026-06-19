@@ -168,7 +168,7 @@ Registered keys (as of 2026-04):
 
 | Key | Scope | Example |
 |---|---|---|
-| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `scout`, `about` |
+| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `scout`, `about` (`scout` and `about` resolve by direct URL only — both are hidden from the nav; `scout` was pulled 2026-06-19 pending more work) |
 | `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile`, `Bodyweight bucket` |
 | `mode` | Lifter Lookup | `search`, `compare`, `manual` |
 | `lifter` | Lifter Lookup search | `Matthias Bernhard` |
