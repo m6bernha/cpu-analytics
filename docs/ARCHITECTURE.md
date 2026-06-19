@@ -168,8 +168,8 @@ Registered keys (as of 2026-04):
 
 | Key | Scope | Example |
 |---|---|---|
-| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `about` |
-| `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile` |
+| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `scout`, `about` |
+| `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile`, `Bodyweight bucket` |
 | `mode` | Lifter Lookup | `search`, `compare`, `manual` |
 | `lifter` | Lifter Lookup search | `Matthias Bernhard` |
 | `lifters` | Lifter Lookup compare | `Matthias Bernhard,Alex Mardell` |
