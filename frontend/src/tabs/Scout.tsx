@@ -119,6 +119,25 @@ export default function Scout({ isActive }: ScoutProps) {
 
   const report = mutation.data
 
+  // Display-only sex filter over the generated report. Rows with unknown
+  // sex (manual overrides without one) are hidden while a filter is on.
+  const [sexFilter, setSexFilter] = useState<'all' | 'F' | 'M'>('all')
+  const visibleReport = useMemo<ScoutMeetReport | undefined>(() => {
+    if (!report || sexFilter === 'all') return report
+    const keep = (a: { sex: string | null }) => a.sex === sexFilter
+    const filterBlocks = (blocks: ScoutClassBlock[]) =>
+      blocks
+        .map((cb) => ({ ...cb, athletes: cb.athletes.filter(keep) }))
+        .filter((cb) => cb.athletes.length > 0)
+        .map((cb) => ({ ...cb, n_athletes: cb.athletes.length }))
+    return {
+      ...report,
+      class_blocks: filterBlocks(report.class_blocks),
+      closest_battles: filterBlocks(report.closest_battles),
+      homies: report.homies.filter(keep),
+    }
+  }, [report, sexFilter])
+
   return (
     <div className={isActive ? 'space-y-6' : 'space-y-6 hidden'}>
       <section className="scout-form">
@@ -232,7 +251,34 @@ export default function Scout({ isActive }: ScoutProps) {
         </form>
       </section>
 
-      {report && <ReportView report={report} />}
+      {report && (
+        <div className="print:hidden flex items-center gap-2">
+          <span className="text-zinc-500 text-xs uppercase tracking-wide">Show</span>
+          {(
+            [
+              ['all', 'All'],
+              ['F', 'Women'],
+              ['M', 'Men'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setSexFilter(value)}
+              aria-pressed={sexFilter === value}
+              className={
+                'px-3 py-1 rounded text-xs transition-colors ' +
+                (sexFilter === value
+                  ? 'bg-zinc-800 text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {visibleReport && <ReportView report={visibleReport} />}
     </div>
   )
 }
@@ -340,6 +386,13 @@ function ReportView({ report }: { report: ScoutMeetReport }) {
 
       <section className="space-y-6">
         <h2 className="text-zinc-100 text-base font-semibold">Per-class deep dive</h2>
+        <p className="text-zinc-500 text-xs -mt-4 max-w-2xl">
+          Classes are ordered by the projected gap between #1 and #2, tightest
+          battle first. Projections run each athlete's per-lift Engine C
+          forecast to meet day; ±PI is the 95% interval summed across S/B/D.
+          Athletes more than 2 years out from their last meet stay listed but
+          are excluded from the gap calculation.
+        </p>
         {report.class_blocks.map((cb, i) => (
           <ClassBlock key={`class-${cb.weight_class}-${i}`} block={cb} rank={i + 1} />
         ))}

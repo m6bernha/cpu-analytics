@@ -523,6 +523,7 @@ export interface ScoutAthleteRow {
   is_homie: boolean
   is_manual: boolean
   status_tag: ScoutStatusTag
+  sex: string | null
   division: string | null
   weight_class: string | null
   n_meets: number | null

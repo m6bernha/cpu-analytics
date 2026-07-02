@@ -9,33 +9,24 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
-## 2026-06-19 -- Scout (BETA) pulled from public nav -- NEEDS MORE WORK before relaunch
+## 2026-07-01 -- Scout (BETA) RELAUNCHED to public nav
 
-Scout was removed from the public navigation on 2026-06-19. It is no longer
-reachable by normal site visitors. This is a deliberate "take it down for
-now" pull, not a deletion -- all code and the backend endpoint are intact.
+Scout returned to the public navigation on 2026-07-01 as part of the
+productization sprint. The 2026-06-19 pull never had a recorded defect (the
+"reason" field stayed TBD), so the relaunch cleared the logged v2 candidates
+instead:
 
-**What changed:**
-- `frontend/src/tabs/App.tsx` `TABS` array no longer includes the `scout`
-  entry, so the tab button is gone from the header nav.
-- `scout` is still in `VALID_TABS`, so `https://cpu-analytics.vercel.app/?tab=scout`
-  still resolves for dev/testing. `Scout.tsx`, the `lib/api.ts` fetcher, the
-  `@media print` CSS, and the `POST /api/scout/report` backend endpoint are
-  all untouched and still live.
-
-**Reason for the pull:** _TBD -- fill in the specific defect / gap that
-triggered the takedown so the relaunch checklist is concrete._
-
-**To relaunch:** re-add `{ key: 'scout', label: 'Scout', beta: true }` to the
-`TABS` array in `frontend/src/App.tsx` (and drop the "pulled" notes from
-CLAUDE.md item 5, README intro, and docs/ARCHITECTURE.md). `npm run build`,
-then confirm the tab renders and `POST /api/scout/report` still returns.
-
-**Known Scout follow-ups to clear before (or as part of) relaunch** -- the
-v2 candidates already logged below: manual-override UI in the frontend form;
-native PDF export via html-to-image (Phase 4 of the Scout plan); Sex column
-in the response (for women's-only filters); per-class methodology copy in the
-rendered report. Plus whatever the takedown reason above turns out to be.
+- **Sex column** in `ScoutAthleteRow` (backend + frontend types), sourced
+  from OpenIPF `Sex` or the manual override's `sex` field. SHIPPED.
+- **Women's / Men's display filter** above the rendered report
+  (`print:hidden`, client-side, rows with unknown sex hidden while a filter
+  is active). SHIPPED.
+- **Per-class methodology copy** under the deep-dive heading (gap ordering,
+  PI quadrature, stale-exclusion rule). SHIPPED.
+- **Manual-override UI** in the form: still open, v2 candidate. The API
+  accepts `manual_override` per roster entry; the form doesn't expose it.
+- **Native PDF export** via html-to-image (Phase 4): still open, browser
+  print remains the v1 path.
 
 ---
 
