@@ -13,7 +13,7 @@
 // depends on the lifter's latest_weight_class. The era toggle switches between
 // 2025 and 2027 standards.
 
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
