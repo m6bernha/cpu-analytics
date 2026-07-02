@@ -17,6 +17,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
+import { usePinnedLifters } from '../lib/pinnedLifters'
 import { ShareButton } from '../lib/ShareButton'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
@@ -543,6 +544,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
   // would flood history.
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query, 300)
+  const { pinned, isPinned, togglePin } = usePinnedLifters()
 
   const searchQuery = useQuery<LifterSearchResult[]>({
     queryKey: ['lifter-search', debouncedQuery],
@@ -691,6 +693,30 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
               // autoFocus removed: on phones it pops the keyboard and pushes content down
             />
 
+            {pinned.length > 0 && (
+              <div className="mt-3">
+                <div className="text-zinc-500 text-[11px] uppercase tracking-wide mb-1.5">
+                  My lifters
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {pinned.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setSelectedName(name)}
+                      className={
+                        'px-2.5 py-1 rounded-full text-xs border transition-colors ' +
+                        (selectedName === name
+                          ? 'border-[#569cd6] text-zinc-100 bg-zinc-800'
+                          : 'border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100')
+                      }
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4">
               {query.trim().length > 0 && query.trim().length < 2 && (
                 <p className="text-zinc-500 text-sm">Type at least 2 characters.</p>
@@ -710,11 +736,11 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                 <>
                   <ul className="divide-y divide-zinc-800">
                     {searchQuery.data.map((lifter) => (
-                      <li key={lifter.Name}>
+                      <li key={lifter.Name} className="flex items-stretch">
                         <button
                           onClick={() => setSelectedName(lifter.Name)}
                           className={
-                            'w-full text-left py-2 px-2 -mx-2 rounded hover:bg-zinc-900 transition-colors ' +
+                            'flex-1 text-left py-2 px-2 -mx-2 rounded hover:bg-zinc-900 transition-colors ' +
                             (selectedName === lifter.Name ? 'bg-zinc-900' : '')
                           }
                         >
@@ -723,6 +749,24 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                             {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
                             {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
                           </div>
+                        </button>
+                        <button
+                          onClick={() => togglePin(lifter.Name)}
+                          aria-label={
+                            isPinned(lifter.Name)
+                              ? `Unpin ${lifter.Name} from My lifters`
+                              : `Pin ${lifter.Name} to My lifters`
+                          }
+                          aria-pressed={isPinned(lifter.Name)}
+                          title={isPinned(lifter.Name) ? 'Unpin' : 'Pin to My lifters'}
+                          className={
+                            'px-2 rounded transition-colors focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 ' +
+                            (isPinned(lifter.Name)
+                              ? 'text-amber-400 hover:text-amber-300'
+                              : 'text-zinc-600 hover:text-zinc-300')
+                          }
+                        >
+                          {isPinned(lifter.Name) ? '★' : '☆'}
                         </button>
                       </li>
                     ))}
