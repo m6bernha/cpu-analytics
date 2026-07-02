@@ -9,6 +9,62 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-07-02 -- Productization sprint -- SHIPPED (16 commits, 9df7b7b..1b605db)
+
+Full-codebase review (3 parallel agents: backend / frontend / product) then
+the approved roadmap, all deployed and verified live:
+
+| Item | Commit |
+|---|---|
+| og:image share card + twitter:card + canonical + robots.txt + sitemap.xml | `9df7b7b` |
+| `/api/meta/freshness` + header badge (amber past 35 days stale) | `acd0971` |
+| Welcome hero (3 start-here cards, localStorage dismiss) + QT Squeeze renamed "Qualifying Totals" + About public in nav | `28d34c2` |
+| Per-lift progression empty state | `7d9583b` |
+| Share buttons everywhere + native share sheet on touch | `f9a85f2` |
+| My-lifters pin list (localStorage) | `85364a6` |
+| CSV export (lifter meets + cohort curve) | `a11f872` |
+| Scout relaunch (sex filter, methodology copy, public nav) | `fa8cf61` + `20c3588` |
+| Backend: constants.py, print->logging, download retry, /api/ready fix | `e4a681d` |
+| AthleteProjection.tsx split (1589 -> 405-line orchestrator + 5 modules) | `b96f568` |
+| athlete_projection.py split (tables / engine_c / engine_d + facade) | `0a4eb36` (parallel session) |
+
+## 2026-07-02 -- Scout WIP lock + bundle regression found
+
+- **Scout locked as WIP** (`SCOUT_LOCKED = true` in
+  `frontend/src/tabs/Scout.tsx`, commit `b2f38c7`). Tab stays public, page
+  shows a WIP notice with the form greyed out and disabled. Matthias's
+  call: the page was vibe-coded and needs validation before anyone uses
+  it. Unlock checklist before flipping the flag: manual-override form UI,
+  native PDF export, and a real-roster accuracy pass (name matching,
+  stale-lifter handling).
+- **Main-bundle regression (P1):** the Dependabot lockfile bump (#16,
+  `f9c1c0d`) moved Vite 8 onto rolldown chunking, which inlines Recharts
+  into the entry chunk. Main bundle went ~369 KB (108.9 KB gzip) to
+  ~722 KB (211 KB gzip), live in prod since the sprint push. Recharts is
+  entry-reachable through `Progression.tsx`'s static import, so the fix
+  is either rolldown `codeSplitting`/`advancedChunks` config or
+  lazy-loading the Progression/QT chart subtrees. One focused session.
+
+---
+
+**New follow-ups from the sprint (unstarted):**
+
+- **Manual (Matthias):** submit sitemap.xml in Google Search Console;
+  analytics (Plausible) + Sentry (skipped item 5); Render Hobby $7/mo
+  upgrade (skipped item 6, kills the 20-50 s cold start).
+- Pipeline health surface: `/api/pipeline-health` + QT-feed staleness
+  banner + GHA failure notifications.
+- API envelope consistency + `/api/v1/` prefix (do before any external
+  API consumer exists).
+- Real-phone mobile pass (chart aspect ratios, tap targets).
+- Accessibility: focus-visible rings on all inputs, skip-to-content link,
+  manual-entry form validation feedback.
+- Surface Compare as a first-class entry point.
+- CI e2e job has no backend, fails at baseline with ERR_CONNECTION_REFUSED
+  (verified pre-existing). Fix = backend service or API mocks in the job.
+
+---
+
 ## 2026-07-01 -- Scout (BETA) RELAUNCHED to public nav
 
 Scout returned to the public navigation on 2026-07-01 as part of the

@@ -6,9 +6,8 @@ A web app that turns the OpenPowerlifting dataset into six live views a
 Canadian raw powerlifter (or their coach) actually uses: cohort progression,
 per-lifter Bayesian-shrinkage projection, per-lifter history, CPU
 qualifying-total coverage (federal + provincial), a Vireo-style meet scouting
-report generator (Scout, BETA, relaunched 2026-07-01 with a sex filter and
-per-class methodology copy), and an About page with full methodology and live
-backtest MAPE.
+report generator (Scout, locked as work in progress since 2026-07-02), and an
+About page with full methodology and live backtest MAPE.
 
 Scoped to Canadian lifters in IPF-sanctioned meets (CPU domestic and IPF
 international). Data refreshed weekly from
@@ -46,7 +45,7 @@ reference points.
 
 ## What it does
 
-Five tabs, each answering one concrete question. All views share filters for
+Six tabs, each answering one concrete question. All views share filters for
 sex, weight class, equipment, event, division, and age bracket, and URL state
 is shareable (every meaningful view has a clean permalink).
 
@@ -87,13 +86,25 @@ Three modes:
 - **Manual**: enter hypothetical meets for lifters not in the dataset, or
   project a planned total at a future date.
 
-### 4. QT Squeeze — "what percent of Open lifters meet the new standard?"
+### 4. Qualifying Totals — "what percent of lifters meet the standard?"
 
-Four-block table (men's Nationals, men's Regionals, women's Nationals,
-women's Regionals) showing the fraction of Open lifters whose 24-month-best
-total clears each era's qualifying standard: pre-2025, 2025, and the
-forward-looking 2027 cutoff. Answers "how hard did they just make it, and
-how hard is it about to get" in one view.
+Unified filter-panel view over live-scraped CPU federal and provincial
+qualifying totals (all 10 provinces routed: 6 scraped, 2 via CPU Regional,
+2 open-entry). Pick sex, level (Nationals / Regionals / Provincials), age
+division, effective year, and region or province; the table shows the
+fraction of lifters whose 24-month-best SBD total clears each class's
+standard. Refreshed weekly from powerlifting.ca and the provincial sources.
+
+### 6. Scout (BETA, locked) — "who is showing up to this meet and how do they stack?"
+
+Work in progress. The tab is public but the page shows a WIP notice with a
+greyed-out, disabled form while the roster layer gets validated. The goal:
+paste a meet roster (one name per line, `@name` to tag your own lifters),
+pick a meet date, and get a scouting report: per-class projected standings
+with 95% intervals, classes ordered by the tightest projected #1-vs-#2
+battle, status tags (Rookie through Veteran), and an unranked appendix for
+names not in OpenIPF. Unlock is a one-line flip (`SCOUT_LOCKED` in
+`frontend/src/tabs/Scout.tsx`).
 
 ---
 
