@@ -25,6 +25,8 @@ import logging
 import os
 import shutil
 import tempfile
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -39,23 +41,51 @@ REQUIRED_QT_CURRENT_COLUMNS: frozenset[str] = frozenset({
 })
 
 
-def _download(url: str, dest: Path) -> None:
-    """Atomic HTTP download. Same shape as data_loader._download."""
+def _download(url: str, dest: Path, max_retries: int = 3) -> None:
+    """Atomic HTTP download with exponential backoff retry.
+
+    Retries up to max_retries times on URLError, HTTPError 429/5xx,
+    timeout, or connection reset.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     log.info("downloading %s -> %s", url, dest)
-    with tempfile.NamedTemporaryFile(
-        dir=dest.parent, prefix=dest.name + ".", suffix=".tmp", delete=False,
-    ) as tmp_file:
-        tmp_path = Path(tmp_file.name)
-        with urllib.request.urlopen(url, timeout=60) as resp:  # noqa: S310
-            shutil.copyfileobj(resp, tmp_file)
-    try:
-        tmp_path.replace(dest)
-    except OSError:
-        tmp_path.unlink(missing_ok=True)
-        raise
-    size_kb = dest.stat().st_size / 1024
-    log.info("wrote %s (%.1f KB)", dest, size_kb)
+
+    backoff_secs = [2, 8]  # exponential backoff: 2s, then 8s
+
+    for attempt in range(max_retries):
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=dest.parent, prefix=dest.name + ".", suffix=".tmp", delete=False,
+            ) as tmp_file:
+                tmp_path = Path(tmp_file.name)
+                with urllib.request.urlopen(url, timeout=60) as resp:  # noqa: S310
+                    shutil.copyfileobj(resp, tmp_file)
+            try:
+                tmp_path.replace(dest)
+            except OSError:
+                tmp_path.unlink(missing_ok=True)
+                raise
+            size_kb = dest.stat().st_size / 1024
+            log.info("wrote %s (%.1f KB)", dest, size_kb)
+            return
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            TimeoutError,
+            ConnectionResetError,
+        ) as exc:
+            is_retryable = (
+                isinstance(exc, urllib.error.HTTPError)
+                and exc.code in (429, 500, 502, 503, 504)
+            ) or isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionResetError))
+            if not is_retryable or attempt >= max_retries - 1:
+                raise
+            wait_secs = backoff_secs[min(attempt, len(backoff_secs) - 1)]
+            log.warning(
+                "download attempt %d/%d failed (%s), retrying in %.0f seconds",
+                attempt + 1, max_retries, type(exc).__name__, wait_secs
+            )
+            time.sleep(wait_secs)
 
 
 def _validate(path: Path) -> bool:

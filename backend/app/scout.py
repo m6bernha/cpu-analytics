@@ -25,6 +25,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from .athlete_projection import shrinkage_projection
+from .constants import DAYS_PER_MONTH
 from .lifters import search_lifters
 
 
@@ -136,7 +137,6 @@ class ScoutMeetReport(BaseModel):
 
 STALE_DAYS_THRESHOLD = 730                   # > 2 years since last meet = stale
 CLOSEST_BATTLES_TOP_N = 5
-DAYS_PER_MONTH = 30.44
 
 _METHODOLOGY_TEXT = (
     "Projections use Engine C (Bayesian shrinkage with IPF-GL-stratified "

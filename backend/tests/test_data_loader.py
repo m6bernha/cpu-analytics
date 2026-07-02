@@ -62,7 +62,7 @@ def test_healthy_parquets_pass(tmp_path: Path) -> None:
 
 
 def test_zero_row_parquet_triggers_self_heal(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Empty openipf parquet -> log, delete both files, raise 503."""
     openipf_path = tmp_path / "openipf.parquet"
@@ -80,12 +80,11 @@ def test_zero_row_parquet_triggers_self_heal(
     assert not openipf_path.exists()
     assert not qt_path.exists()
 
-    captured = capsys.readouterr()
-    assert "zero rows" in captured.out
+    assert "zero rows" in caplog.text
 
 
 def test_missing_column_triggers_self_heal(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """openipf parquet missing a required column -> log, delete both, raise 503."""
     openipf_path = tmp_path / "openipf.parquet"
@@ -106,8 +105,7 @@ def test_missing_column_triggers_self_heal(
     assert not openipf_path.exists()
     assert not qt_path.exists()
 
-    captured = capsys.readouterr()
-    assert "Goodlift" in captured.out
+    assert "Goodlift" in caplog.text
 
 
 def test_multiple_missing_columns_all_listed(tmp_path: Path) -> None:

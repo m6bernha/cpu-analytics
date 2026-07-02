@@ -37,6 +37,19 @@ from .ipf_gl_points import (
     assign_glp_bracket,
     ipf_gl_points,
 )
+from .constants import (
+    CURRENT_LEVEL_WINDOW,
+    DAYS_PER_MONTH,
+    HORIZON_MONTHS_HARD_CAP,
+    HORIZON_MONTHS_SMALL_N_CAP,
+    HORIZON_MONTHS_WARN,
+    KM_DROPOUT_MONTHS,
+    MIN_COHORT_CELL_SIZE,
+    OUTLIER_SIGMA,
+    SHRINKAGE_K,
+    SMALL_N_THRESHOLD,
+    Z_95,
+)
 from .progression import age_to_category
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 
@@ -57,21 +70,6 @@ LIFT_COLS: dict[str, str] = {
 LIFT_KEYS: tuple[str, ...] = ("squat", "bench", "deadlift")
 
 AGE_DIVISIONS: tuple[str, ...] = ("Sub-Jr", "Jr", "Open", "M1", "M2", "M3", "M4")
-
-SHRINKAGE_K: int = 5                  # w_p = n / (n + SHRINKAGE_K)
-CURRENT_LEVEL_WINDOW: int = 3         # max of last 3 lift-specific totals
-KM_DROPOUT_MONTHS: int = 18           # last meet > this many months -> censored dropout
-Z_95: float = 1.96                    # normal critical value for 95% PI
-
-HORIZON_MONTHS_HARD_CAP: int = 18
-HORIZON_MONTHS_SMALL_N_CAP: int = 6
-HORIZON_MONTHS_WARN: int = 12
-SMALL_N_THRESHOLD: int = 5
-
-OUTLIER_SIGMA: float = 2.5            # latest meet > this many sigma below fit -> flag
-
-DAYS_PER_MONTH: float = 30.44
-MIN_COHORT_CELL_SIZE: int = 20        # (division x bracket x lift) cell floor; below, merge
 
 
 # =============================================================================

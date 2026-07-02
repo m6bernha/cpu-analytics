@@ -7,6 +7,7 @@ Run locally:
 
 from __future__ import annotations
 
+import logging
 import math
 import os
 import time
@@ -19,6 +20,16 @@ from fastapi import FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
+
+log = logging.getLogger(__name__)
+
+# Configure logging for the app and all uvicorn-managed loggers.
+# Uvicorn doesn't configure the root logger, so app loggers default to
+# NOTSET level and would not emit without this basicConfig.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 from . import athlete_projection as athlete_proj_mod
 from . import filters as filters_mod
@@ -53,22 +64,22 @@ async def lifespan(_app: FastAPI):
         from .data import is_qt_current_available
         if is_qt_current_available():
             n_qt_current = conn.execute("SELECT COUNT(*) FROM qt_current").fetchone()[0]
-            print(
-                f"[startup] warmed: openipf={n_meets:,} rows, "
-                f"qt_standards={n_qt} rows, qt_current={n_qt_current} rows"
+            log.info(
+                "[startup] warmed: openipf=%d rows, qt_standards=%d rows, qt_current=%d rows",
+                n_meets, n_qt, n_qt_current
             )
         else:
-            print(
-                f"[startup] warmed: openipf={n_meets:,} rows, "
-                f"qt_standards={n_qt} rows, qt_current=UNAVAILABLE "
-                f"(live endpoints degraded)"
+            log.info(
+                "[startup] warmed: openipf=%d rows, qt_standards=%d rows, "
+                "qt_current=UNAVAILABLE (live endpoints degraded)",
+                n_meets, n_qt
             )
         # Memory footprint after warmup. Visible in Render logs so future
         # regressions (accidental full-table .df() load, etc) are obvious.
         try:
             import psutil
             rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
-            print(f"[startup] process RSS: {rss_mb:.1f} MB")
+            log.info("[startup] process RSS: %.1f MB", rss_mb)
         except ImportError:
             pass
         # Athlete Projection cohort + Kaplan-Meier tables. Populates
@@ -92,47 +103,46 @@ async def lifespan(_app: FastAPI):
                         ATHLETE_PROJ_TABLES,
                     )
                     load_ms = 1000.0 * (time.perf_counter() - t_load)
-                    print(
-                        f"[startup] athlete_projection tables: loaded from disk "
-                        f"cohort_cells={stats['cohort_cells']} "
-                        f"km={stats['km_tables']} "
-                        f"mixedlm_cells={stats.get('mixedlm_cells', 0)} "
-                        f"elapsed_ms={load_ms:.0f}"
+                    log.info(
+                        "[startup] athlete_projection tables: loaded from disk "
+                        "cohort_cells=%d km=%d mixedlm_cells=%d elapsed_ms=%.0f",
+                        stats['cohort_cells'], stats['km_tables'],
+                        stats.get('mixedlm_cells', 0), load_ms
                     )
                 except Exception as exc:
-                    print(
-                        f"[startup] athlete_projection artifact load failed: "
-                        f"{exc!r} -- falling back to live fit"
+                    log.warning(
+                        "[startup] athlete_projection artifact load failed: "
+                        "%r -- falling back to live fit",
+                        exc
                     )
                     stats = None
             if stats is None:
                 t_precompute = time.perf_counter()
                 stats = athlete_proj_mod.precompute_tables(conn)
                 precompute_ms = 1000.0 * (time.perf_counter() - t_precompute)
-                print(
-                    f"[startup] athlete_projection tables: fitted "
-                    f"cohort_cells={stats['cohort_cells']} "
-                    f"km={stats['km_tables']} "
-                    f"mixedlm_cells={stats.get('mixedlm_cells', 0)} "
-                    f"elapsed_ms={precompute_ms:.0f}"
+                log.info(
+                    "[startup] athlete_projection tables: fitted "
+                    "cohort_cells=%d km=%d mixedlm_cells=%d elapsed_ms=%.0f",
+                    stats['cohort_cells'], stats['km_tables'],
+                    stats.get('mixedlm_cells', 0), precompute_ms
                 )
             # Engine D global gate: log the convergence rate + flag for
             # operators. The flag is already set by load/precompute; this
             # line is the operator-visible signal in Render logs.
             mixedlm_pct = stats.get("mixedlm_converged_pct", 0.0) or 0.0
-            print(
-                f"[startup] engine_d gate: rate={mixedlm_pct:.3f} "
-                f"available={athlete_proj_mod.is_engine_d_globally_available()}"
+            log.info(
+                "[startup] engine_d gate: rate=%.3f available=%s",
+                mixedlm_pct, athlete_proj_mod.is_engine_d_globally_available()
             )
         # If either view is empty, the parquet is likely corrupt or truncated.
         # Delete the files so the next cold-start re-downloads, then log.
         if n_meets == 0 or n_qt == 0:
             import os
             from .data import OPENIPF_PARQUET, QT_PARQUET
-            print(
-                f"[startup] ERROR: parquet appears empty "
-                f"(openipf={n_meets}, qt={n_qt}). Removing local files "
-                f"so the next cold-start re-downloads."
+            log.error(
+                "[startup] ERROR: parquet appears empty (openipf=%d, qt=%d). "
+                "Removing local files so the next cold-start re-downloads.",
+                n_meets, n_qt
             )
             for p in (OPENIPF_PARQUET, QT_PARQUET):
                 try:
@@ -143,7 +153,7 @@ async def lifespan(_app: FastAPI):
         # Log but continue: transient download failures will be retried
         # by get_conn() on the first real request. Only fatal-empty-parquet
         # above re-raises (and does so above this handler).
-        print(f"[startup] warmup failed: {exc!r}")
+        log.warning("[startup] warmup failed: %r", exc)
     yield
 
 
@@ -189,17 +199,14 @@ async def log_request_duration(request: Request, call_next):
         response = await call_next(request)
     except Exception:
         dur_ms = (time.perf_counter() - start) * 1000
-        print(f"[req] {request.method} {request.url.path} CRASH in {dur_ms:.0f}ms")
+        log.error("[req] %s %s CRASH in %.0f ms", request.method, request.url.path, dur_ms)
         raise
     # Skip /api/health: uvicorn access-logs it, and UptimeRobot + Render's
     # internal prober would otherwise double-spam the app log every few seconds.
     if request.url.path == "/api/health":
         return response
     dur_ms = (time.perf_counter() - start) * 1000
-    print(
-        f"[req] {request.method} {request.url.path} "
-        f"{response.status_code} {dur_ms:.0f}ms"
-    )
+    log.info("[req] %s %s %d %.0f ms", request.method, request.url.path, response.status_code, dur_ms)
     return response
 
 
@@ -208,10 +215,10 @@ async def log_request_duration(request: Request, call_next):
 # of leaking stack traces through FastAPI's default 500.
 @app.exception_handler(duckdb.Error)
 async def duckdb_error_handler(request: Request, exc: duckdb.Error):
-    tb = traceback.format_exc()
-    print(
-        f"[duckdb-error] path={request.url.path} "
-        f"type={type(exc).__name__} msg={exc!s}\n{tb}"
+    log.error(
+        "[duckdb-error] path=%s type=%s msg=%s",
+        request.url.path, type(exc).__name__, exc,
+        exc_info=True
     )
     return JSONResponse(
         status_code=503,
@@ -283,16 +290,14 @@ def ready():
     unreadable (corrupt download, missing file, etc), this fails while
     /api/health still passes.
     """
-    from fastapi import Response
     try:
         cur = get_cursor()
         cur.execute("SELECT 1").fetchone()
         return {"ready": True}
     except Exception as exc:
-        return Response(
-            content='{"ready": false, "error": "' + type(exc).__name__ + '"}',
+        return JSONResponse(
             status_code=503,
-            media_type="application/json",
+            content={"ready": False, "error": type(exc).__name__},
         )
 
 
