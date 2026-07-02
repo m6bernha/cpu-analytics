@@ -188,8 +188,10 @@ export default function QtLiveCoveragePanel() {
         Percent of Canadian IPF lifters in the 24-month window ending March 1
         of the effective year whose best SBD total meets the qualifying total
         for the selected slice. CPU federal data covers Nationals and
-        Regionals; Provincial coverage is currently Ontario-only (OPA) with
-        other provinces rolling out as their federations' sites are audited.
+        Regionals. Provincial standards cover Ontario, Manitoba, Nova
+        Scotia, Newfoundland, Alberta, and Quebec. BC and Saskatchewan
+        defer to CPU Regional standards. New Brunswick and PEI run
+        open-entry provincials.
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
@@ -313,9 +315,9 @@ export default function QtLiveCoveragePanel() {
             {provinceApplies && province && !routeViaCpuRegional
               && rows.length === 0 && (
               <p className="text-xs text-orange-400/80 mb-2">
-                No provincial QT data yet for {province}. Check the weekly
-                qt_refresh workflow status; this province may still be in
-                the scraper backlog.
+                No {province} standards for effective year {effectiveYear}.
+                The provincial federation may not have published that year
+                yet. Try an earlier effective year.
               </p>
             )}
             {rows.length === 0 && !provinceApplies ? (

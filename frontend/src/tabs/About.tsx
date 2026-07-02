@@ -485,11 +485,11 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
           tolerance window).
         </p>
         <p>
-          Baseline is a 50-lifter Canada+IPF smoke sample. A full-OpenIPF
-          run is a one-off manual step once the 285 MB bulk CSV is available
-          locally (see{' '}
-          <code className="text-zinc-400">data/backtest_projection.py</code>{' '}
-          docstring).
+          Numbers come from a full run over the global OpenIPF export, not
+          just the Canadian subset, to maximize sample size. The engines and
+          parameters are identical to what serves the Canadian data in
+          production (see{' '}
+          <code className="text-zinc-400">data/backtest_projection.py</code>).
         </p>
       </div>
 
