@@ -124,6 +124,7 @@ class TestScoutReportShape:
         assert athlete.weight_class == "83"
         assert athlete.n_meets == 5   # 4 SBD + 1 bench in fixture
         assert athlete.best_total_kg == 565.0
+        assert athlete.sex == "M"
 
     def test_homie_flag_propagates(self, precomputed):
         req = _make_req([
@@ -145,6 +146,7 @@ class TestManualOverride:
             bench_best_kg=140.0,
             deadlift_best_kg=240.0,
             weight_class="83",
+            sex="M",
             last_meet_date="2026-12-01",
         )
         req = _make_req([
@@ -158,6 +160,7 @@ class TestManualOverride:
         assert row.best_total_kg == 600.0
         assert row.projected_total_kg == 600.0   # manual: no projection
         assert row.weight_class == "83"
+        assert row.sex == "M"
         assert "manual entry" in row.inline_tags
 
 

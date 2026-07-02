@@ -93,6 +93,7 @@ class ScoutAthleteRow(BaseModel):
     is_homie: bool
     is_manual: bool                          # True when sourced from manual override
     status_tag: StatusTag
+    sex: str | None                          # 'M' / 'F' from OpenIPF or override
     division: str | None                     # CPU age division string
     weight_class: str | None
     n_meets: int | None
@@ -259,6 +260,7 @@ def _row_from_override(
         is_homie=entry.is_homie,
         is_manual=True,
         status_tag=status,
+        sex=o.sex,
         division=None,
         weight_class=o.weight_class,
         n_meets=None,
@@ -296,6 +298,8 @@ def _row_from_openipf(
     best_total = float(best_total) if best_total is not None else None
     weight_class = search_row.get("LatestWeightClass")
     weight_class = str(weight_class) if weight_class is not None else None
+    sex = search_row.get("Sex")
+    sex = str(sex) if sex is not None else None
 
     # Project forward to meet day. None means insufficient data (no
     # cohort cell, no age, etc.) — fall back to a frozen-style row.
@@ -309,6 +313,7 @@ def _row_from_openipf(
             is_homie=entry.is_homie,
             is_manual=False,
             status_tag=classify_status(n_meets, _tenure_days(search_row, today_iso)),
+            sex=sex,
             division=None,
             weight_class=weight_class,
             n_meets=n_meets,
@@ -364,6 +369,7 @@ def _row_from_openipf(
         is_homie=entry.is_homie,
         is_manual=False,
         status_tag=status,
+        sex=sex,
         division=proj.age_division,
         weight_class=weight_class,
         n_meets=n_meets,
