@@ -21,6 +21,21 @@ export function ShareButton({
   const [copied, setCopied] = useState<boolean>(false)
 
   const onClick = async () => {
+    // On touch devices prefer the native share sheet (Messenger, Instagram,
+    // group chats) over silent clipboard copy. Desktop keeps copy-to-
+    // clipboard since a share dialog there is usually friction.
+    const isTouch = navigator.maxTouchPoints > 0
+    if (isTouch && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: document.title,
+          url: window.location.href,
+        })
+        return
+      } catch {
+        // User cancelled or share failed; fall through to clipboard.
+      }
+    }
     try {
       await navigator.clipboard.writeText(window.location.href)
       setCopied(true)

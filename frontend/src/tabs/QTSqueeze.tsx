@@ -8,6 +8,7 @@
 // GitHub Actions workflow for the pipeline.
 
 import QtLiveCoveragePanel from './QtLiveCoveragePanel'
+import { ShareButton } from '../lib/ShareButton'
 
 export default function QTSqueeze({ isActive: _isActive }: { isActive: boolean }) {
   // isActive is accepted for parity with other tabs that gate Recharts
@@ -16,7 +17,10 @@ export default function QTSqueeze({ isActive: _isActive }: { isActive: boolean }
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-zinc-100 text-lg font-semibold">Qualifying Totals</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-zinc-100 text-lg font-semibold">Qualifying Totals</h2>
+          <ShareButton ariaLabel="Copy shareable link to this coverage view" />
+        </div>
         <p className="text-zinc-300 text-sm mt-1 max-w-3xl">
           Percent of Canadian IPF lifters in each weight class whose best SBD
           total in the 24-month qualifying window meets the CPU qualifying

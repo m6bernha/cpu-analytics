@@ -34,6 +34,7 @@ import {
   type ProgressionResponse,
 } from '../lib/api'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
+import { ShareButton } from '../lib/ShareButton'
 
 // ---------- Filter state ----------
 
@@ -369,11 +370,14 @@ export default function Progression({ isActive }: { isActive: boolean }) {
 
       {/* ---- Chart area ---- */}
       <section className="flex-1 min-w-0">
-        <div className="mb-4">
-          <h2 className="text-zinc-100 text-lg font-semibold">Cohort progression</h2>
-          <p className="text-zinc-500 text-sm">
-            Average change in total from each lifter's first meet in the selected cohort.
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-zinc-100 text-lg font-semibold">Cohort progression</h2>
+            <p className="text-zinc-500 text-sm">
+              Average change in total from each lifter's first meet in the selected cohort.
+            </p>
+          </div>
+          <ShareButton ariaLabel="Copy shareable link to this cohort view" />
         </div>
 
         {filters.per_lift === 'true' && liftProgQuery.isLoading && (
