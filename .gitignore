@@ -32,3 +32,6 @@ frontend/dist/
 /qt_blocks.json
 /qt_coverage_*.json
 /manual_test.json
+
+# Local pytest scratch (basetemp workaround for Windows temp-dir ACL lock)
+.pytest_tmp/
