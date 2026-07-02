@@ -56,10 +56,12 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
         <p>
           cpu-analytics is a public web app for Canadian raw powerlifters
           competing in CPU- and IPF-sanctioned meets. It aggregates every
-          CPU meet in the OpenIPF bulk export and surfaces three views:
-          cohort progression over time, QT qualifying-total coverage, and
-          an individual lifter lookup. The Athlete Projection BETA tab
-          extends the lookup with a per-lift forward projection.
+          Canadian IPF-affiliated meet in the OpenIPF bulk export and
+          surfaces five working views: cohort progression over time, a
+          per-lift Athlete Projection (BETA), an individual lifter lookup,
+          live qualifying-total coverage for CPU and all ten provinces,
+          and this methodology page. A sixth view, Scout, is a meet
+          scouting report generator that is still a work in progress.
         </p>
       </Section>
 
@@ -81,8 +83,12 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
           <code className="text-zinc-200">ParentFederation=IPF</code>, and
           republishes as a parquet in a rolling GitHub Release. The
           production backend downloads that parquet on cold start. Live
-          CPU QT standards are scraped from powerlifting.ca on the same
-          weekly cadence for the Qualifying Totals tab.
+          qualifying totals are scraped on the same weekly cadence for the
+          Qualifying Totals tab: CPU standards from powerlifting.ca, plus
+          provincial standards from the Ontario, Manitoba, Nova Scotia,
+          Newfoundland, Alberta, and Quebec federations. BC and
+          Saskatchewan defer to CPU Regional standards, and New Brunswick
+          and PEI run open-entry provincials with no qualifying total.
         </p>
       </Section>
 
@@ -139,17 +145,23 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
 
       <Section title="Engine D (Advanced): mixed-effects">
         <p>
-          Engine D fits a statsmodels MixedLM per lift with a random
-          intercept and random slope per lifter, plus fixed effects for
-          age division and IPF GL bracket. Prediction intervals come
-          directly from the posterior predictive distribution.
+          Engine D fits a statsmodels MixedLM per (age division, GLP
+          bracket, lift) cell with a random intercept per lifter and a
+          fixed effect for years since first meet. Fitting runs at
+          precompute time. Each converged cell is converted into a virtual
+          cohort cell that drops into the same projection math as Engine
+          C, so the personal-slope shrinkage and prediction-interval
+          structure are shared. The per-meet residual variance from the
+          fit provides the cohort noise term.
         </p>
         <p className="text-zinc-400 mt-2">
-          Advanced is currently a placeholder that delegates to Simple
-          while the MixedLM wiring and convergence probe ship in a
-          follow-up release. When the probe detects convergence failure
-          on more than 10 percent of backtest lifters, the toggle stays
-          hidden.
+          Engine D is live in production. A cell needs at least 20 lifters
+          and 60 meets to fit. Cells below that floor, and any cell that
+          fails to converge, fall back to Engine C for that lift and are
+          flagged in the response metadata. The engine toggle on the
+          Athlete Projection tab appears when the overall convergence rate
+          clears a 70 percent gate. The current production fit converges
+          on 100 percent of eligible cells.
         </p>
       </Section>
 
@@ -273,8 +285,9 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
         <p>
           Hard cap 18 months in the UI. Loud warning past 12 months.
           Lifters with fewer than 5 meets are clamped server-side to 6
-          months because the personal slope is unstable there. Projections
-          past 24 months never render.
+          months because the personal slope is unstable there. The server
+          enforces the same 18-month cap regardless of what a request
+          asks for.
         </p>
       </Section>
 
@@ -302,7 +315,7 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
         <p>
           The Simple / Advanced toggle for engines C and D is an
           approximation of a design question we have not yet answered.
-          After release, the alternatives (overlaid, side-by-side, or a
+          As usage accumulates, the alternatives (overlaid, side-by-side, or a
           pick-one default with an advanced-mode escape hatch) will be
           evaluated against real usage.
         </p>

@@ -25,6 +25,11 @@ interface ScoutProps {
   isActive: boolean
 }
 
+// Scout is locked while the roster fan-out gets validated. The tab stays
+// visible so visitors can see what is coming. Flip to false to re-enable
+// the form and report rendering.
+const SCOUT_LOCKED = true
+
 interface FormState {
   meetName: string
   federation: string
@@ -105,7 +110,7 @@ export default function Scout({ isActive }: ScoutProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!canSubmit) return
+    if (SCOUT_LOCKED || !canSubmit) return
     mutation.mutate({
       meet_name: form.meetName.trim(),
       federation: form.federation.trim() || 'CPU',
@@ -140,7 +145,44 @@ export default function Scout({ isActive }: ScoutProps) {
 
   return (
     <div className={isActive ? 'space-y-6' : 'space-y-6 hidden'}>
-      <section className="scout-form">
+      {SCOUT_LOCKED && (
+        <section className="rounded border border-amber-500/30 bg-amber-500/5 p-4 max-w-3xl">
+          <h2 className="text-amber-300 text-base font-semibold mb-2">
+            Scout is a work in progress
+          </h2>
+          <div className="text-zinc-300 text-sm leading-relaxed space-y-2">
+            <p>
+              This page is not ready to use yet. It is being rebuilt and
+              validated before it opens up.
+            </p>
+            <p>
+              The goal: paste the roster of an upcoming meet and get a
+              coach-ready scouting report in seconds. Projected totals with
+              95 percent prediction intervals for every athlete, per-class
+              rankings with the gap between first and second, the closest
+              projected battles across the meet, and status tags that
+              separate rookies, established lifters, and veterans returning
+              from a layoff.
+            </p>
+            <p>
+              The projection engine behind it already powers the Athlete
+              Projection tab. The roster layer on top still needs work:
+              name matching, stale-lifter handling, and report accuracy
+              across a full field. Until that holds up, the form below is
+              a disabled preview.
+            </p>
+          </div>
+        </section>
+      )}
+
+      <section
+        className={
+          SCOUT_LOCKED
+            ? 'scout-form opacity-40 pointer-events-none select-none'
+            : 'scout-form'
+        }
+        aria-hidden={SCOUT_LOCKED}
+      >
         <h2 className="text-zinc-100 text-base font-semibold mb-1">
           Meet Scout
         </h2>
@@ -150,10 +192,11 @@ export default function Scout({ isActive }: ScoutProps) {
           Names not found in OpenIPF fall to the Unranked Field section.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl"
-        >
+        <form onSubmit={handleSubmit}>
+          <fieldset
+            disabled={SCOUT_LOCKED}
+            className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl"
+          >
           <label className="text-xs text-zinc-400 space-y-1">
             <span>Meet name *</span>
             <input
@@ -248,10 +291,11 @@ export default function Scout({ isActive }: ScoutProps) {
               </span>
             )}
           </div>
+          </fieldset>
         </form>
       </section>
 
-      {report && (
+      {!SCOUT_LOCKED && report && (
         <div className="print:hidden flex items-center gap-2">
           <span className="text-zinc-500 text-xs uppercase tracking-wide">Show</span>
           {(
@@ -278,7 +322,7 @@ export default function Scout({ isActive }: ScoutProps) {
         </div>
       )}
 
-      {visibleReport && <ReportView report={visibleReport} />}
+      {!SCOUT_LOCKED && visibleReport && <ReportView report={visibleReport} />}
     </div>
   )
 }

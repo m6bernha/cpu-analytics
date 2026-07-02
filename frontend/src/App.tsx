@@ -25,7 +25,7 @@ const TABS: { key: TabKey; label: string; hint: string; beta?: boolean }[] = [
   { key: 'projection', label: 'Athlete Projection', hint: 'Individual per-lift forecast with prediction intervals', beta: true },
   { key: 'lookup', label: 'Lifter Lookup', hint: 'Search any lifter, full meet history and PRs' },
   { key: 'qt', label: 'Qualifying Totals', hint: 'Live CPU + provincial qualifying total coverage' },
-  { key: 'scout', label: 'Scout', hint: 'Paste a meet roster, get a projected scouting report', beta: true },
+  { key: 'scout', label: 'Scout', hint: 'Meet scouting reports, work in progress', beta: true },
   { key: 'about', label: 'About', hint: 'Methodology, backtest results, references, disclaimers' },
 ]
 
