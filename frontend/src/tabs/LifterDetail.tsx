@@ -26,6 +26,7 @@ import {
 } from 'recharts'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
 import { fmtDate, fmtDateShort, fmtKg } from '../lib/format'
+import { downloadCsv, slugify } from '../lib/csv'
 import { MethodPill } from '../components/MethodPill'
 import { AthleteCard } from '../components/AthleteCard'
 import { ShareButton } from '../lib/ShareButton'
@@ -630,6 +631,29 @@ export default function LifterDetail({
           read fine on two lines, while a 3-line "270 / 175 / 285" stack of
           numbers reads as visual noise. */}
       <div className="mt-6">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() =>
+              downloadCsv(
+                `${slugify(history.meets[0]?.Name ?? 'lifter')}-meets.csv`,
+                [
+                  'Date', 'Meet', 'Event', 'Class', 'Division', 'Age',
+                  'SquatKg', 'BenchKg', 'DeadliftKg', 'TotalKg', 'Goodlift', 'PR',
+                ],
+                history.meets.map((m) => [
+                  m.Date, m.MeetName, m.Event, m.CanonicalWeightClass,
+                  m.Division, m.Age, m.Best3SquatKg, m.Best3BenchKg,
+                  m.Best3DeadliftKg, m.TotalKg, m.Goodlift,
+                  m.is_pr ? 'yes' : '',
+                ]),
+              )
+            }
+            className="px-2.5 py-1.5 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            aria-label="Download this lifter's meet history as CSV"
+          >
+            Download CSV
+          </button>
+        </div>
         <table className="w-full text-sm">
           <thead className="text-zinc-400 text-xs uppercase tracking-wide">
             <tr className="border-b border-zinc-800">

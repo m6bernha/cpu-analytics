@@ -35,6 +35,7 @@ import {
 } from '../lib/api'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import { ShareButton } from '../lib/ShareButton'
+import { downloadCsv } from '../lib/csv'
 
 // ---------- Filter state ----------
 
@@ -377,7 +378,28 @@ export default function Progression({ isActive }: { isActive: boolean }) {
               Average change in total from each lifter's first meet in the selected cohort.
             </p>
           </div>
-          <ShareButton ariaLabel="Copy shareable link to this cohort view" />
+          <div className="flex gap-2 shrink-0">
+            {filters.per_lift !== 'true' &&
+              progQuery.data &&
+              progQuery.data.points.length > 0 && (
+                <button
+                  onClick={() => {
+                    const d = progQuery.data
+                    if (!d) return
+                    downloadCsv(
+                      `cohort-progression-${filters.sex}-${filters.weight_class || 'overall'}.csv`,
+                      [d.x_label, `mean ${d.y_label}`, 'std', 'lifter_count'],
+                      d.points.map((p) => [p.x, p.y, p.std, p.lifter_count]),
+                    )
+                  }}
+                  className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  aria-label="Download the cohort curve as CSV"
+                >
+                  Download CSV
+                </button>
+              )}
+            <ShareButton ariaLabel="Copy shareable link to this cohort view" />
+          </div>
         </div>
 
         {filters.per_lift === 'true' && liftProgQuery.isLoading && (
