@@ -25,6 +25,7 @@ import {
   YAxis,
 } from 'recharts'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
+import { fmtDate, fmtDateShort, fmtKg } from '../lib/format'
 import { MethodPill } from '../components/MethodPill'
 import { AthleteCard } from '../components/AthleteCard'
 import { ShareButton } from '../lib/ShareButton'
@@ -72,38 +73,9 @@ function ClassChangeBadge({ label }: { label: string }) {
 
 // ---------- Date / value formatters ----------
 
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  // iso is 'yyyy-mm-dd'. Don't pass through Date(iso) — that would interpret
-  // it as UTC midnight and can round back to the previous day depending on
-  // the viewer's timezone.
-  const parts = iso.slice(0, 10).split('-').map(Number)
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return iso
-  const [y, m, d] = parts
-  return `${MONTHS[m - 1]} ${d}, ${y}`
-}
-
-function fmtKg(v: number | null | undefined, digits = 1): string {
-  if (v == null || !Number.isFinite(v)) return '—'
-  return v.toFixed(digits)
-}
-
 function fmtSbd(s: number | null, b: number | null, d: number | null): string {
   if (s == null && b == null && d == null) return '—'
   return `${fmtKg(s)} / ${fmtKg(b)} / ${fmtKg(d)}`
-}
-
-function fmtDateShort(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const parts = iso.slice(0, 10).split('-').map(Number)
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return iso
-  const [y, m] = parts
-  return `${MONTHS[m - 1]} '${String(y).slice(-2)}`
 }
 
 // ---------- QT lookup helper ----------

@@ -16,6 +16,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useUrlState } from '../lib/useUrlState'
+import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { ShareButton } from '../lib/ShareButton'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
@@ -35,17 +36,6 @@ import {
 // from LifterDetail.tsx back into this file; that would re-merge the lazy
 // chunk into the main bundle and Vite would warn INEFFECTIVE_DYNAMIC_IMPORT.
 const LifterDetail = lazy(() => import('./LifterDetail'))
-
-// ---------- Debounce hook ----------
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
-}
 
 // ---------- Manual entry form ----------
 

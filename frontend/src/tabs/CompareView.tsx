@@ -20,6 +20,7 @@ import {
   type LifterSearchResult,
   type QtStandardRow,
 } from '../lib/api'
+import { fmtDate } from '../lib/format'
 
 // 6-color non-orange palette. Locked 2026-04-26 (plan v1 Q2 color pass) so
 // coral #FB923C can live alone in the orange family for accents/warnings.
@@ -68,19 +69,6 @@ const TOOLTIP_THRESHOLD_MONTHS = 3
 
 // ---------- Inline helpers (not imported from LifterDetail) ----------
 
-const MONTHS_ABBR = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
-
-// Parse ISO yyyy-mm-dd without going through Date() to avoid UTC/local drift.
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const parts = iso.slice(0, 10).split('-').map(Number)
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return iso
-  const [y, m, d] = parts
-  return `${MONTHS_ABBR[m - 1]} ${d}, ${y}`
-}
 
 // Count distinct IPF weight classes across all meets.
 function classMigrationCount(history: LifterHistory): number {

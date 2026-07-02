@@ -19,6 +19,7 @@ import {
   type ScoutRosterEntry,
   type ScoutStatusTag,
 } from '../lib/api'
+import { fmtInt, fmtKg } from '../lib/format'
 
 interface ScoutProps {
   isActive: boolean
@@ -77,16 +78,6 @@ function statusToneClass(tag: ScoutStatusTag): string {
     default:
       return 'bg-zinc-800 text-zinc-400 border-zinc-700'
   }
-}
-
-function fmtKg(value: number | null | undefined, digits = 1): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—'
-  return value.toFixed(digits)
-}
-
-function fmtInt(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—'
-  return String(Math.round(value))
 }
 
 function fmtDateRelative(iso: string | null, days: number | null): string {

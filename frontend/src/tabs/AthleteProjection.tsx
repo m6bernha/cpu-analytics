@@ -36,6 +36,7 @@ import {
   type QtLiveCoverageResponse,
 } from '../lib/api'
 import { useUrlState } from '../lib/useUrlState'
+import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { ShareButton } from '../lib/ShareButton'
 import { MethodPill } from '../components/MethodPill'
 import { Banner } from '../components/Banner'
@@ -74,15 +75,6 @@ const COLORS = {
   piBand: '#818CF8',
   reference: '#4ec9b0',
   grid: '#3f3f46',
-}
-
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
 }
 
 export default function AthleteProjection({ isActive }: { isActive: boolean }) {
