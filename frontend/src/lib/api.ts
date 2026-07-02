@@ -621,3 +621,14 @@ export async function postManualTrajectory(req: ManualRequest): Promise<LifterHi
   }
   return res.json()
 }
+
+// ---------- Data freshness (header badge) ----------
+
+export type FreshnessResponse = {
+  latest_meet_date: string | null
+  row_count: number
+}
+
+export async function fetchFreshness(): Promise<FreshnessResponse> {
+  return getJson<FreshnessResponse>(`${API_BASE}/api/meta/freshness`)
+}

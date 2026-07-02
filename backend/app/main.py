@@ -23,6 +23,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from . import athlete_projection as athlete_proj_mod
 from . import filters as filters_mod
 from . import lifters as lifters_mod
+from . import meta as meta_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
 from .data import ATHLETE_PROJ_TABLES, OPENIPF_PARQUET, QT_PARQUET, get_cursor
@@ -293,6 +294,19 @@ def ready():
             status_code=503,
             media_type="application/json",
         )
+
+
+@app.get("/api/meta/freshness")
+def api_meta_freshness(request: Request, response: Response) -> Any:
+    """Data-freshness metadata for the header badge.
+
+    Returns the latest meet date present in the openipf view plus the
+    row count. Cheap (container-lifetime cached) and ETag-friendly.
+    """
+    cached = _maybe_304(request, response)
+    if cached is not None:
+        return cached
+    return meta_mod.get_freshness()
 
 
 @app.get("/api/filters")
