@@ -82,7 +82,7 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
           republishes as a parquet in a rolling GitHub Release. The
           production backend downloads that parquet on cold start. Live
           CPU QT standards are scraped from powerlifting.ca on the same
-          weekly cadence for the QT Squeeze tab.
+          weekly cadence for the Qualifying Totals tab.
         </p>
       </Section>
 

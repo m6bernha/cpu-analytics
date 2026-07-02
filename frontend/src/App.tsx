@@ -10,26 +10,22 @@ import Progression from './tabs/Progression'
 import QTSqueeze from './tabs/QTSqueeze'
 import LifterLookup from './tabs/LifterLookup'
 import Scout from './tabs/Scout'
+import { WelcomeHero } from './components/WelcomeHero'
 import { ErrorBoundary } from './lib/ErrorBoundary'
 import { FreshnessBadge } from './lib/FreshnessBadge'
 import { useUrlState } from './lib/useUrlState'
 
 type TabKey = 'progression' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
 
-// Tab order: most-used analytics first, Projection as the new BETA feature,
-// Lifter Lookup for individual use, then QT Squeeze.
-//
-// Scout (BETA) and About are intentionally hidden from the nav. Scout was
-// pulled from the public nav on 2026-06-19 pending more work before relaunch
-// (see NEXT_STEPS.md "Scout pulled from public nav"); About isn't
-// publish-ready yet. Both routes still resolve via ?tab=scout / ?tab=about
-// for direct dev access — see VALID_TABS below. To relaunch Scout, re-add its
-// entry here.
-const TABS: { key: TabKey; label: string; beta?: boolean }[] = [
-  { key: 'progression', label: 'Progression' },
-  { key: 'projection', label: 'Athlete Projection', beta: true },
-  { key: 'lookup', label: 'Lifter Lookup' },
-  { key: 'qt', label: 'QT Squeeze' },
+// Tab order: most-used analytics first, Projection as the BETA feature,
+// Lifter Lookup for individual use, Qualifying Totals (URL key stays 'qt'
+// so old deep links keep working), then About.
+const TABS: { key: TabKey; label: string; hint: string; beta?: boolean }[] = [
+  { key: 'progression', label: 'Progression', hint: 'Cohort average total over a career, filterable' },
+  { key: 'projection', label: 'Athlete Projection', hint: 'Individual per-lift forecast with prediction intervals', beta: true },
+  { key: 'lookup', label: 'Lifter Lookup', hint: 'Search any lifter, full meet history and PRs' },
+  { key: 'qt', label: 'Qualifying Totals', hint: 'Live CPU + provincial qualifying total coverage' },
+  { key: 'about', label: 'About', hint: 'Methodology, backtest results, references, disclaimers' },
 ]
 
 const VALID_TABS: TabKey[] = [
@@ -69,6 +65,7 @@ export default function App() {
                 onClick={() => setTab(t.key)}
                 role="tab"
                 aria-selected={tab === t.key}
+                title={t.hint}
                 className={
                   'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
                   (tab === t.key
@@ -89,6 +86,7 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <WelcomeHero onNavigate={(t) => setTab(t as TabKey)} />
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">
             <Progression isActive={tab === 'progression'} />
@@ -105,7 +103,7 @@ export default function App() {
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
-          <ErrorBoundary label="QT Squeeze">
+          <ErrorBoundary label="Qualifying Totals">
             <QTSqueeze isActive={tab === 'qt'} />
           </ErrorBoundary>
         </div>

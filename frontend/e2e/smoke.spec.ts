@@ -33,15 +33,15 @@ test('/ loads Progression tab', async ({ page }) => {
   check()
 })
 
-// Route 2: QT Squeeze tab
-test('/?tab=qt renders QT Squeeze', async ({ page }) => {
+// Route 2: Qualifying Totals tab (URL key stays 'qt' for old deep links)
+test('/?tab=qt renders Qualifying Totals', async ({ page }) => {
   const check = watchConsoleErrors(page)
   await page.goto('/?tab=qt')
   await expect(
-    page.getByRole('tab', { name: 'QT Squeeze' })
+    page.getByRole('tab', { name: 'Qualifying Totals' })
   ).toHaveAttribute('aria-selected', 'true')
   await expect(
-    page.getByRole('heading', { name: /QT Squeeze/i })
+    page.getByRole('heading', { name: /Qualifying Totals/i })
   ).toBeVisible()
   check()
 })

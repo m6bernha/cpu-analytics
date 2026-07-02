@@ -35,7 +35,7 @@ npx playwright test --ui
 | Test | Route |
 |------|-------|
 | Progression tab loads | `/` |
-| QT Squeeze renders | `/?tab=qt` |
+| Qualifying Totals renders | `/?tab=qt` |
 | Lifter Lookup search input visible | `/?tab=lookup` |
 | Pre-filled lifter detail | `/?tab=lookup&lifter=Matthias%20Bernhard` |
 | Compare mode renders | `/?tab=lookup&mode=compare&lifters=Matthias%20Bernhard,Alex%20Mardell` |
