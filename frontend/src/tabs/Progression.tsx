@@ -173,6 +173,16 @@ export default function Progression({ isActive }: { isActive: boolean }) {
     enabled: filtersQuery.isSuccess && filters.per_lift === 'true',
   })
 
+  // Per-lift can come back structurally valid but empty (ordinal x-axes
+  // like Career quartile / Bodyweight bucket are unsupported per-lift,
+  // and a tight filter combo can zero out the cohort). Show a message
+  // instead of an empty chart frame.
+  const perLiftEmpty =
+    liftProgQuery.data != null &&
+    liftProgQuery.data.lifts.squat.length === 0 &&
+    liftProgQuery.data.lifts.bench.length === 0 &&
+    liftProgQuery.data.lifts.deadlift.length === 0
+
   // Weight class options depend on sex. "Overall" is always first.
   const weightClassOptions = useMemo<string[]>(() => {
     const f = filtersQuery.data
@@ -374,7 +384,14 @@ export default function Progression({ isActive }: { isActive: boolean }) {
             Lift progression failed: {(liftProgQuery.error as Error).message}
           </div>
         )}
-        {filters.per_lift === 'true' && liftProgQuery.data && (
+        {filters.per_lift === 'true' && perLiftEmpty && (
+          <div className="text-zinc-500 text-sm">
+            No per-lift data for this filter combination. Per-lift view
+            supports time-based x-axes only (Meet # / Days / Weeks / Months /
+            Years). Try switching the x-axis or loosening a filter.
+          </div>
+        )}
+        {filters.per_lift === 'true' && liftProgQuery.data && !perLiftEmpty && (
           <>
             <div className="text-sm text-zinc-400 mb-2">
               <span className="text-zinc-200 tabular-nums">
