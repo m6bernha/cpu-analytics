@@ -643,6 +643,6 @@ def api_projection_engines() -> dict[str, Any]:
         "mixed_effects": {
             "available": athlete_proj_mod.is_engine_d_globally_available(),
             "convergence_rate": athlete_proj_mod.get_mixedlm_converged_pct(),
-            "n_cells": len(athlete_proj_mod._MIXEDLM),
+            "n_cells": athlete_proj_mod.get_mixedlm_cell_count(),
         },
     }

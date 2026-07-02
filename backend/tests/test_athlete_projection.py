@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 import backend.app.athlete_projection as ap
+import backend.app.athlete_projection_tables as apt
 
 
 # -----------------------------------------------------------------------------
@@ -23,12 +24,12 @@ def precomputed(test_conn):
     """Populate module-level cohort + K-M + MixedLM tables from the test parquet."""
     ap.precompute_tables()
     yield
-    ap._COHORT = {}
-    ap._KM = {}
-    ap._MIXEDLM = {}
-    ap._MIXEDLM_CONVERGED_PCT = 0.0
-    ap._ENGINE_D_GLOBAL_AVAILABLE = False
-    ap._PRECOMPUTED = False
+    apt._COHORT = {}
+    apt._KM = {}
+    apt._MIXEDLM = {}
+    apt._MIXEDLM_CONVERGED_PCT = 0.0
+    apt._ENGINE_D_GLOBAL_AVAILABLE = False
+    apt._PRECOMPUTED = False
 
 
 # =============================================================================
@@ -225,17 +226,17 @@ class TestGlpBracketCohort:
         # Replace Bob's Open + <60 cell with a very high slope, and the next
         # bracket with a very low slope. A pass-1 projection at the high slope
         # may push the projected total into the next bracket.
-        original = dict(ap._COHORT)
+        original = dict(apt._COHORT)
 
         from backend.app.ipf_gl_points import GLP_BRACKET_LABELS
         for lift in ap.LIFT_KEYS:
-            ap._COHORT[("Open", "<60", lift)] = ap.GlpCohortCell(
+            apt._COHORT[("Open", "<60", lift)] = ap.GlpCohortCell(
                 division="Open", glp_bracket="<60", lift=lift,
                 n_lifters=100, slope_kg_per_day=0.20,  # extreme gain
                 residual_std=0.01, merged_from=(), is_global_fallback=False,
             )
             for b in GLP_BRACKET_LABELS[1:]:
-                ap._COHORT[("Open", b, lift)] = ap.GlpCohortCell(
+                apt._COHORT[("Open", b, lift)] = ap.GlpCohortCell(
                     division="Open", glp_bracket=b, lift=lift,
                     n_lifters=100, slope_kg_per_day=0.001,
                     residual_std=0.001, merged_from=(), is_global_fallback=False,
@@ -253,8 +254,8 @@ class TestGlpBracketCohort:
             # at the boundary) or a transition is observed. Both are valid.
             assert distinct >= 1
         finally:
-            ap._COHORT.clear()
-            ap._COHORT.update(original)
+            apt._COHORT.clear()
+            apt._COHORT.update(original)
 
 
 # =============================================================================
@@ -551,8 +552,8 @@ class TestSerializedTables:
         """serialize_tables -> load_serialized_tables yields byte-equivalent
         in-memory state."""
         path = tmp_path / "athlete_projection_tables.json"
-        cohort_before = dict(ap._COHORT)
-        km_before = dict(ap._KM)
+        cohort_before = dict(apt._COHORT)
+        km_before = dict(apt._KM)
         assert len(cohort_before) > 0
         assert len(km_before) > 0
 
@@ -561,9 +562,9 @@ class TestSerializedTables:
         assert path.stat().st_size > 0
 
         # Reset module state to be sure load actually repopulates it.
-        ap._COHORT = {}
-        ap._KM = {}
-        ap._PRECOMPUTED = False
+        apt._COHORT = {}
+        apt._KM = {}
+        apt._PRECOMPUTED = False
 
         stats = ap.load_serialized_tables(path)
         assert stats["cohort_cells"] == len(cohort_before)
@@ -574,9 +575,9 @@ class TestSerializedTables:
         # keys (multiple dict keys that pointed to the same Cell object
         # before serialisation must still point to the same Cell object
         # after load).
-        assert set(ap._COHORT.keys()) == set(cohort_before.keys())
+        assert set(apt._COHORT.keys()) == set(cohort_before.keys())
         for key, before in cohort_before.items():
-            after = ap._COHORT[key]
+            after = apt._COHORT[key]
             assert after.division == before.division
             assert after.glp_bracket == before.glp_bracket
             assert after.lift == before.lift
@@ -591,7 +592,7 @@ class TestSerializedTables:
             assert after.is_global_fallback == before.is_global_fallback
 
         for div, km in km_before.items():
-            loaded = ap._KM[div]
+            loaded = apt._KM[div]
             assert loaded.sample_size == km.sample_size
             assert loaded.survival_by_month == km.survival_by_month
 
@@ -604,7 +605,7 @@ class TestSerializedTables:
         reflect across its aliased keys."""
         from collections import defaultdict
         before_groups: dict[int, list] = defaultdict(list)
-        for key, cell in ap._COHORT.items():
+        for key, cell in apt._COHORT.items():
             before_groups[id(cell)].append(key)
         aliased_groups = [keys for keys in before_groups.values() if len(keys) > 1]
         if not aliased_groups:
@@ -612,13 +613,13 @@ class TestSerializedTables:
 
         path = tmp_path / "tables.json"
         ap.serialize_tables(path)
-        ap._COHORT = {}
-        ap._KM = {}
-        ap._PRECOMPUTED = False
+        apt._COHORT = {}
+        apt._KM = {}
+        apt._PRECOMPUTED = False
         ap.load_serialized_tables(path)
 
         for keys in aliased_groups:
-            cells_after = {id(ap._COHORT[k]) for k in keys}
+            cells_after = {id(apt._COHORT[k]) for k in keys}
             assert len(cells_after) == 1, (
                 f"merged-alias group {keys} lost identity during round trip: "
                 f"{cells_after}"
@@ -663,8 +664,8 @@ class TestMixedLMCellSerialization:
         """serialize_tables -> load_serialized_tables preserves MixedLM
         fit parameters and merged-alias identity for `_MIXEDLM`."""
         path = tmp_path / "tables.json"
-        mixedlm_before = dict(ap._MIXEDLM)
-        pct_before = ap._MIXEDLM_CONVERGED_PCT
+        mixedlm_before = dict(apt._MIXEDLM)
+        pct_before = apt._MIXEDLM_CONVERGED_PCT
         # Synthetic fixture is small; the test fixture's lifters may not
         # produce any MixedLM cells. Skip if so -- the cohort serialization
         # tests already prove the round-trip mechanics.
@@ -672,15 +673,15 @@ class TestMixedLMCellSerialization:
             pytest.skip("synthetic fixture produced no MixedLM cells")
 
         ap.serialize_tables(path)
-        ap._MIXEDLM = {}
-        ap._MIXEDLM_CONVERGED_PCT = 0.0
+        apt._MIXEDLM = {}
+        apt._MIXEDLM_CONVERGED_PCT = 0.0
 
         stats = ap.load_serialized_tables(path)
         assert stats["mixedlm_cells"] == len(mixedlm_before)
-        assert ap._MIXEDLM_CONVERGED_PCT == pytest.approx(pct_before)
+        assert apt._MIXEDLM_CONVERGED_PCT == pytest.approx(pct_before)
 
         for key, before in mixedlm_before.items():
-            after = ap._MIXEDLM[key]
+            after = apt._MIXEDLM[key]
             assert after.division == before.division
             assert after.glp_bracket == before.glp_bracket
             assert after.lift == before.lift
@@ -776,12 +777,12 @@ class TestEngineDRuntime:
         """Empty `_MIXEDLM` -> all 3 lifts fall back, not partial."""
         name, _ = self._pick_lifter(precomputed)
         # Save + clear MixedLM, then restore in finally.
-        saved = dict(ap._MIXEDLM)
-        ap._MIXEDLM = {}
+        saved = dict(apt._MIXEDLM)
+        apt._MIXEDLM = {}
         try:
             result = ap.mixed_effects_projection(name, horizon_months=12)
         finally:
-            ap._MIXEDLM = saved
+            apt._MIXEDLM = saved
         assert result is not None
         assert result.engine == "mixed_effects"
         meta = result.meta
@@ -798,9 +799,9 @@ class TestEngineDRuntime:
         assert bracket is not None, "fixture lifter has no resolved bracket"
 
         # Build a synthetic MixedLM table where deadlift fails.
-        saved = dict(ap._MIXEDLM)
-        saved_pct = ap._MIXEDLM_CONVERGED_PCT
-        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        saved = dict(apt._MIXEDLM)
+        saved_pct = apt._MIXEDLM_CONVERGED_PCT
+        saved_avail = apt._ENGINE_D_GLOBAL_AVAILABLE
         synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
         for lift in ap.LIFT_KEYS:
             synth[(division, bracket, lift)] = _make_mixedlm_cell(
@@ -809,15 +810,15 @@ class TestEngineDRuntime:
                 lift=lift,
                 converged=(lift != "deadlift"),
             )
-        ap._MIXEDLM = synth
-        ap._MIXEDLM_CONVERGED_PCT = 0.95
-        ap._ENGINE_D_GLOBAL_AVAILABLE = True
+        apt._MIXEDLM = synth
+        apt._MIXEDLM_CONVERGED_PCT = 0.95
+        apt._ENGINE_D_GLOBAL_AVAILABLE = True
         try:
             result = ap.mixed_effects_projection(name, horizon_months=12)
         finally:
-            ap._MIXEDLM = saved
-            ap._MIXEDLM_CONVERGED_PCT = saved_pct
-            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+            apt._MIXEDLM = saved
+            apt._MIXEDLM_CONVERGED_PCT = saved_pct
+            apt._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
 
         assert result is not None
         meta = result.meta
@@ -834,9 +835,9 @@ class TestEngineDRuntime:
         bracket = (result_c.meta or {}).get("lifter_bracket", {}).get("bracket")
         assert bracket is not None
 
-        saved = dict(ap._MIXEDLM)
-        saved_pct = ap._MIXEDLM_CONVERGED_PCT
-        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        saved = dict(apt._MIXEDLM)
+        saved_pct = apt._MIXEDLM_CONVERGED_PCT
+        saved_avail = apt._ENGINE_D_GLOBAL_AVAILABLE
         synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
         for lift in ap.LIFT_KEYS:
             synth[(division, bracket, lift)] = _make_mixedlm_cell(
@@ -845,15 +846,15 @@ class TestEngineDRuntime:
                 lift=lift,
                 converged=True,
             )
-        ap._MIXEDLM = synth
-        ap._MIXEDLM_CONVERGED_PCT = 0.95
-        ap._ENGINE_D_GLOBAL_AVAILABLE = True
+        apt._MIXEDLM = synth
+        apt._MIXEDLM_CONVERGED_PCT = 0.95
+        apt._ENGINE_D_GLOBAL_AVAILABLE = True
         try:
             result = ap.mixed_effects_projection(name, horizon_months=12)
         finally:
-            ap._MIXEDLM = saved
-            ap._MIXEDLM_CONVERGED_PCT = saved_pct
-            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+            apt._MIXEDLM = saved
+            apt._MIXEDLM_CONVERGED_PCT = saved_pct
+            apt._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
 
         assert result is not None
         meta = result.meta
@@ -869,9 +870,9 @@ class TestEngineDRuntime:
         bracket = (result_c.meta or {}).get("lifter_bracket", {}).get("bracket")
         assert bracket is not None
 
-        saved = dict(ap._MIXEDLM)
-        saved_pct = ap._MIXEDLM_CONVERGED_PCT
-        saved_avail = ap._ENGINE_D_GLOBAL_AVAILABLE
+        saved = dict(apt._MIXEDLM)
+        saved_pct = apt._MIXEDLM_CONVERGED_PCT
+        saved_avail = apt._ENGINE_D_GLOBAL_AVAILABLE
         synth: dict[tuple[str, str, str], ap.MixedLMCell] = {}
         for lift in ap.LIFT_KEYS:
             synth[(division, bracket, lift)] = _make_mixedlm_cell(
@@ -880,15 +881,15 @@ class TestEngineDRuntime:
                 lift=lift,
                 converged=True,
             )
-        ap._MIXEDLM = synth
-        ap._MIXEDLM_CONVERGED_PCT = 0.5
-        ap._ENGINE_D_GLOBAL_AVAILABLE = False
+        apt._MIXEDLM = synth
+        apt._MIXEDLM_CONVERGED_PCT = 0.5
+        apt._ENGINE_D_GLOBAL_AVAILABLE = False
         try:
             result = ap.mixed_effects_projection(name, horizon_months=12)
         finally:
-            ap._MIXEDLM = saved
-            ap._MIXEDLM_CONVERGED_PCT = saved_pct
-            ap._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
+            apt._MIXEDLM = saved
+            apt._MIXEDLM_CONVERGED_PCT = saved_pct
+            apt._ENGINE_D_GLOBAL_AVAILABLE = saved_avail
 
         assert result.meta["engine_d_available"] is False
         # But it still ran with the synthetic cells, so partial=False

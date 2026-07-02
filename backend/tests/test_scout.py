@@ -17,6 +17,7 @@ from __future__ import annotations
 import pytest
 
 from backend.app import athlete_projection as ap
+from backend.app import athlete_projection_tables as apt
 from backend.app.scout import (
     ScoutManualOverride,
     ScoutMeetRequest,
@@ -33,12 +34,12 @@ def precomputed(test_conn):
     """Populate module-level cohort + K-M + MixedLM tables."""
     ap.precompute_tables()
     yield
-    ap._COHORT = {}
-    ap._KM = {}
-    ap._MIXEDLM = {}
-    ap._MIXEDLM_CONVERGED_PCT = 0.0
-    ap._ENGINE_D_GLOBAL_AVAILABLE = False
-    ap._PRECOMPUTED = False
+    apt._COHORT = {}
+    apt._KM = {}
+    apt._MIXEDLM = {}
+    apt._MIXEDLM_CONVERGED_PCT = 0.0
+    apt._ENGINE_D_GLOBAL_AVAILABLE = False
+    apt._PRECOMPUTED = False
 
 
 def _make_req(roster_entries, meet_date="2027-06-01"):
