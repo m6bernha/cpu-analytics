@@ -72,7 +72,7 @@ Supported URL keys (as of 2026-04):
 
 | Key | Scope | Example values |
 |---|---|---|
-| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `about` |
+| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `scout`, `about` |
 | `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile` |
 | `mode` | Lifter Lookup | `search`, `compare`, `manual` |
 | `lifter` | Lifter Lookup search mode | `Matthias Bernhard` |
@@ -80,7 +80,7 @@ Supported URL keys (as of 2026-04):
 | `era` | Lifter Lookup | `pre2025`, `2025`, `2027` |
 | `view_mode` | Lifter Lookup | `total`, `per_lift` |
 | `range` | Lifter Lookup compare | `all`, `6`, `12`, `24`, `60` |
-| `ap_name`, `ap_horizon`, `ap_qt_year` | Athlete Projection | `Matthias Bernhard`, `12`, `2027` |
+| `ap_lifter`, `ap_horizon`, `ap_lift`, `ap_show_qt`, `ap_qt_year` | Athlete Projection | `Matthias Bernhard`, `12`, `total`, `true`, `2027` |
 
 Example deep links:
 - `?tab=progression&weight_class=83&x_axis=Months`
@@ -174,7 +174,7 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  348 backend tests, 1 skipped, ~65 s, covering progression (incl.
+  351 backend tests, 1 skipped, ~65 s, covering progression (incl.
   Bodyweight bucket + per-lift guard), lifters, projection, athlete
   projection (Engine C + D), QT (federal + provincial scrapers), manual
   entry, scout, security, weight class Hypothesis, and concurrency.
@@ -285,7 +285,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**348 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
+**351 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and
