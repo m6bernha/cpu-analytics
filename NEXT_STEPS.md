@@ -28,7 +28,7 @@ the approved roadmap, all deployed and verified live:
 | AthleteProjection.tsx split (1589 -> 405-line orchestrator + 5 modules) | `b96f568` |
 | athlete_projection.py split (tables / engine_c / engine_d + facade) | `0a4eb36` (parallel session) |
 
-## 2026-07-02 -- Scout WIP lock + bundle regression found
+## 2026-07-02 -- Scout WIP lock + bundle regression fixed
 
 - **Scout locked as WIP** (`SCOUT_LOCKED = true` in
   `frontend/src/tabs/Scout.tsx`, commit `b2f38c7`). Tab stays public, page
@@ -37,13 +37,19 @@ the approved roadmap, all deployed and verified live:
   it. Unlock checklist before flipping the flag: manual-override form UI,
   native PDF export, and a real-roster accuracy pass (name matching,
   stale-lifter handling).
-- **Main-bundle regression (P1):** the Dependabot lockfile bump (#16,
-  `f9c1c0d`) moved Vite 8 onto rolldown chunking, which inlines Recharts
-  into the entry chunk. Main bundle went ~369 KB (108.9 KB gzip) to
-  ~722 KB (211 KB gzip), live in prod since the sprint push. Recharts is
-  entry-reachable through `Progression.tsx`'s static import, so the fix
-  is either rolldown `codeSplitting`/`advancedChunks` config or
-  lazy-loading the Progression/QT chart subtrees. One focused session.
+- **Main-bundle regression -- FIXED** (`aa6fa56`). The Dependabot
+  lockfile bump (#16, `f9c1c0d`) moved Vite 8 onto rolldown chunking,
+  which stopped auto-hoisting Recharts and fused app + React + Recharts
+  into one 722 KB (211 KB gzip) entry chunk. Fix: a function-form
+  `manualChunks` in `frontend/vite.config.ts` splits `recharts`
+  (108 KB gzip) and `react` (60 KB gzip) into their own cacheable
+  chunks, leaving a 43 KB gzip app chunk. First-paint bytes for the
+  default Progression tab are unchanged (Recharts is needed there), but
+  returning visitors after a deploy re-download only the 43 KB app
+  chunk, the three chunks load in parallel, and the 500 KB chunk-size
+  warning is resolved. Note: rolldown's `manualChunks` only accepts the
+  function form, not the object form -- the object form is a TS2769
+  build error.
 
 ---
 
