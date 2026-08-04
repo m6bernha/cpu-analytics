@@ -9,6 +9,36 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-04 -- Fable 5 deep audit + fixes (first session back after 33 days idle)
+
+Six-dimension multi-agent audit (backend / frontend / tests / infra / docs /
+security) with adversarial verification of code findings. Verdict: repo and
+live infra healthy after a month unattended. All 351 pytest + 53 Vitest +
+build green at baseline; Render + Vercel live; weekly data refreshes all
+succeeded (parquet refreshed 2026-08-02). Only data-staleness is upstream:
+OpenIPF's latest meet is 2026-06-13.
+
+Confirmed findings, all fixed this session:
+
+| Finding | Severity | Fix |
+|---|---|---|
+| `ReferenceLine` missing `ifOverflow="extendDomain"` in CompareView (QT lines) + LifterDetail (Regionals/Nationals) | critical / high | Prop added at all 3 sites, matching ProjectionChart |
+| No rate limiting on expensive public POSTs | high | New `backend/app/rate_limit.py` sliding-window middleware: scout 10/min, manual 30/min per IP, 429 + Retry-After, XFF-last-entry identity |
+| Scout `_row_from_override` hardcoded status, bypassing recency | medium | Recency-aware: unknown or stale (>2 yr) reads Frozen, recent reads Established; locked by new tests |
+| 3 dead engine_d imports in athlete_projection facade | medium | Removed (`_mixedlm_to_virtual_cohort_cell` kept, tests use it via facade) |
+| CORS `allow_methods=['*']`, `allow_headers=['*']` | low | Tightened to GET/POST/HEAD/OPTIONS + Content-Type |
+| preprocess.py docstring claimed no scope filtering happens there | high (docs) | Docstring corrected (Canada+IPF filter, --no-scope-filter escape) |
+| CLAUDE.md drift: QT Squeeze naming x2, per-lift plumbing listed open (shipped `98cbdef`), stale bundle numbers | low (docs) | All corrected |
+
+Refuted by verification (no action): mixed SQL parameterization in
+engine C (constants only, not reachable from user input).
+
+Also this session: Arena Powerlifting product teardown completed as input
+to the social-layer design (leaderboards + public profiles + share cards
+first; skip live scoreboards / team dashboards).
+
+---
+
 ## 2026-07-02 -- Productization sprint -- SHIPPED (16 commits, 9df7b7b..1b605db)
 
 Full-codebase review (3 parallel agents: backend / frontend / product) then

@@ -16,8 +16,10 @@ What it does:
   * Coerces Date and TotalKg to real types.
   * Drops rows missing Date/TotalKg/Sex/Name/WeightClassKg (unusable for the app).
   * Adds CanonicalWeightClass using backend.app.weight_class.canonical_weight_class.
-  * Writes Parquet via pyarrow. No filtering on country/federation/equipment/tested
-    happens here; those stay query-time knobs so the public app can serve any scope.
+  * Scopes rows to Country=Canada AND ParentFederation=IPF before writing
+    (skip with --no-scope-filter, which emits openipf_global.parquet instead).
+    Equipment/tested stay query-time knobs.
+  * Writes Parquet via pyarrow.
 """
 
 from __future__ import annotations

@@ -10,7 +10,7 @@ A public web app for Canadian raw powerlifters competing in CPU and IPF-sanction
 1. **Progression** — cohort average total change over time, filterable. X-axis options: Meet # / Days / Weeks / Months / Years / Career quartile / Bodyweight bucket (the last two are ordinal — trendline computes but projection short-circuits).
 2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
-4. **QT Squeeze** — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
+4. **Qualifying Totals** (URL key `qt`) — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
 5. **Scout (BETA, LOCKED as WIP since 2026-07-02)** — _The tab is public but the page renders a WIP notice with the form greyed out and disabled (`SCOUT_LOCKED = true` in `frontend/src/tabs/Scout.tsx`, one-line flip to re-enable). Locked pending validation of the roster layer. Unlock checklist: manual-override form UI, native PDF export, real-roster accuracy pass (see NEXT_STEPS.md). The 2026-07-01 relaunch added a sex display filter (Women/Men/All, `print:hidden`), a `sex` column in `ScoutAthleteRow`, and per-class methodology copy._ Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report`. v1 stopgap PDF is browser-print (the form hides under `@media print` via `frontend/src/index.css`).
 6. **About** (public in the nav as of 2026-07-01) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Also linked from every other tab's methodology block.
 
@@ -145,10 +145,11 @@ specifically, not the first meet of any kind.
 - **`/api/ready` is a real readiness probe.** Runs `SELECT 1` via `get_cursor()`. Returns 503 if the parquet views are broken. `/api/health` is liveness only and doesn't touch DuckDB.
 - **Request timing middleware** logs `[req] METHOD /path STATUS <ms>` on every request. Crashes log `CRASH in <ms>ms`. Visible in Render logs.
 - **Dedicated DuckDB exception handler** catches `duckdb.Error`, logs the request path + exception + stack trace, returns a clean 503 JSON `{"error": "database_error"}`. Means future DuckDB issues show which endpoint triggered them.
+- **Per-IP rate limiting on expensive POSTs** (`backend/app/rate_limit.py`, added 2026-08-04). Sliding-window middleware on `POST /api/scout/report` (10/min) and `POST /api/manual/trajectory` (30/min), returns 429 + Retry-After. Client IP = LAST X-Forwarded-For entry (Render appends the real one; earlier entries are spoofable). In-process state only, valid while uvicorn runs single-worker. Registered BEFORE CORSMiddleware in main.py so CORS wraps the 429s. Test suite disables it via `RATE_LIMIT_ENABLED=0` in conftest.py; dedicated unit tests live in `test_rate_limit.py`.
 - **QueryClient defaults** (main.tsx): `retry: 3`, exponential backoff up to 30 s, `staleTime: 5 min`, `refetchOnWindowFocus: false`. Tuned for the Render free-tier cold start. Individual queries override staleTime where appropriate.
 - **Frontend error display pattern.** Every query uses `lib/QueryStatus.tsx`: `QueryErrorCard` (with HTTP status + Retry button + cold-start explanation) on `isError`, `LoadingSkeleton` on `isLoading`. Keeps users informed instead of rendering partially.
 - **CompareView is lazy-loaded.** `const CompareView = lazy(() => import('./CompareView'))` in `LifterLookup.tsx`. Ships as its own ~11 KB chunk. Do NOT add a static import from CompareView back into LifterLookup - it will defeat the split (vite warns `INEFFECTIVE_DYNAMIC_IMPORT`).
-- **LifterDetail is lazy-loaded.** `const LifterDetail = lazy(() => import('./LifterDetail'))` in `LifterLookup.tsx`. The whole detail view (chart + meet table + ClassChangeBadge + fmtDate/Kg/Sbd formatters + findQtForLifter + EVENT_DESCRIPTION + Era maps) lives in `frontend/src/tabs/LifterDetail.tsx` and ships as its own ~18 KB chunk. Both usages (search-mode and ManualEntryForm result block) are wrapped in `<Suspense fallback={<LoadingSkeleton lines={3} chart />}>`. Do NOT add a static import from LifterDetail.tsx back into LifterLookup.tsx — that would re-merge the lazy chunk into the main bundle. Recharts (~357 KB CartesianChart chunk) is now shared between CompareView and LifterDetail and only loads when either opens. Main bundle went from ~663 KB to 295.61 KB (-55%) in commit that landed 2026-04-20.
+- **LifterDetail is lazy-loaded.** `const LifterDetail = lazy(() => import('./LifterDetail'))` in `LifterLookup.tsx`. The whole detail view (chart + meet table + ClassChangeBadge + fmtDate/Kg/Sbd formatters + findQtForLifter + EVENT_DESCRIPTION + Era maps) lives in `frontend/src/tabs/LifterDetail.tsx` and ships as its own ~18 KB chunk. Both usages (search-mode and ManualEntryForm result block) are wrapped in `<Suspense fallback={<LoadingSkeleton lines={3} chart />}>`. Do NOT add a static import from LifterDetail.tsx back into LifterLookup.tsx — that would re-merge the lazy chunk into the main bundle. Historical numbers: the 2026-04-20 lazy-load split dropped the main bundle from ~663 KB to 295.61 KB. Since the rolldown vendor split (`aa6fa56`, 2026-07-02) the layout changed: app chunk ~155 KB raw / 43 KB gzip, react vendor ~60 KB gzip, recharts vendor ~377 KB raw / 108 KB gzip (verified 2026-08-04). Recharts still only loads with a chart-bearing view.
 - **Recharts + display:none (resolved via isActive prop).** Inactive tabs render with `display:none` at the wrapper level so tab-internal state (scroll, dropdown, typed search) survives switches. Each tab component takes an `isActive: boolean` prop from `App.tsx` and gates its `ResponsiveContainer` subtree with `{isActive && <ResponsiveContainer>...</ResponsiveContainer>}`. Fix landed 2026-04-21 in commit `cd5e579`. Pattern applies to `Progression.tsx`, `QTSqueeze.tsx` (four instances), `LifterDetail.tsx` (two), `CompareView.tsx` (one). `LifterLookup.tsx` threads `isActive` through to its lazy children. `AthleteProjection.tsx` accepts the prop for future charts. Do NOT reintroduce a ResponsiveContainer render outside the `{isActive && ...}` gate, and do NOT remove the display:none wrapper (that would break state preservation on tab switches). Residual Recharts console noise: width(0) height(0) fires once per chart on its very first render before ResizeObserver measures the container. Orthogonal to the display:none problem and not worth fixing — it's the Recharts init cycle, not a layout bug.
 - **Dots renamed to Goodlift through the SQL pipeline.** `backend/app/lifters.py` selects `Goodlift`, not `Dots`. If the locally preprocessed parquet was generated before the rename, `/api/lifter/history` returns 503 with `duckdb_error: column Goodlift not found`. Fix: re-run `python data/preprocess.py` to regenerate. The data_loader corrupt-parquet self-heal only checks row-count > 0, not schema completeness, so a stale-schema parquet will keep being served. See NEXT_STEPS.md Issue 16.
 - **Parallel-chat hook sweep risk.** When multiple Claude Code chats stage changes to the same worktree simultaneously, a concurrent commit hook or agent can sweep unrelated staged files into a single commit with only one chat's message. This happened three times on 2026-04-17 alone: Chat A's per-lift `main.py` inside Chat B's `e7432f5`, scroll-fix inside tooltip commit `24dadb5`, and an NEXT_STEPS.md stash/pop during the CI landing `12cbb46`. Mitigation: run parallel chats in git worktrees, not the same checkout, or dispatch serially. See `~/.claude/rules/common/parallel-chat-isolation.md`.
@@ -175,10 +176,11 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  351 backend tests, 1 skipped, ~65 s, covering progression (incl.
+  357 backend tests, 1 skipped, ~65 s, covering progression (incl.
   Bodyweight bucket + per-lift guard), lifters, projection, athlete
   projection (Engine C + D), QT (federal + provincial scrapers), manual
-  entry, scout, security, weight class Hypothesis, and concurrency.
+  entry, scout (incl. manual-override recency), rate limiting,
+  security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
 - `cd frontend && npm run test` -- 53 Vitest unit tests (useUrlState
@@ -248,7 +250,7 @@ The full 9-phase implementation roadmap lives at `~/.claude/plans/gleaming-toast
 - G5: GHA keepalive, request timing middleware, DuckDB exception handler
 
 **Tab taxonomy + attribution (2026-04-16):**
-- Tab order: Progression, Athlete Projection (BETA), Lifter Lookup, QT Squeeze
+- Tab order: Progression, Athlete Projection (BETA), Lifter Lookup, QT Squeeze (renamed Qualifying Totals 2026-07-01)
 - Attribution footer with LinkedIn/Instagram on every page
 - Equipment collapsed to Raw/Equipped; Event to Full Power/Bench Only
 - Division uses CPU canonical labels with backend alias-mapping
@@ -286,7 +288,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**351 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
+**357 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and
@@ -354,10 +356,9 @@ items summarized here:
    from 663 KB to 295.61 KB (-55%). Recharts now lives in a shared 357 KB
    CartesianChart chunk that only loads when CompareView or LifterDetail is
    opened. LifterDetail ships as its own 18 KB chunk.
-2. **Per-lift filter plumbing.** Frontend shows an amber warning that per-lift
-   view ignores age_category, same_class_only, and max_gap_months. Data-correctness
-   gap. Extend `compute_lift_progression` to accept and apply those filters
-   (including baseline recomputation for age_category).
+2. **Per-lift filter plumbing** — SHIPPED (commit `98cbdef`).
+   `compute_lift_progression` accepts and applies age_category,
+   same_class_only, and max_gap_months; the amber warning is gone.
 
 ### Medium-priority features
 
