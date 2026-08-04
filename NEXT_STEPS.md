@@ -37,6 +37,33 @@ Also this session: Arena Powerlifting product teardown completed as input
 to the social-layer design (leaderboards + public profiles + share cards
 first; skip live scoreboards / team dashboards).
 
+### Scout UNLOCKED (same session)
+
+The full 2026-07-02 unlock checklist shipped and `SCOUT_LOCKED` flipped
+to false:
+
+- **Manual-override form UI.** Override cards under the roster textarea
+  (name, best total required; S/B/D, class, sex, last meet optional).
+  Merge logic in `frontend/src/lib/scoutOverrides.ts` with 9 Vitest
+  cases: attach to roster line by case-insensitive name, append complete
+  overrides with no line, ignore incomplete drafts. Unranked names get
+  an "Add data" button that seeds a card.
+- **Native PDF export** (Phase 4). `frontend/src/lib/exportReportPdf.ts`:
+  html-to-image rasterizes the rendered (sex-filtered) report at 2x,
+  offscreen canvas slices A4 pages, jsPDF assembles. jspdf + its
+  html2canvas/purify deps ship as lazy chunks (~230 KB gzip total)
+  loaded only on the Download PDF click. App chunk cost of the whole
+  Scout unlock: +3 KB gzip.
+- **Accuracy pass vs live backend** (fresh 2026-08-02 parquet). Sunny
+  Daze 2026 replay: 70/80 matched (was 42/80 in the 2026-05-25 smoke;
+  28 lifters entered OpenIPF since, zero regressions). Manual-override
+  path verified live incl. the new recency statuses. The 74 kg 209.9 kg
+  gap anomaly checked and found real (Daniel Remulla 723.6 proj vs
+  513.7 next active). One defect found and fixed: internal double
+  spaces in a pasted name broke the backend exact match; `parseRoster`
+  now collapses internal whitespace (moved to scoutOverrides.ts,
+  tested).
+
 ---
 
 ## 2026-07-02 -- Productization sprint -- SHIPPED (16 commits, 9df7b7b..1b605db)

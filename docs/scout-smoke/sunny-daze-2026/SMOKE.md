@@ -94,3 +94,25 @@ print(json.dumps(json.loads(urllib.request.urlopen(req, timeout=120).read()))[:5
 Or visit https://cpu-analytics.vercel.app/?tab=scout , paste the roster from
 [`roster.json`](roster.json) (drop the JSON shell, keep one name per line,
 prefix homie names with `@`), and hit Generate.
+
+## 2026-08-04 re-run — Scout unlock accuracy pass
+
+Replayed the same roster against the live backend (parquet refreshed
+2026-08-02) as the accuracy gate before flipping `SCOUT_LOCKED = false`.
+
+| Metric | 2026-05-25 baseline | 2026-08-04 | Verdict |
+|---|---|---|---|
+| Matched | 42 | 70 | ✅ 28 lifters entered OpenIPF since; zero regressions |
+| Unranked | 38 | 10 | ✅ strict subset of the baseline unranked set |
+| Classes / homies | 7 / 4 | 7 / 4 | ✅ exact |
+
+Additional probes the baseline did not cover:
+
+- **Name matching**: uppercase matches (case-insensitive confirmed);
+  internal double spaces did NOT match — fixed same day by collapsing
+  internal whitespace in the frontend `parseRoster`.
+- **manual_override**: recent / stale / dateless overrides return
+  `is_manual=true` with recency statuses Established / Frozen / Frozen
+  per the 2026-08-04 status fix, verified live.
+- **74 kg gap outlier** (209.9 kg): real, not a bug — Daniel Remulla
+  projects 723.6 vs 513.7 for the next active lifter.

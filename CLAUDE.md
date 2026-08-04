@@ -11,7 +11,7 @@ A public web app for Canadian raw powerlifters competing in CPU and IPF-sanction
 2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
 3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
 4. **Qualifying Totals** (URL key `qt`) — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
-5. **Scout (BETA, LOCKED as WIP since 2026-07-02)** — _The tab is public but the page renders a WIP notice with the form greyed out and disabled (`SCOUT_LOCKED = true` in `frontend/src/tabs/Scout.tsx`, one-line flip to re-enable). Locked pending validation of the roster layer. Unlock checklist: manual-override form UI, native PDF export, real-roster accuracy pass (see NEXT_STEPS.md). The 2026-07-01 relaunch added a sex display filter (Women/Men/All, `print:hidden`), a `sex` column in `ScoutAthleteRow`, and per-class methodology copy._ Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report`. v1 stopgap PDF is browser-print (the form hides under `@media print` via `frontend/src/index.css`).
+5. **Scout (BETA, UNLOCKED 2026-08-04)** — Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Was WIP-locked 2026-07-02 through 2026-08-04; the unlock checklist (manual-override form UI, native PDF export, real-roster accuracy pass) shipped 2026-08-04 and `SCOUT_LOCKED = false` in `frontend/src/tabs/Scout.tsx` (flip to true to re-lock). Manual overrides: form cards merge into the roster by case-insensitive name via `frontend/src/lib/scoutOverrides.ts` (`buildRosterEntries`); complete overrides without a roster line are appended; unranked names get an "Add data" seed button. Native PDF export: `frontend/src/lib/exportReportPdf.ts` (html-to-image + jsPDF, both lazy chunks that only load on click); browser-print still works (form hides under `@media print`). `parseRoster` collapses internal whitespace because the backend matches names exactly. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report` (rate-limited 10/min per IP). Sex display filter (Women/Men/All) filters the rendered report client-side.
 6. **About** (public in the nav as of 2026-07-01) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Also linked from every other tab's methodology block.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
@@ -183,9 +183,10 @@ specifically, not the first meet of any kind.
   security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 53 Vitest unit tests (useUrlState
+- `cd frontend && npm run test` -- 62 Vitest unit tests (useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
-  meet-tier resolver + AthleteCard). Runs in jsdom, ~4 s.
+  meet-tier resolver + AthleteCard + Scout roster/override helpers).
+  Runs in jsdom, ~4 s.
 - `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
   also runs in CI via the `e2e` job (Arc 7, commit `166c5ff`) with
   `continue-on-error: true` until the suite is hardened. Requires
@@ -288,7 +289,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**357 pytest + 53 Vitest + 6 Playwright passing.** Pytest covers
+**357 pytest + 62 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

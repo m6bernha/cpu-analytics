@@ -8,7 +8,7 @@
 // `@` are homies (highlighted in the report). Names that don't match
 // OpenIPF fall to the Unranked appendix.
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 
 import {
@@ -16,19 +16,26 @@ import {
   type ScoutClassBlock,
   type ScoutMeetReport,
   type ScoutMeetRequest,
-  type ScoutRosterEntry,
   type ScoutStatusTag,
 } from '../lib/api'
+import { exportReportPdf } from '../lib/exportReportPdf'
 import { fmtInt, fmtKg } from '../lib/format'
+import {
+  EMPTY_OVERRIDE,
+  buildRosterEntries,
+  parseRoster,
+  type OverrideDraft,
+} from '../lib/scoutOverrides'
 
 interface ScoutProps {
   isActive: boolean
 }
 
-// Scout is locked while the roster fan-out gets validated. The tab stays
-// visible so visitors can see what is coming. Flip to false to re-enable
-// the form and report rendering.
-const SCOUT_LOCKED = true
+// Scout was locked as WIP from 2026-07-02 while the roster fan-out got
+// validated. Unlocked 2026-08-04 after the manual-override UI, native PDF
+// export, and the real-roster accuracy pass landed. Flip to true to
+// re-lock the form and report rendering.
+const SCOUT_LOCKED = false
 
 interface FormState {
   meetName: string
@@ -48,23 +55,6 @@ const INITIAL_FORM: FormState = {
   generatorName: '',
   generatorBrand: 'Vireo Powerlifting',
   rosterText: '',
-}
-
-function parseRoster(text: string): ScoutRosterEntry[] {
-  const entries: ScoutRosterEntry[] = []
-  const seen = new Set<string>()
-  for (const raw of text.split('\n')) {
-    let line = raw.trim()
-    if (!line) continue
-    const isHomie = line.startsWith('@')
-    if (isHomie) line = line.slice(1).trim()
-    if (!line) continue
-    const key = line.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    entries.push({ name: line, is_homie: isHomie })
-  }
-  return entries
 }
 
 function statusToneClass(tag: ScoutStatusTag): string {
@@ -96,6 +86,7 @@ function fmtDateRelative(iso: string | null, days: number | null): string {
 
 export default function Scout({ isActive }: ScoutProps) {
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [overrides, setOverrides] = useState<OverrideDraft[]>([])
 
   const mutation = useMutation<ScoutMeetReport, Error, ScoutMeetRequest>({
     mutationFn: postScoutReport,
@@ -108,6 +99,17 @@ export default function Scout({ isActive }: ScoutProps) {
     && /^\d{4}-\d{2}-\d{2}$/.test(form.meetDate)
     && roster.length > 0
 
+  const updateOverride = (i: number, patch: Partial<OverrideDraft>) =>
+    setOverrides(overrides.map((d, j) => (j === i ? { ...d, ...patch } : d)))
+  const removeOverride = (i: number) =>
+    setOverrides(overrides.filter((_, j) => j !== i))
+  const seedOverride = (name: string) =>
+    setOverrides((prev) =>
+      prev.some((d) => d.name.trim().toLowerCase() === name.toLowerCase())
+        ? prev
+        : [...prev, { ...EMPTY_OVERRIDE, name }],
+    )
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (SCOUT_LOCKED || !canSubmit) return
@@ -118,11 +120,38 @@ export default function Scout({ isActive }: ScoutProps) {
       meet_date: form.meetDate,
       generator_name: form.generatorName.trim(),
       generator_brand: form.generatorBrand.trim(),
-      roster,
+      roster: buildRosterEntries(roster, overrides),
     })
   }
 
   const report = mutation.data
+
+  // Native PDF export (Phase 4). Captures the rendered (and sex-filtered)
+  // report DOM, so the download matches what is on screen.
+  const reportRef = useRef<HTMLDivElement | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const handleExportPdf = async () => {
+    if (!reportRef.current || !report) return
+    setExporting(true)
+    setExportError(null)
+    try {
+      const slug =
+        report.request.meet_name
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || 'scout-report'
+      await exportReportPdf(
+        reportRef.current,
+        `scout-${slug}-${report.request.meet_date}.pdf`,
+      )
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'PDF export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // Display-only sex filter over the generated report. Rows with unknown
   // sex (manual overrides without one) are hidden while a filter is on.
@@ -277,6 +306,135 @@ export default function Scout({ isActive }: ScoutProps) {
               placeholder={'Jane Doe\nJohn Smith\n@My Lifter'}
             />
           </label>
+
+          <div className="md:col-span-2 space-y-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs text-zinc-400">
+                Manual overrides ({overrides.length})
+              </span>
+              <button
+                type="button"
+                onClick={() => setOverrides([...overrides, { ...EMPTY_OVERRIDE }])}
+                className="px-2 py-0.5 rounded text-xs border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100"
+              >
+                Add override
+              </button>
+              <span className="text-zinc-500 text-xs">
+                For lifters missing from OpenIPF. Best total stands in as the
+                projection. Matches a roster line by name, or adds the lifter
+                if no line matches.
+              </span>
+            </div>
+            {overrides.map((d, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-2 md:grid-cols-9 gap-2 rounded border border-zinc-800 bg-zinc-900/50 p-2"
+              >
+                <label className="text-[10px] text-zinc-500 space-y-0.5 col-span-2">
+                  <span>Name *</span>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={d.name}
+                    onChange={(e) => updateOverride(i, { name: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>Total kg *</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1500}
+                    step="0.5"
+                    value={d.bestTotal}
+                    onChange={(e) => updateOverride(i, { bestTotal: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>S kg</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    step="0.5"
+                    value={d.squat}
+                    onChange={(e) => updateOverride(i, { squat: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>B kg</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={400}
+                    step="0.5"
+                    value={d.bench}
+                    onChange={(e) => updateOverride(i, { bench: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>D kg</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={600}
+                    step="0.5"
+                    value={d.deadlift}
+                    onChange={(e) => updateOverride(i, { deadlift: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>Class</span>
+                  <input
+                    type="text"
+                    maxLength={20}
+                    value={d.weightClass}
+                    onChange={(e) => updateOverride(i, { weightClass: e.target.value })}
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                    placeholder="83"
+                  />
+                </label>
+                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                  <span>Sex</span>
+                  <select
+                    value={d.sex}
+                    onChange={(e) =>
+                      updateOverride(i, { sex: e.target.value as OverrideDraft['sex'] })
+                    }
+                    className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  >
+                    <option value="">—</option>
+                    <option value="F">F</option>
+                    <option value="M">M</option>
+                  </select>
+                </label>
+                <div className="flex items-end gap-1">
+                  <label className="text-[10px] text-zinc-500 space-y-0.5 flex-1">
+                    <span>Last meet</span>
+                    <input
+                      type="date"
+                      value={d.lastMeetDate}
+                      onChange={(e) => updateOverride(i, { lastMeetDate: e.target.value })}
+                      className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => removeOverride(i)}
+                    aria-label={`Remove override ${d.name || i + 1}`}
+                    className="pb-1 text-zinc-500 hover:text-red-400 text-sm leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="md:col-span-2 flex items-center gap-3">
             <button
               type="submit"
@@ -296,7 +454,7 @@ export default function Scout({ isActive }: ScoutProps) {
       </section>
 
       {!SCOUT_LOCKED && report && (
-        <div className="print:hidden flex items-center gap-2">
+        <div className="print:hidden flex items-center gap-2 flex-wrap">
           <span className="text-zinc-500 text-xs uppercase tracking-wide">Show</span>
           {(
             [
@@ -319,16 +477,37 @@ export default function Scout({ isActive }: ScoutProps) {
               {label}
             </button>
           ))}
+          <span className="flex-1" />
+          {exportError && (
+            <span className="text-xs text-red-400">{exportError}</span>
+          )}
+          <button
+            onClick={handleExportPdf}
+            disabled={exporting}
+            className="px-3 py-1 rounded text-xs border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:text-zinc-600 disabled:cursor-wait"
+          >
+            {exporting ? 'Exporting…' : 'Download PDF'}
+          </button>
         </div>
       )}
 
-      {!SCOUT_LOCKED && visibleReport && <ReportView report={visibleReport} />}
+      {!SCOUT_LOCKED && visibleReport && (
+        <div ref={reportRef}>
+          <ReportView report={visibleReport} onAddOverride={seedOverride} />
+        </div>
+      )}
     </div>
   )
 }
 
 
-function ReportView({ report }: { report: ScoutMeetReport }) {
+function ReportView({
+  report,
+  onAddOverride,
+}: {
+  report: ScoutMeetReport
+  onAddOverride?: (name: string) => void
+}) {
   const { request: req } = report
   return (
     <article className="scout-report space-y-6 text-zinc-200">
@@ -452,7 +631,19 @@ function ReportView({ report }: { report: ScoutMeetReport }) {
           </p>
           <ul className="text-zinc-300 text-xs grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1">
             {[...report.unranked].sort().map((n) => (
-              <li key={n}>{n}</li>
+              <li key={n} className="flex items-center gap-2">
+                <span>{n}</span>
+                {onAddOverride && (
+                  <button
+                    type="button"
+                    onClick={() => onAddOverride(n)}
+                    className="print:hidden text-[10px] text-zinc-500 hover:text-orange-300 border border-zinc-800 hover:border-zinc-600 rounded px-1"
+                    title="Seed a manual override in the form above, then regenerate"
+                  >
+                    Add data
+                  </button>
+                )}
+              </li>
             ))}
           </ul>
         </section>
