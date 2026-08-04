@@ -89,10 +89,7 @@ from .athlete_projection_engine_c import (
     to_response_dict,
 )
 from .athlete_projection_engine_d import (
-    _failed_mixedlm_cell,
-    _fit_mixedlm_cells,
-    _fit_one_mixedlm_cell,
-    _mixedlm_to_virtual_cohort_cell,
+    _mixedlm_to_virtual_cohort_cell,  # not in __all__; tests reach it via the facade
     mixed_effects_projection,
 )
 

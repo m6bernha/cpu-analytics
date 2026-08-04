@@ -253,7 +253,14 @@ def _row_from_override(
 
     last_iso = o.last_meet_date
     days_since = _days_between(last_iso, today_iso) if last_iso else None
-    status = "Frozen" if days_since is None else "Established"
+    # The classify_status ladder needs a meet count, which overrides do not
+    # carry. Classify on recency alone: unknown or stale (>2 yr) reads
+    # Frozen, matching the stale-exclusion rule; a recent meet reads
+    # Established as the neutral default.
+    if days_since is None or days_since > STALE_DAYS_THRESHOLD:
+        status = "Frozen"
+    else:
+        status = "Established"
 
     return ScoutAthleteRow(
         name=entry.name,

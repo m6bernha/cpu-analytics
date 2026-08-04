@@ -553,6 +553,7 @@ export default function LifterDetail({
                 y={regionalsQt}
                 stroke="#94a3b8"
                 strokeDasharray="4 4"
+                ifOverflow="extendDomain"
                 label={{
                   value: `Regionals ${ERA_LABEL[era]} (${regionalsQt.toFixed(0)})`,
                   position: 'insideTopLeft',
@@ -567,6 +568,7 @@ export default function LifterDetail({
                 y={nationalsQt}
                 stroke="#FB923C"
                 strokeDasharray="4 4"
+                ifOverflow="extendDomain"
                 label={{
                   value: `Nationals ${ERA_LABEL[era]} (${nationalsQt.toFixed(0)})`,
                   position: 'insideTopLeft',

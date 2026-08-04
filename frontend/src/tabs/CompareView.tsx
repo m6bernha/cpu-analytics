@@ -833,6 +833,7 @@ export default function CompareView({
                       y={rl.value}
                       stroke={rl.stroke}
                       strokeDasharray="4 4"
+                      ifOverflow="extendDomain"
                       label={{
                         value: rl.label,
                         position: 'insideTopRight',

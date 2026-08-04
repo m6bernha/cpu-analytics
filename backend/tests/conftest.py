@@ -7,8 +7,15 @@ read from the fixture instead of the real data.
 
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
+
+# Rate limiting is covered by dedicated unit tests (test_rate_limit.py)
+# against their own app instance; the shared TestClient suites would trip
+# the per-IP limits, so disable the middleware for the whole suite. Must
+# be set before backend.app.main is imported by any test module.
+os.environ.setdefault("RATE_LIMIT_ENABLED", "0")
 
 import duckdb
 import pandas as pd

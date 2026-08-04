@@ -40,6 +40,7 @@ from . import qt as qt_mod
 from .data import ATHLETE_PROJ_TABLES, OPENIPF_PARQUET, QT_PARQUET, get_cursor
 from .data_loader import ensure_athlete_proj_tables
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
+from .rate_limit import RateLimitMiddleware
 from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
 from .scout import ScoutMeetRequest, build_scout_report
 
@@ -171,6 +172,11 @@ app = FastAPI(
 _extra = os.environ.get("EXTRA_CORS_ORIGINS", "")
 _extra_origins = [o.strip() for o in _extra.split(",") if o.strip()]
 
+# Added before CORSMiddleware so CORS wraps it (Starlette: later
+# add_middleware = outer). CORS then decorates the 429 short-circuit
+# responses so browsers can read them cross-origin.
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -180,8 +186,8 @@ app.add_middleware(
     ],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "HEAD", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 # Gzip JSON responses. Cohort/qt payloads compress ~5-10x and dominate the

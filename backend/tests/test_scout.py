@@ -22,6 +22,7 @@ from backend.app.scout import (
     ScoutManualOverride,
     ScoutMeetRequest,
     ScoutRosterEntry,
+    _row_from_override,
     build_scout_report,
     classify_status,
 )
@@ -163,6 +164,25 @@ class TestManualOverride:
         assert row.weight_class == "83"
         assert row.sex == "M"
         assert "manual entry" in row.inline_tags
+        assert row.status_tag == "Established"  # recent last_meet_date
+
+    def test_manual_override_status_reflects_recency(self):
+        """Manual entries classify on recency alone: the ladder needs a
+        meet count, which overrides do not carry."""
+
+        def _row(last_meet_date):
+            override = ScoutManualOverride(
+                best_total_kg=600.0,
+                weight_class="83",
+                sex="M",
+                last_meet_date=last_meet_date,
+            )
+            entry = ScoutRosterEntry(name="Manual M", manual_override=override)
+            return _row_from_override(entry, today_iso="2026-08-04")
+
+        assert _row("2026-06-01").status_tag == "Established"  # recent
+        assert _row("2020-01-01").status_tag == "Frozen"       # stale >2 yr
+        assert _row(None).status_tag == "Frozen"               # unknown
 
 
 class TestStatusClassification:
