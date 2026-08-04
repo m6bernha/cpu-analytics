@@ -25,7 +25,7 @@ const TABS: { key: TabKey; label: string; hint: string; beta?: boolean }[] = [
   { key: 'projection', label: 'Athlete Projection', hint: 'Individual per-lift forecast with prediction intervals', beta: true },
   { key: 'lookup', label: 'Lifter Lookup', hint: 'Search any lifter, full meet history and PRs' },
   { key: 'qt', label: 'Qualifying Totals', hint: 'Live CPU + provincial qualifying total coverage' },
-  { key: 'scout', label: 'Scout', hint: 'Meet scouting reports, work in progress', beta: true },
+  { key: 'scout', label: 'Scout', hint: 'Meet scouting reports from a pasted roster', beta: true },
   { key: 'about', label: 'About', hint: 'Methodology, backtest results, references, disclaimers' },
 ]
 
@@ -42,6 +42,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:bg-zinc-900 focus:text-zinc-100 focus:px-3 focus:py-2 focus:rounded focus:border focus:border-orange-400"
+      >
+        Skip to content
+      </a>
       <header className="border-b border-zinc-800 px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
           <div>
@@ -68,7 +74,7 @@ export default function App() {
                 aria-selected={tab === t.key}
                 title={t.hint}
                 className={
-                  'px-3 py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
+                  'px-3 py-2 sm:py-1.5 rounded text-sm transition-colors whitespace-nowrap ' +
                   (tab === t.key
                     ? 'bg-zinc-800 text-zinc-100'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900')
@@ -86,7 +92,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <WelcomeHero onNavigate={(t) => setTab(t as TabKey)} />
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">

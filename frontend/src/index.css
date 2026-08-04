@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Keyboard-only focus ring, sitewide. Inputs and buttons widely use
+   Tailwind's focus:outline-none to suppress the mouse-focus outline;
+   this restores a visible indicator for keyboard navigation (Tab) in
+   one place instead of re-editing every element. !important is needed
+   to beat the .focus\:outline-none:focus utility's specificity. */
+*:focus-visible {
+  outline: 2px solid #fb923c !important;
+  outline-offset: 2px;
+}
+
 /* Scout tab: hide the form + chrome under browser-print so a coach can
    File → Print → Save as PDF and get a clean single-page report. The
    .scout-report block is preserved. v1 stopgap until native PDF export

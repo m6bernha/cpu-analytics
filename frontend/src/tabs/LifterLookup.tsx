@@ -81,6 +81,32 @@ function rowHasPartialLifts(r: ManualFormRow): boolean {
   return count > 0 && count < 3
 }
 
+// Human-readable reason a touched row cannot submit, or null for empty and
+// valid rows. Before this existed, not-ready rows were silently dropped at
+// submit time, which read as the chart ignoring data.
+function rowProblem(r: ManualFormRow): string | null {
+  const touched = Object.values(r).some((v) => v !== '')
+  if (!touched) return null
+  if (!r.date) return 'missing date'
+  if (rowHasPartialLifts(r)) {
+    return 'fill all three lifts, or clear them and enter a total only'
+  }
+  const hasTotal = r.total !== '' && Number(r.total) > 0
+  const hasSquat = r.squat !== '' && Number(r.squat) > 0
+  const hasBench = r.bench !== '' && Number(r.bench) > 0
+  const hasDead = r.deadlift !== '' && Number(r.deadlift) > 0
+  if (!hasTotal && !(hasSquat && hasBench && hasDead)) {
+    return 'needs a total or all three lifts'
+  }
+  if (hasTotal && hasSquat && hasBench && hasDead) {
+    const sum = Number(r.squat) + Number(r.bench) + Number(r.deadlift)
+    if (Math.abs(sum - Number(r.total)) > 0.01) {
+      return `total ${r.total} does not match S+B+D = ${sum}`
+    }
+  }
+  return null
+}
+
 function ManualEntryForm({
   onSubmit,
   pending,
@@ -111,8 +137,10 @@ function ManualEntryForm({
     setRows((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev))
 
   const validRows = rows.filter(rowReady)
-  const canSubmit = validRows.length >= 1
-  const hasPartialLiftWarning = rows.some(rowHasPartialLifts)
+  const problems = rows
+    .map((r, i) => [i, rowProblem(r)] as const)
+    .filter((pair): pair is readonly [number, string] => pair[1] !== null)
+  const canSubmit = validRows.length >= 1 && problems.length === 0
 
   return (
     <div>
@@ -415,18 +443,21 @@ function ManualEntryForm({
         </button>
         <button
           onClick={() => onSubmit({ sex, rows: validRows })}
-          disabled={!canSubmit || pending || hasPartialLiftWarning}
+          disabled={!canSubmit || pending}
           className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 text-zinc-100 text-sm rounded border border-zinc-600"
         >
           {pending ? 'Computing…' : 'Compute trajectory'}
         </button>
       </div>
 
-      {hasPartialLiftWarning && (
-        <div className="mt-3 text-orange-400 text-sm">
-          Some rows have one or two lifts filled but not all three. Fill in squat,
-          bench, and deadlift together, or clear them to enter a total only.
-        </div>
+      {problems.length > 0 && (
+        <ul className="mt-3 text-orange-400 text-sm space-y-0.5" aria-live="polite">
+          {problems.map(([i, msg]) => (
+            <li key={i}>
+              Meet #{i + 1}: {msg}
+            </li>
+          ))}
+        </ul>
       )}
 
       {error && (

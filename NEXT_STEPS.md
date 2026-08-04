@@ -64,6 +64,25 @@ to false:
   now collapses internal whitespace (moved to scoutOverrides.ts,
   tested).
 
+### Accessibility + mobile pass (same session)
+
+- **Sitewide keyboard focus ring.** One `*:focus-visible` rule in
+  `index.css` (coral outline, `!important` to beat the 28
+  `focus:outline-none` utilities across 9 components). Keyboard-only;
+  mouse focus stays clean.
+- **Skip-to-content link** in App.tsx (`sr-only` until focused, jumps
+  to `#main-content`).
+- **Manual-entry validation feedback.** New `rowProblem()` in
+  LifterLookup: touched-but-invalid rows now list "Meet #N: <reason>"
+  (missing date / partial lifts / no total / total-vs-S+B+D mismatch,
+  the last previously only caught server-side) instead of being
+  silently dropped at submit. Submit blocks until problems clear.
+- **Nav tap targets** bumped to `py-2` below the `sm` breakpoint.
+- **Stale copy**: Scout nav hint no longer says "work in progress".
+- Verified in-browser at 375px (accessibility tree): Scout unlocked
+  form, skip link first in tab order. **Real-phone walk of the live
+  site still on Matthias** per the visual-QA convention.
+
 ---
 
 ## 2026-07-02 -- Productization sprint -- SHIPPED (16 commits, 9df7b7b..1b605db)
