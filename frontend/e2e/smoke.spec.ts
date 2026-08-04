@@ -1,6 +1,11 @@
 // Smoke tests for key user routes. Requires:
 // - Vite dev server (auto-started by Playwright webServer config)
 // - Backend running at VITE_API_BASE (default: http://127.0.0.1:8000)
+//   serving the SYNTHETIC fixtures (python scripts/make_synthetic_data.py).
+//   Routes 4-5 assert on fixture lifters (Alice A, Bob B), so a backend
+//   on a real preprocessed parquet will fail them. CI wires this up in
+//   the e2e job; locally, back up data/processed/ first if it holds a
+//   real parquet.
 //
 // First run: npx playwright install chromium
 
@@ -59,43 +64,45 @@ test('/?tab=lookup shows search input', async ({ page }) => {
   check()
 })
 
-// Route 4: Lifter Lookup with pre-filled lifter — search input pre-filled
-test('/?tab=lookup&lifter=Matthias%20Bernhard renders detail', async ({ page }) => {
+// Route 4: pre-selected lifter renders the detail view. The `lifter` URL
+// key selects the lifter directly; the search input stays empty by design
+// (query is ephemeral local state). Asserts the detail heading, which
+// requires the synthetic fixture backend.
+test('/?tab=lookup&lifter=Alice%20A renders detail', async ({ page }) => {
   const check = watchConsoleErrors(page)
-  await page.goto('/?tab=lookup&lifter=Matthias%20Bernhard')
+  await page.goto('/?tab=lookup&lifter=Alice%20A')
   await expect(
     page.getByRole('tab', { name: 'Lifter Lookup' })
   ).toHaveAttribute('aria-selected', 'true')
-  await expect(
-    page.getByRole('textbox', { name: /search/i })
-  ).toHaveValue('Matthias Bernhard')
+  // Two headings carry the name (AthleteCard h2 + detail h3); either proves
+  // the detail view rendered.
+  await expect(page.getByRole('heading', { name: 'Alice A' }).first()).toBeVisible()
   check()
 })
 
-// Route 5: compare mode with two lifters — compare view renders
+// Route 5: compare mode with two fixture lifters — mode pill selected
+// (the pills are role=tab, not button) and both lifters render.
 test('/?tab=lookup&mode=compare&lifters=... renders compare', async ({ page }) => {
   const check = watchConsoleErrors(page)
-  await page.goto(
-    '/?tab=lookup&mode=compare&lifters=Matthias%20Bernhard,Alex%20Mardell'
-  )
+  await page.goto('/?tab=lookup&mode=compare&lifters=Alice%20A,Bob%20B')
   await expect(
-    page.getByRole('tab', { name: 'Lifter Lookup' })
+    page.getByRole('tab', { name: /compare/i })
   ).toHaveAttribute('aria-selected', 'true')
-  await expect(
-    page.getByRole('button', { name: /compare/i })
-  ).toBeVisible()
+  await expect(page.getByText('Alice A').first()).toBeVisible()
+  await expect(page.getByText('Bob B').first()).toBeVisible()
   check()
 })
 
-// Route 6: manual entry form visible
+// Route 6: manual entry form visible — mode pill selected and the submit
+// button rendered.
 test('/?tab=lookup&mode=manual shows manual entry form', async ({ page }) => {
   const check = watchConsoleErrors(page)
   await page.goto('/?tab=lookup&mode=manual')
   await expect(
-    page.getByRole('tab', { name: 'Lifter Lookup' })
+    page.getByRole('tab', { name: /manual/i })
   ).toHaveAttribute('aria-selected', 'true')
   await expect(
-    page.getByRole('button', { name: /manual/i })
+    page.getByRole('button', { name: /compute trajectory/i })
   ).toBeVisible()
   check()
 })
