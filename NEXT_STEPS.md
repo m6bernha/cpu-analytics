@@ -64,6 +64,24 @@ to false:
   now collapses internal whitespace (moved to scoutOverrides.ts,
   tested).
 
+### Social layer designed + CI e2e became a real gate (same session)
+
+- **ADR 0002** (`docs/adr/0002-social-layer-stateless.md`): Arena-style
+  social layer, stateless-first per Matthias's interview. No accounts /
+  no database yet. Phase 0 = tier badges + Rankings tab (/api/tiers +
+  /api/leaderboard). Phase 1 = real /athlete/{name} URLs + per-athlete
+  og:image edge function + meet result pages + share-card polish.
+  Research basis committed at `docs/research/arena-teardown-2026-08.md`.
+  **Phase 0 is the next build item.**
+- **CI e2e job is now a real gate.** `scripts/make_synthetic_data.py`
+  writes the pytest fixture rows as real files; the job boots uvicorn on
+  them, waits on /api/ready, runs Playwright, continue-on-error removed.
+  The first gated run exposed three stale assertions (mode pills are
+  role=tab, lifter URL key no longer prefills the search input); suite
+  updated to fixture lifters and verified 6/6 locally and in CI.
+  Consider adding `E2E (Playwright smoke)` to the required checks now
+  that it is meaningful (manual, GitHub settings).
+
 ### Accessibility + mobile pass (same session)
 
 - **Sitewide keyboard focus ring.** One `*:focus-visible` rule in
