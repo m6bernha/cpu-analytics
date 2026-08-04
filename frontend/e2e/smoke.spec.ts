@@ -9,6 +9,13 @@
 //
 // First run: npx playwright install chromium
 
+// IMPORTANT: every tab stays MOUNTED (inactive ones are display:none) so
+// tab-internal state survives switches. A bare page.getByText(...) therefore
+// matches hidden nodes in other tabs, and `.first()` can land on one in DOM
+// order — which is exactly what broke when the Rankings tab shipped a lifter
+// link named "Alice A". Always narrow name-based lookups with
+// `.filter({ visible: true })`.
+
 import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
 // Attach a console error collector and return a checker function.
@@ -76,7 +83,9 @@ test('/?tab=lookup&lifter=Alice%20A renders detail', async ({ page }) => {
   ).toHaveAttribute('aria-selected', 'true')
   // Two headings carry the name (AthleteCard h2 + detail h3); either proves
   // the detail view rendered.
-  await expect(page.getByRole('heading', { name: 'Alice A' }).first()).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Alice A' }).filter({ visible: true }).first()
+  ).toBeVisible()
   check()
 })
 
@@ -88,8 +97,13 @@ test('/?tab=lookup&mode=compare&lifters=... renders compare', async ({ page }) =
   await expect(
     page.getByRole('tab', { name: /compare/i })
   ).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByText('Alice A').first()).toBeVisible()
-  await expect(page.getByText('Bob B').first()).toBeVisible()
+  // Visible-filtered: other mounted tabs (Rankings) also render these names.
+  await expect(
+    page.getByText('Alice A').filter({ visible: true }).first()
+  ).toBeVisible()
+  await expect(
+    page.getByText('Bob B').filter({ visible: true }).first()
+  ).toBeVisible()
   check()
 })
 
