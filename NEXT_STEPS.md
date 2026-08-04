@@ -9,6 +9,77 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-04 -- Social layer Phase 0 SHIPPED (Rankings + percentile standing)
+
+First build wave off ADR 0002. Decisions taken in the pre-build interview,
+which resolved the three things the ADR left open:
+
+| Question | Decision |
+|---|---|
+| Leaderboard time window | **Active last 24 months** (not all-time) |
+| Tier naming | **None yet** — ship the raw percentile ("Top 4%"), name the tiers later |
+| Badge reach | Rankings + Lifter Lookup + AthleteCard |
+
+**Backend** (`backend/app/rankings.py`, 14 new pytests):
+
+- `GET /api/rankings` — one row per lifter at their best meet by the
+  selected metric (GLP or total), so total / GLP / class / date always
+  describe the same day. Filters: sex, weight class, division (canonical
+  alias table reused from progression). Paginated, global rank preserved
+  across pages. Metric column is whitelisted before reaching ORDER BY.
+- `GET /api/rankings/percentiles` — per-sex GLP curve, one value per whole
+  percentile (101 floats). Clients resolve any lifter's standing locally
+  by binary search, no per-lifter round trip.
+- Two scope invariants, both documented in CLAUDE.md gotchas: Raw SBD only
+  (GLP coefficients are Raw-Classic-specific, so the ADR's proposed
+  equipment filter was deliberately dropped rather than ship a wrong
+  metric), and the active window anchors to the newest meet in the parquet
+  rather than wall-clock today so a stalled refresh cannot empty the board.
+
+**Frontend** (10 new Vitest cases):
+
+- New Rankings tab, URL keys `rk_sex` / `rk_class` / `rk_div` /
+  `rk_metric` / `rk_page`.
+- `lib/percentile.ts` + `components/PercentileBadge.tsx`. The badge
+  self-hides below a 30-lifter cohort, and phrases the lower half as
+  "30th percentile" rather than "top 70%".
+- Badge also mounts on AthleteCard. Note the card now carries two
+  unrelated "tier" notions: meet PRESTIGE (local..international, ADR 0001)
+  and GLP STANDING (this). Named distinctly in the props.
+
+**Bug found and fixed while verifying** (`lib/useUrlState.ts`): `update()`
+called `writeUrl()` inside the `setState` updater. React runs updaters
+during the render phase and `writeUrl` dispatches its sync event
+synchronously, so every other mounted `useUrlState` instance called
+setState mid-render, and StrictMode double-wrote the URL. Pre-existing
+(reproduced on a clean checkout), but the new tab made it fire on every
+Rankings render. `update()` now merges against `read()` and writes outside
+the updater. Console is clean through repeated tab switching.
+
+**Verified against real data** (local backend, 69,306-row parquet):
+5,336 active lifters; men's p50 GLP 76.7 / p95 97.0, women's p50 69.0 /
+p95 94.2; a GLP-76.7 lifter renders "Top 50%", matching the p50 exactly.
+
+Note: ranking by GLP with sex=All puts women at the top of the board
+(F max 124.8 vs M max 113.4 in the current Canadian pool). That is what
+cross-sex GLP normalization means and the filter is one click away, but
+it is worth a look before Phase 1.
+
+**Next:** ADR 0002 Phase 1a — path routing + `/athlete/{name}` profile
+pages. Phases 1b (OG edge function), 1c (meet pages), 1d (share-card
+polish) follow.
+
+### Backlog: name the percentile tiers
+
+Deferred deliberately on 2026-08-04. Ship the raw percentile first, get a
+feel for the distribution live, then decide between Arena-style metals
+(Bronze / Silver / Gold / Elite / Legend at top 50/20/5/1%) and
+powerlifting class-based naming (Class 3 / Class 2 / Class 1 / Master /
+International). Percentile edges already exist in `PercentileBadge`'s
+`toneFor`; naming is additive.
+
+---
+
 ## 2026-08-04 -- Fable 5 deep audit + fixes (first session back after 33 days idle)
 
 Six-dimension multi-agent audit (backend / frontend / tests / infra / docs /

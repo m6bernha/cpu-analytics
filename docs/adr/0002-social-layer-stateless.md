@@ -108,10 +108,28 @@ touch (ShareButton already does this).
 
 | Phase | Work | Estimate |
 |---|---|---|
-| 0 | /api/tiers + tier badges + Rankings tab | 1-2 sessions |
+| 0 | ~~/api/tiers + tier badges + Rankings tab~~ **SHIPPED 2026-08-04** | 1 session |
 | 1a | Path routing + /athlete/{name} profile page | 1 session |
 | 1b | OG edge function + middleware | 1 session |
 | 1c | Meet pages + cross-linking | 1 session |
 | 1d | Share-card tier polish + mobile pass | 0.5 session |
 
 Phase 0 has no routing risk and ships value alone; start there.
+
+## Phase 0 as built (2026-08-04)
+
+Three deviations from the design above, all deliberate:
+
+1. **No tier names.** Matthias chose to ship the raw percentile ("Top 4%")
+   and defer naming until the distribution has been live. The five-tier
+   percentile table survives only as badge color thresholds. See the
+   backlog entry in NEXT_STEPS.md.
+2. **No equipment filter.** The design listed one, but IPF GL coefficients
+   are defined for Raw Classic SBD only, so an equipped row scored on the
+   same curve would be meaningless. Rankings are Raw SBD only.
+3. **Endpoints named `/api/rankings` and `/api/rankings/percentiles`**
+   rather than `/api/tiers`, matching what they actually return.
+
+Also added: the leaderboard is scoped to lifters **active in the last 24
+months**, a question the design did not settle. The window anchors to the
+newest meet in the parquet rather than wall-clock today.

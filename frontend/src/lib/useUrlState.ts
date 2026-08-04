@@ -89,24 +89,33 @@ export function useUrlState<T extends Record<string, string>>(
 
   const update = useCallback(
     (patch: Partial<T>) => {
-      setState((prev) => {
-        const next = { ...prev, ...patch } as T
-        const params = readParams()
-        for (const k of keys) {
-          const v = (next as Record<string, string>)[k as string]
-          if (v === (defaults as Record<string, string>)[k as string]) {
-            params.delete(k as string)
-          } else {
-            params.set(k as string, String(v))
-          }
+      // The URL write must NOT live inside a setState updater. React runs
+      // updaters during the render phase, and writeUrl dispatches
+      // URL_EVENT synchronously, so every other useUrlState instance would
+      // setState mid-render ("Cannot update a component while rendering a
+      // different component"). StrictMode also double-invokes updaters,
+      // which would write the URL twice.
+      //
+      // Merging against read() rather than React state is also more
+      // correct: the URL is the source of truth, and replaceState is
+      // synchronous, so two update() calls in the same tick compose
+      // instead of the second clobbering the first.
+      const next = { ...read(), ...patch } as T
+      const params = readParams()
+      for (const k of keys) {
+        const v = (next as Record<string, string>)[k as string]
+        if (v === (defaults as Record<string, string>)[k as string]) {
+          params.delete(k as string)
+        } else {
+          params.set(k as string, String(v))
         }
-        writeUrl(params)
-        return next
-      })
+      }
+      writeUrl(params)
+      setState(next)
       // defaults/keys treated as stable by convention.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [],
+    [read],
   )
 
   return [state, update]

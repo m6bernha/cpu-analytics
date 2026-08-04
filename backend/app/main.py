@@ -37,6 +37,7 @@ from . import lifters as lifters_mod
 from . import meta as meta_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
+from . import rankings as rankings_mod
 from .data import ATHLETE_PROJ_TABLES, OPENIPF_PARQUET, QT_PARQUET, get_cursor
 from .data_loader import ensure_athlete_proj_tables
 from .manual import ManualTrajectoryRequest, build_manual_trajectory
@@ -453,6 +454,44 @@ def api_lifters_search(
 @app.get("/api/lifters/{name}/history")
 def api_lifter_history(name: str) -> dict[str, Any]:
     return _clean(lifters_mod.get_lifter_history(name))
+
+
+@app.get("/api/rankings/percentiles")
+def api_rankings_percentiles() -> dict[str, Any]:
+    """Per-sex GLP percentile curves over the active (24-month) cohort.
+
+    Powers the "top X% in Canada" badge anywhere a GLP score renders.
+    Clients resolve a percentile locally against the returned curve
+    instead of round-tripping per lifter.
+    """
+    return _clean(rankings_mod.get_percentile_curves())
+
+
+@app.get("/api/rankings")
+def api_rankings(
+    sex: str | None = Query(None),
+    weight_class: str | None = Query(None),
+    division: str | None = Query(None),
+    metric: str = Query("glp"),
+    limit: int = Query(rankings_mod.DEFAULT_LIMIT, ge=1, le=rankings_mod.MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    """Leaderboard of lifters active in the last 24 months.
+
+    Raw SBD only: IPF GL coefficients are Raw-Classic-specific, so equipped
+    results are out of scope rather than silently mixed in. See
+    `backend/app/rankings.py` for the window and scope rules.
+    """
+    return _clean(
+        rankings_mod.compute_leaderboard(
+            sex=sex,
+            weight_class=weight_class,
+            division=division,
+            metric=metric,
+            limit=limit,
+            offset=offset,
+        )
+    )
 
 
 @app.post("/api/manual/trajectory")

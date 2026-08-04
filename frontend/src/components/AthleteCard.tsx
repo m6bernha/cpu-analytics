@@ -21,13 +21,25 @@ import type { Ref } from 'react'
 import type { LifterHistory } from '../lib/api'
 import { TIER_TOKENS, type Tier } from '../lib/colors'
 import { resolveHighestTier } from '../lib/meetTier'
+import { PercentileBadge } from './PercentileBadge'
+import type { PercentileCurves } from '../lib/percentile'
 
 interface AthleteCardProps {
   lifter: LifterHistory
+  /**
+   * GLP percentile curves from /api/rankings/percentiles. Optional: the
+   * card renders without the standing badge when absent (and the badge
+   * self-hides for lifters with no GLP or a too-small cohort).
+   *
+   * Note the two unrelated notions of "tier" on this card: `TIER_TOKENS`
+   * is meet PRESTIGE (local..international), while this is a STANDING
+   * percentile within the active cohort.
+   */
+  percentileCurves?: PercentileCurves
   ref?: Ref<HTMLDivElement>
 }
 
-export function AthleteCard({ lifter, ref }: AthleteCardProps) {
+export function AthleteCard({ lifter, percentileCurves, ref }: AthleteCardProps) {
   const meets = lifter.meets ?? []
 
   const totals = meets
@@ -91,6 +103,12 @@ export function AthleteCard({ lifter, ref }: AthleteCardProps) {
         {subtitle ? (
           <p className="text-sm text-zinc-400 mt-1">{subtitle}</p>
         ) : null}
+        <PercentileBadge
+          glp={prGlp}
+          sex={lifter.sex}
+          curves={percentileCurves}
+          className="mt-2"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">

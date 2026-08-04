@@ -3,6 +3,8 @@
 // API_BASE reads from Vite env var first, falls back to localhost for dev.
 // In production (Vercel), set VITE_API_BASE to the Fly.io backend URL.
 
+import type { PercentileCurves } from './percentile'
+
 export const API_BASE: string =
   (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://127.0.0.1:8000'
 
@@ -557,6 +559,60 @@ export interface ScoutMeetReport {
   unranked: string[]
   methodology: string
   n_athletes_matched: number
+}
+
+// ---------------------------------------------------------------------------
+// Rankings: GET /api/rankings + /api/rankings/percentiles
+// ---------------------------------------------------------------------------
+
+export interface RankingRow {
+  rank: number
+  name: string
+  sex: string | null
+  weight_class: string | null
+  division: string | null
+  bodyweight_kg: number | null
+  total_kg: number | null
+  glp: number | null
+  date: string | null
+  meet_name: string | null
+  /** Meets inside the 24-month active window, not career total. */
+  n_meets_in_window: number
+}
+
+export interface RankingsResponse {
+  rows: RankingRow[]
+  n_total: number
+  limit: number
+  offset: number
+  metric: string
+  metric_label: string
+  window_start: string | null
+  window_end: string | null
+}
+
+export interface RankingsParams {
+  sex?: string | null
+  weight_class?: string | null
+  division?: string | null
+  metric?: string
+  limit?: number
+  offset?: number
+}
+
+export async function fetchRankings(p: RankingsParams): Promise<RankingsResponse> {
+  const qs = new URLSearchParams()
+  if (p.sex && p.sex !== 'All') qs.set('sex', p.sex)
+  if (p.weight_class && p.weight_class !== 'All') qs.set('weight_class', p.weight_class)
+  if (p.division && p.division !== 'All') qs.set('division', p.division)
+  if (p.metric) qs.set('metric', p.metric)
+  if (p.limit != null) qs.set('limit', String(p.limit))
+  if (p.offset != null) qs.set('offset', String(p.offset))
+  return getJson<RankingsResponse>(`${API_BASE}/api/rankings?${qs.toString()}`)
+}
+
+export async function fetchPercentileCurves(): Promise<PercentileCurves> {
+  return getJson<PercentileCurves>(`${API_BASE}/api/rankings/percentiles`)
 }
 
 export async function postScoutReport(req: ScoutMeetRequest): Promise<ScoutMeetReport> {

@@ -11,6 +11,7 @@
 
 import { useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   Area,
   CartesianGrid,
@@ -24,6 +25,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { fetchPercentileCurves } from '../lib/api'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
 import { fmtDate, fmtDateShort, fmtKg } from '../lib/format'
 import { downloadCsv, slugify } from '../lib/csv'
@@ -166,6 +168,16 @@ export default function LifterDetail({
   // user clicks the Download PNG button. The card mounts above the chart;
   // the ref is forwarded to the card's outer div via React 19 ref-as-prop.
   const cardRef = useRef<HTMLDivElement>(null)
+
+  // GLP standing badge on the card. Shares a query key with the Rankings
+  // tab so the curves are fetched once per session, and failure is
+  // non-blocking: the badge simply does not render.
+  const percentileQ = useQuery({
+    queryKey: ['rankings', 'percentiles'],
+    queryFn: fetchPercentileCurves,
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  })
   const handleExportCard = async () => {
     const safeName = history.name.replace(/[^a-zA-Z0-9_-]+/g, '_')
     await exportCardToPng(cardRef.current, `${safeName}-card.png`)
@@ -328,7 +340,11 @@ export default function LifterDetail({
 
       {/* Athlete card -- shareable visual summary, ADR 0001 */}
       <section className="mb-6">
-        <AthleteCard ref={cardRef} lifter={history} />
+        <AthleteCard
+          ref={cardRef}
+          lifter={history}
+          percentileCurves={percentileQ.data}
+        />
         <div className="mt-2 flex justify-center gap-2 max-w-sm mx-auto">
           <ShareButton ariaLabel="Copy shareable link to this lifter" />
           <button

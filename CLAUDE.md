@@ -8,11 +8,12 @@ in this repo, then read `NEXT_STEPS.md` for the current backlog.
 A public web app for Canadian raw powerlifters competing in CPU and IPF-sanctioned meets. Six tabs in the nav as of 2026-07-01: Progression, Athlete Projection (BETA), Lifter Lookup, Qualifying Totals (renamed from "QT Squeeze", URL key stays `qt`), Scout (BETA, relaunched 2026-07-01), and About. A dismissible welcome hero with three start-here cards renders above the tab content for first-time visitors (`frontend/src/components/WelcomeHero.tsx`, localStorage flag).
 
 1. **Progression** — cohort average total change over time, filterable. X-axis options: Meet # / Days / Weeks / Months / Years / Career quartile / Bodyweight bucket (the last two are ordinal — trendline computes but projection short-circuits).
-2. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
-3. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
-4. **Qualifying Totals** (URL key `qt`) — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
-5. **Scout (BETA, UNLOCKED 2026-08-04)** — Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Was WIP-locked 2026-07-02 through 2026-08-04; the unlock checklist (manual-override form UI, native PDF export, real-roster accuracy pass) shipped 2026-08-04 and `SCOUT_LOCKED = false` in `frontend/src/tabs/Scout.tsx` (flip to true to re-lock). Manual overrides: form cards merge into the roster by case-insensitive name via `frontend/src/lib/scoutOverrides.ts` (`buildRosterEntries`); complete overrides without a roster line are appended; unranked names get an "Add data" seed button. Native PDF export: `frontend/src/lib/exportReportPdf.ts` (html-to-image + jsPDF, both lazy chunks that only load on click); browser-print still works (form hides under `@media print`). `parseRoster` collapses internal whitespace because the backend matches names exactly. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report` (rate-limited 10/min per IP). Sex display filter (Women/Men/All) filters the rendered report client-side.
-6. **About** (public in the nav as of 2026-07-01) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Also linked from every other tab's methodology block.
+2. **Rankings** (added 2026-08-04, Phase 0 of the social layer) — leaderboard of lifters active in the last 24 months, ranked by IPF GL Points or raw total, filterable by sex / weight class / division, paginated 50 per page. Backend `backend/app/rankings.py`, endpoints `GET /api/rankings` + `GET /api/rankings/percentiles`. See `docs/adr/0002-social-layer-stateless.md`.
+3. **Athlete Projection (BETA)** — per-lift Engine C Bayesian shrinkage projection stratified by age division × IPF-GL bracket, with Kaplan-Meier dropout-adjusted prediction intervals. See `backend/app/athlete_projection.py`.
+4. **Lifter Lookup** — name search with history plot against QT reference lines, plus manual entry for hypothetical trajectories.
+5. **Qualifying Totals** (URL key `qt`) — unified filter-panel view of CPU + all 10 provincial qualifying total coverage. All 10 provinces routed (6 scraped, 2 via CPU Regional, 2 open-entry).
+6. **Scout (BETA, UNLOCKED 2026-08-04)** — Vireo-style meet scouting report generator. Paste a roster (one name per line, `@name` to tag homies), pick a meet date, generate a per-class projected gap table + per-athlete deep dive + unranked appendix. Was WIP-locked 2026-07-02 through 2026-08-04; the unlock checklist (manual-override form UI, native PDF export, real-roster accuracy pass) shipped 2026-08-04 and `SCOUT_LOCKED = false` in `frontend/src/tabs/Scout.tsx` (flip to true to re-lock). Manual overrides: form cards merge into the roster by case-insensitive name via `frontend/src/lib/scoutOverrides.ts` (`buildRosterEntries`); complete overrides without a roster line are appended; unranked names get an "Add data" seed button. Native PDF export: `frontend/src/lib/exportReportPdf.ts` (html-to-image + jsPDF, both lazy chunks that only load on click); browser-print still works (form hides under `@media print`). `parseRoster` collapses internal whitespace because the backend matches names exactly. Backend at `backend/app/scout.py` is a fan-out wrapper around `shrinkage_projection`; endpoint `POST /api/scout/report` (rate-limited 10/min per IP). Sex display filter (Women/Men/All) filters the rendered report client-side.
+7. **About** (public in the nav as of 2026-07-01) — full methodology, live backtest MAPE table + ship-gate status (rendered from `frontend/src/data/backtest_results.json`), references, and disclaimers. Also linked from every other tab's methodology block.
 
 Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 
@@ -72,7 +73,8 @@ Supported URL keys (as of 2026-04):
 
 | Key | Scope | Example values |
 |---|---|---|
-| `tab` | App shell | `progression`, `projection`, `qt`, `lookup`, `scout`, `about` |
+| `tab` | App shell | `progression`, `rankings`, `projection`, `qt`, `lookup`, `scout`, `about` |
+| `rk_sex`, `rk_class`, `rk_div`, `rk_metric`, `rk_page` | Rankings | `M`, `83`, `Open`, `glp` \| `total`, `0` |
 | `sex`, `weight_class`, `equipment`, `tested`, `event`, `division`, `age_category`, `x_axis` | Progression filters | `M`, `83`, `Raw`, `Yes`, `SBD`, `Open`, `All`, `Years`, `Career quartile` |
 | `mode` | Lifter Lookup | `search`, `compare`, `manual` |
 | `lifter` | Lifter Lookup search mode | `Matthias Bernhard` |
@@ -145,6 +147,8 @@ specifically, not the first meet of any kind.
 - **`/api/ready` is a real readiness probe.** Runs `SELECT 1` via `get_cursor()`. Returns 503 if the parquet views are broken. `/api/health` is liveness only and doesn't touch DuckDB.
 - **Request timing middleware** logs `[req] METHOD /path STATUS <ms>` on every request. Crashes log `CRASH in <ms>ms`. Visible in Render logs.
 - **Dedicated DuckDB exception handler** catches `duckdb.Error`, logs the request path + exception + stack trace, returns a clean 503 JSON `{"error": "database_error"}`. Means future DuckDB issues show which endpoint triggered them.
+- **Rankings scope rules are load-bearing** (`backend/app/rankings.py`, added 2026-08-04). Two invariants: (1) **Raw SBD only** — IPF GL coefficients in `ipf_gl_points.py` are Raw-Classic-specific, so equipped Goodlift values must NEVER be mixed into the same percentile curve or leaderboard. The ADR listed equipment as a filter; shipping it would make the headline metric wrong, so it was deliberately dropped. (2) **The 24-month active window is anchored to `MAX(Date)` in the parquet, not wall-clock today**, so a stalled data refresh does not slowly empty the board. `window_start`/`window_end` ship in every response and the UI states them. `n_meets_in_window` is named that way because it counts meets INSIDE the window, not career meets. The ranking metric column is interpolated into ORDER BY, so it must stay whitelisted through `RANKING_METRICS` — never pass user input.
+- **useUrlState must not write the URL inside a setState updater** (fixed 2026-08-04). `writeUrl` dispatches `URL_EVENT` synchronously; React runs state updaters during the render phase, so doing it there made every OTHER mounted `useUrlState` instance call setState mid-render ("Cannot update a component while rendering a different component"), and StrictMode double-invoked the write. `update()` now merges against `read()` (the URL is the source of truth, and `replaceState` is synchronous so same-tick calls compose) and writes outside the updater. Do not move the write back in.
 - **Per-IP rate limiting on expensive POSTs** (`backend/app/rate_limit.py`, added 2026-08-04). Sliding-window middleware on `POST /api/scout/report` (10/min) and `POST /api/manual/trajectory` (30/min), returns 429 + Retry-After. Client IP = LAST X-Forwarded-For entry (Render appends the real one; earlier entries are spoofable). In-process state only, valid while uvicorn runs single-worker. Registered BEFORE CORSMiddleware in main.py so CORS wraps the 429s. Test suite disables it via `RATE_LIMIT_ENABLED=0` in conftest.py; dedicated unit tests live in `test_rate_limit.py`.
 - **QueryClient defaults** (main.tsx): `retry: 3`, exponential backoff up to 30 s, `staleTime: 5 min`, `refetchOnWindowFocus: false`. Tuned for the Render free-tier cold start. Individual queries override staleTime where appropriate.
 - **Frontend error display pattern.** Every query uses `lib/QueryStatus.tsx`: `QueryErrorCard` (with HTTP status + Retry button + cold-start explanation) on `isError`, `LoadingSkeleton` on `isLoading`. Keeps users informed instead of rendering partially.
@@ -176,14 +180,14 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  357 backend tests, 1 skipped, ~65 s, covering progression (incl.
+  371 backend tests, 1 skipped, ~65 s, covering rankings, progression (incl.
   Bodyweight bucket + per-lift guard), lifters, projection, athlete
   projection (Engine C + D), QT (federal + provincial scrapers), manual
   entry, scout (incl. manual-override recency), rate limiting,
   security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 62 Vitest unit tests (useUrlState
+- `cd frontend && npm run test` -- 72 Vitest unit tests (percentile + useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard + Scout roster/override helpers).
   Runs in jsdom, ~4 s.
@@ -289,7 +293,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**357 pytest + 62 Vitest + 6 Playwright passing.** Pytest covers
+**371 pytest + 72 Vitest + 6 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

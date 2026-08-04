@@ -9,19 +9,22 @@ import AthleteProjection from './tabs/AthleteProjection'
 import Progression from './tabs/Progression'
 import QTSqueeze from './tabs/QTSqueeze'
 import LifterLookup from './tabs/LifterLookup'
+import Rankings from './tabs/Rankings'
 import Scout from './tabs/Scout'
 import { WelcomeHero } from './components/WelcomeHero'
 import { ErrorBoundary } from './lib/ErrorBoundary'
 import { FreshnessBadge } from './lib/FreshnessBadge'
 import { useUrlState } from './lib/useUrlState'
 
-type TabKey = 'progression' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
+type TabKey =
+  | 'progression' | 'rankings' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
 
 // Tab order: most-used analytics first, Projection as the BETA feature,
 // Lifter Lookup for individual use, Qualifying Totals (URL key stays 'qt'
 // so old deep links keep working), then About.
 const TABS: { key: TabKey; label: string; hint: string; beta?: boolean }[] = [
   { key: 'progression', label: 'Progression', hint: 'Cohort average total over a career, filterable' },
+  { key: 'rankings', label: 'Rankings', hint: 'Best active Canadian lifters by IPF GL Points or total' },
   { key: 'projection', label: 'Athlete Projection', hint: 'Individual per-lift forecast with prediction intervals', beta: true },
   { key: 'lookup', label: 'Lifter Lookup', hint: 'Search any lifter, full meet history and PRs' },
   { key: 'qt', label: 'Qualifying Totals', hint: 'Live CPU + provincial qualifying total coverage' },
@@ -30,7 +33,7 @@ const TABS: { key: TabKey; label: string; hint: string; beta?: boolean }[] = [
 ]
 
 const VALID_TABS: TabKey[] = [
-  'progression', 'projection', 'lookup', 'qt', 'scout', 'about',
+  'progression', 'rankings', 'projection', 'lookup', 'qt', 'scout', 'about',
 ]
 
 export default function App() {
@@ -97,6 +100,11 @@ export default function App() {
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">
             <Progression isActive={tab === 'progression'} />
+          </ErrorBoundary>
+        </div>
+        <div style={{ display: tab === 'rankings' ? undefined : 'none' }}>
+          <ErrorBoundary label="Rankings">
+            <Rankings isActive={tab === 'rankings'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'projection' ? undefined : 'none' }}>
