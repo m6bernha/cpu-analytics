@@ -234,12 +234,13 @@ details.
 
 ## Testing
 
-- **Backend**: pytest + Hypothesis property tests. 326 tests passing,
-  1 skipped. Covers progression aggregation, lifter search, PR
-  detection, manual-entry validation, QT coverage (federal + 6
-  provincial scrapers), athlete projection (Engine C + IPF-GL),
-  concurrency (32 parallel threads against DuckDB), and weight-class
-  canonicalization.
+- **Backend**: pytest + Hypothesis property tests. 371 tests passing,
+  1 skipped. Covers progression aggregation, rankings (leaderboard +
+  GLP percentile curves), lifter search, PR detection, manual-entry
+  validation, QT coverage (federal + 6 provincial scrapers), athlete
+  projection (Engine C + Engine D), scout report generation, per-IP
+  rate limiting, concurrency (32 parallel threads against DuckDB), and
+  weight-class canonicalization.
 - **Frontend**: Vite production build + strict TypeScript serve as the
   primary gate. 52 Vitest unit tests (useUrlState + MethodPill +
   Banner + meetTier + AthleteCard) and 6 Playwright E2E smoke tests,

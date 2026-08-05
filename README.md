@@ -2,12 +2,12 @@
 
 **Live app:** https://cpu-analytics.vercel.app
 
-A web app that turns the OpenPowerlifting dataset into six live views a
+A web app that turns the OpenPowerlifting dataset into seven live views a
 Canadian raw powerlifter (or their coach) actually uses: cohort progression,
-per-lifter Bayesian-shrinkage projection, per-lifter history, CPU
-qualifying-total coverage (federal + provincial), a Vireo-style meet scouting
-report generator (Scout, locked as work in progress since 2026-07-02), and an
-About page with full methodology and live backtest MAPE.
+a national leaderboard with percentile standing, per-lifter
+Bayesian-shrinkage projection, per-lifter history, CPU qualifying-total
+coverage (federal + provincial), a Vireo-style meet scouting report
+generator, and an About page with full methodology and live backtest MAPE.
 
 Scoped to Canadian lifters in IPF-sanctioned meets (CPU domestic and IPF
 international). Data refreshed weekly from
@@ -45,7 +45,7 @@ reference points.
 
 ## What it does
 
-Six tabs, each answering one concrete question. All views share filters for
+Seven tabs, each answering one concrete question. All views share filters for
 sex, weight class, equipment, event, division, and age bracket, and URL state
 is shareable (every meaningful view has a clean permalink).
 
@@ -58,7 +58,16 @@ mean so the noise is visible, not hidden. Optional per-lift breakdown
 (squat, bench, deadlift) and a comeback filter that excludes lifters with
 long inter-meet gaps.
 
-### 2. Athlete Projection (BETA) — "where will my total be in two years?"
+### 2. Rankings — "who are the best active lifters in Canada right now?"
+
+Leaderboard of lifters who competed in the last 24 months, ranked by IPF GL
+Points or raw total, filterable by sex, weight class, and division. Each row
+carries a percentile standing badge ("Top 4%") computed against the active
+cohort of the same sex. Raw full power only, because IPF GL coefficients are
+Raw-Classic-specific. One row per lifter at their single best meet, so the
+total, GLP, class, and date always describe the same day.
+
+### 3. Athlete Projection (BETA) — "where will my total be in two years?"
 
 Per-lift Bayesian-shrinkage projection (Engine C) stratified by age division
 and IPF-GL bracket. Personal Huber slope blended with a cohort posterior that
@@ -67,13 +76,7 @@ Kaplan-Meier dropout-adjusted prediction intervals widen with horizon.
 Optional CPU QT reference lines driven by the live qualifying-total feed.
 Full methodology and live backtest MAPE on the About tab.
 
-### 5. About — "how does this work and how well?"
-
-Full methodology notes for every tab, live backtest MAPE table rendered from
-`data/backtest_results.json`, ship-gate status, data source attribution, and
-disclaimers. Linked from every other tab's methodology block.
-
-### 3. Lifter Lookup — "plot my own trajectory against the QT lines"
+### 4. Lifter Lookup — "plot my own trajectory against the QT lines"
 
 Search by name and see every meet plotted with CPU qualifying-total
 reference lines for the lifter's weight class. Per-meet bodyweight, Goodlift
@@ -86,7 +89,7 @@ Three modes:
 - **Manual**: enter hypothetical meets for lifters not in the dataset, or
   project a planned total at a future date.
 
-### 4. Qualifying Totals — "what percent of lifters meet the standard?"
+### 5. Qualifying Totals — "what percent of lifters meet the standard?"
 
 Unified filter-panel view over live-scraped CPU federal and provincial
 qualifying totals (all 10 provinces routed: 6 scraped, 2 via CPU Regional,
@@ -95,16 +98,22 @@ division, effective year, and region or province; the table shows the
 fraction of lifters whose 24-month-best SBD total clears each class's
 standard. Refreshed weekly from powerlifting.ca and the provincial sources.
 
-### 6. Scout (BETA, locked) — "who is showing up to this meet and how do they stack?"
+### 6. Scout (BETA) — "who is showing up to this meet and how do they stack?"
 
-Work in progress. The tab is public but the page shows a WIP notice with a
-greyed-out, disabled form while the roster layer gets validated. The goal:
-paste a meet roster (one name per line, `@name` to tag your own lifters),
+Paste a meet roster (one name per line, `@name` to tag your own lifters),
 pick a meet date, and get a scouting report: per-class projected standings
 with 95% intervals, classes ordered by the tightest projected #1-vs-#2
 battle, status tags (Rookie through Veteran), and an unranked appendix for
-names not in OpenIPF. Unlock is a one-line flip (`SCOUT_LOCKED` in
-`frontend/src/tabs/Scout.tsx`).
+names not in OpenIPF. Manual-override cards cover lifters missing from
+OpenIPF, and the report exports to PDF natively or via browser print.
+Unlocked 2026-08-04 after a live accuracy pass against a real 80-name
+roster.
+
+### 7. About — "how does this work and how well?"
+
+Full methodology notes for every tab, live backtest MAPE table rendered from
+`data/backtest_results.json`, ship-gate status, data source attribution, and
+disclaimers. Linked from every other tab's methodology block.
 
 ---
 
@@ -117,7 +126,7 @@ names not in OpenIPF. Unlock is a one-line flip (`SCOUT_LOCKED` in
 | Data pipeline | GitHub Actions weekly cron + pandas preprocess |
 | Backend hosting | Render.com (free tier, Docker, `render.yaml` blueprint) |
 | Frontend hosting | Vercel Hobby (auto-deploy on push to `main`) |
-| Tests | pytest + Hypothesis (351 passing) + Vitest (53 passing) + Playwright (6 smoke, in CI as `continue-on-error`); Vite build as frontend gate |
+| Tests | pytest + Hypothesis (371 passing) + Vitest (72 passing) + Playwright (6 smoke, a real CI gate against a synthetic-fixture backend); Vite build as frontend gate |
 | CI | GitHub Actions build-gate on every push and PR |
 | Uptime | UptimeRobot HEAD ping + GHA cron keepalive |
 
@@ -217,14 +226,17 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 ### Tests
 
 ```bash
-# Backend tests (351 passing, 1 skipped)
+# Backend tests (371 passing, 1 skipped)
 .venv/Scripts/python -m pytest backend/tests/ -v
 
-# Frontend unit tests (53 Vitest passing — useUrlState + MethodPill + Banner + meetTier + AthleteCard)
+# Frontend unit tests (72 Vitest passing — percentile + useUrlState + MethodPill
+#   + Banner + meetTier + AthleteCard + Scout roster/override helpers)
 cd frontend && npm run test
 
-# Frontend E2E smoke (6 Playwright tests, also run in CI; first local
-#   run needs `npx playwright install chromium`)
+# Frontend E2E smoke (6 Playwright tests, a real CI gate; first local run
+#   needs `npx playwright install chromium`. NOTE: routes 4-5 assert on the
+#   synthetic fixture lifters, so a real preprocessed parquet fails them —
+#   back up data/processed/ and run scripts/make_synthetic_data.py --force)
 cd frontend && npm run test:e2e
 
 # Frontend strict typecheck + production build
