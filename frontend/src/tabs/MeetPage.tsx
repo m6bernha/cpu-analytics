@@ -125,13 +125,13 @@ export default function MeetPage({ name, date }: { name: string; date: string })
                       <tr>
                         <th className="text-right pr-3 pb-1">Pl</th>
                         <th className="text-left pr-3 pb-1">Lifter</th>
-                        <th className="text-left pr-3 pb-1">Division</th>
-                        <th className="text-right pr-3 pb-1">BW</th>
-                        <th className="text-right pr-3 pb-1">S</th>
-                        <th className="text-right pr-3 pb-1">B</th>
-                        <th className="text-right pr-3 pb-1">D</th>
+                        <th className="text-left pr-3 pb-1 hidden md:table-cell">Division</th>
+                        <th className="text-right pr-3 pb-1 hidden sm:table-cell">BW</th>
+                        <th className="text-right pr-3 pb-1 hidden sm:table-cell">S</th>
+                        <th className="text-right pr-3 pb-1 hidden sm:table-cell">B</th>
+                        <th className="text-right pr-3 pb-1 hidden sm:table-cell">D</th>
                         <th className="text-right pr-3 pb-1">Total</th>
-                        <th className="text-right pr-3 pb-1">GLP</th>
+                        <th className="text-right pr-3 pb-1 hidden md:table-cell">GLP</th>
                       </tr>
                     </thead>
                     <tbody className="text-zinc-200">
@@ -153,23 +153,23 @@ export default function MeetPage({ name, date }: { name: string; date: string })
                               {r.name}
                             </a>
                           </td>
-                          <td className="pr-3 py-1 text-zinc-400">{r.division ?? '—'}</td>
-                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400">
+                          <td className="pr-3 py-1 text-zinc-400 hidden md:table-cell">{r.division ?? '—'}</td>
+                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400 hidden sm:table-cell">
                             {fmtKg(r.bodyweight_kg, 1)}
                           </td>
-                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400">
+                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400 hidden sm:table-cell">
                             {fmtKg(r.squat_kg, 1)}
                           </td>
-                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400">
+                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400 hidden sm:table-cell">
                             {fmtKg(r.bench_kg, 1)}
                           </td>
-                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400">
+                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400 hidden sm:table-cell">
                             {fmtKg(r.deadlift_kg, 1)}
                           </td>
                           <td className="pr-3 py-1 text-right tabular-nums">
                             {fmtKg(r.total_kg, 1)}
                           </td>
-                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400">
+                          <td className="pr-3 py-1 text-right tabular-nums text-zinc-400 hidden md:table-cell">
                             {r.glp?.toFixed(1) ?? '—'}
                           </td>
                         </tr>

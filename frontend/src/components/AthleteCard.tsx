@@ -23,6 +23,7 @@ import { TIER_TOKENS, type Tier } from '../lib/colors'
 import { resolveHighestTier } from '../lib/meetTier'
 import { PercentileBadge } from './PercentileBadge'
 import type { PercentileCurves } from '../lib/percentile'
+import { athletePath } from '../lib/route'
 
 interface AthleteCardProps {
   lifter: LifterHistory
@@ -82,6 +83,13 @@ export function AthleteCard({ lifter, percentileCurves, ref }: AthleteCardProps)
     .filter(Boolean)
     .join(' / ')
 
+  // Shown on the card so a downloaded PNG still points home. Rendered
+  // without the scheme because it reads as a label, not a link, and the
+  // host is only known at runtime (tests render under jsdom's localhost).
+  const profileUrl =
+    `${typeof window !== 'undefined' ? window.location.host : 'cpu-analytics.vercel.app'}` +
+    athletePath(lifter.name)
+
   return (
     <div
       ref={ref}
@@ -129,9 +137,19 @@ export function AthleteCard({ lifter, percentileCurves, ref }: AthleteCardProps)
 
       <Sparkline points={sparkPoints} />
 
-      <div className="absolute bottom-3 left-6 right-6 flex items-baseline justify-between text-xs text-zinc-500">
-        <span>{lifter.meet_count ?? meets.length} meets</span>
-        <span>{yearSpan}</span>
+      {/* Footer carries the profile URL so a card reposted to Instagram or
+          a group chat still points home (ADR 0002 Phase 1d). The meet count
+          moves up next to the year span to make room. `break-all` keeps a
+          long encoded name inside the 3:4 frame instead of overflowing the
+          PNG. */}
+      <div className="absolute bottom-3 left-6 right-6 space-y-0.5 text-xs text-zinc-500">
+        <div className="flex items-baseline justify-between">
+          <span>{lifter.meet_count ?? meets.length} meets</span>
+          <span>{yearSpan}</span>
+        </div>
+        <div className="text-[10px] text-zinc-600 break-all" data-testid="athlete-card-url">
+          {profileUrl}
+        </div>
       </div>
     </div>
   )

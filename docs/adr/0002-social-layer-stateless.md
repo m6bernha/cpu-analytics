@@ -112,7 +112,7 @@ touch (ShareButton already does this).
 | 1a | ~~Path routing + /athlete/{name} profile page~~ **SHIPPED 2026-08-04** | 1 session |
 | 1b | ~~OG edge function + middleware~~ **SHIPPED 2026-08-04** | 1 session |
 | 1c | ~~Meet pages + cross-linking~~ **SHIPPED 2026-08-05** | 1 session |
-| 1d | Share-card tier polish + mobile pass | 0.5 session |
+| 1d | ~~Share-card polish + mobile pass~~ **SHIPPED 2026-08-05** | 0.5 session |
 
 Phase 0 has no routing risk and ships value alone; start there.
 
@@ -241,3 +241,30 @@ reproduced as recorded. It never picks or implies a single winner.
 Also surfaced honestly: the parquet is Country=Canada scoped, so an
 international meet shows the Canadian contingent only. Responses carry
 `canadian_scope_only` and the UI states it when `meet_country != Canada`.
+
+## Phase 1d as built (2026-08-05) — Phase 1 COMPLETE
+
+Smaller than specced, because the percentile badge already landed on
+AthleteCard in Phase 0. What remained:
+
+1. **The card now carries its own profile URL.** A downloaded PNG
+   reposted to Instagram previously had no attribution and no way back.
+   The footer renders `{host}/athlete/{encoded-name}` under the meet
+   count, `break-all` so a long encoded name stays inside the 3:4 frame.
+   Host comes from `window.location` at runtime, so dev cards say
+   localhost and production cards say the real domain.
+2. **Responsive columns on the two new tables**, using the
+   `hidden sm:table-cell` / `hidden md:table-cell` convention LifterDetail
+   already used. Phones keep the columns that matter: meet pages show
+   Pl / Lifter / Total, Rankings shows # / Lifter / Standing / Total.
+
+Verified at real widths rather than by inspection: at 375 px the meet
+table fits its 343 px container with no horizontal scroll and no body
+overflow, and at 1280 px all nine columns return — the columns are
+responsive, not deleted.
+
+One measurement gotcha worth recording: with the browser pane not
+compositing, `window.innerWidth` reads 0 and every `offsetParent`
+visibility check reports hidden, which looks exactly like a broken
+layout. Set an explicit viewport size and use `getComputedStyle().display`
+instead of trusting `offsetParent` in that state.

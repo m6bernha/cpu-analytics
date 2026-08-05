@@ -153,6 +153,23 @@ describe('AthleteCard', () => {
     expect(screen.queryByTestId('athlete-card-sparkline-empty')).toBeNull()
   })
 
+  // ADR 0002 Phase 1d: a downloaded PNG reposted to Instagram has to point
+  // back somewhere, so the card carries its own profile URL.
+  it('renders the profile URL so a shared card points home', () => {
+    render(<AthleteCard lifter={makeLifter([makeMeet()])} />)
+    const url = screen.getByTestId('athlete-card-url').textContent ?? ''
+    expect(url).toContain('/athlete/')
+    expect(url).toContain(encodeURIComponent(makeLifter([makeMeet()]).name))
+  })
+
+  it('percent-encodes a name with spaces in the card URL', () => {
+    const lifter = { ...makeLifter([makeMeet()]), name: 'Amélie Picher-Plante' }
+    render(<AthleteCard lifter={lifter} />)
+    const url = screen.getByTestId('athlete-card-url').textContent ?? ''
+    expect(url).toContain('/athlete/Am%C3%A9lie%20Picher-Plante')
+    expect(url).not.toContain(' ')
+  })
+
   it('forwards ref to the card root', () => {
     const ref = createRef<HTMLDivElement>()
     render(<AthleteCard lifter={makeLifter([makeMeet()])} ref={ref} />)

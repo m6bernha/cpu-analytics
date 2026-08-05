@@ -191,11 +191,11 @@ export default function Rankings({ isActive }: RankingsProps) {
                   <th className="text-right pr-3 pb-1.5">#</th>
                   <th className="text-left pr-3 pb-1.5">Lifter</th>
                   <th className="text-left pr-3 pb-1.5">Standing</th>
-                  <th className="text-left pr-3 pb-1.5">Class</th>
-                  <th className="text-left pr-3 pb-1.5">Div</th>
+                  <th className="text-left pr-3 pb-1.5 hidden sm:table-cell">Class</th>
+                  <th className="text-left pr-3 pb-1.5 hidden md:table-cell">Div</th>
                   <th className="text-right pr-3 pb-1.5">Total</th>
-                  <th className="text-right pr-3 pb-1.5">GLP</th>
-                  <th className="text-left pr-3 pb-1.5">Best meet</th>
+                  <th className="text-right pr-3 pb-1.5 hidden sm:table-cell">GLP</th>
+                  <th className="text-left pr-3 pb-1.5 hidden md:table-cell">Best meet</th>
                 </tr>
               </thead>
               <tbody className="text-zinc-200">
@@ -226,19 +226,19 @@ export default function Rankings({ isActive }: RankingsProps) {
                         curves={curvesQ.data}
                       />
                     </td>
-                    <td className="pr-3 py-1.5 text-zinc-400">
+                    <td className="pr-3 py-1.5 text-zinc-400 hidden sm:table-cell">
                       {r.weight_class ?? '—'}
                     </td>
-                    <td className="pr-3 py-1.5 text-zinc-400">
+                    <td className="pr-3 py-1.5 text-zinc-400 hidden md:table-cell">
                       {r.division ?? '—'}
                     </td>
                     <td className="pr-3 py-1.5 text-right tabular-nums">
                       {fmtKg(r.total_kg, 1)}
                     </td>
-                    <td className="pr-3 py-1.5 text-right tabular-nums text-zinc-300">
+                    <td className="pr-3 py-1.5 text-right tabular-nums text-zinc-300 hidden sm:table-cell">
                       {r.glp?.toFixed(1) ?? '—'}
                     </td>
-                    <td className="pr-3 py-1.5 text-zinc-500 text-xs">
+                    <td className="pr-3 py-1.5 text-zinc-500 text-xs hidden md:table-cell">
                       {r.date ?? '—'}
                       {r.meet_name ? ` · ${r.meet_name}` : ''}
                     </td>

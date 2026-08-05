@@ -158,8 +158,41 @@ Meet pages + the cross-linking that closes the internal link graph.
    contingent; the response carries `canadian_scope_only` and the UI says
    so explicitly.
 
-**Next:** ADR 0002 Phase 1d — share-card tier polish + the real-phone
-mobile pass. That closes Phase 1.
+### Phase 1d SHIPPED (2026-08-05) — ADR 0002 Phase 1 is COMPLETE
+
+Smaller than specced: the percentile badge already landed on AthleteCard
+back in Phase 0, so what remained was the link home and the mobile pass.
+
+- **The card carries its own profile URL.** A downloaded PNG reposted to
+  Instagram previously had no attribution and no route back. Footer now
+  renders `{host}/athlete/{encoded-name}`, `break-all` so a long encoded
+  name stays inside the 3:4 frame. Host is read at runtime, so dev cards
+  say localhost and production cards say the real domain. 2 new tests.
+- **Responsive columns on the two new tables**, reusing the
+  `hidden sm:table-cell` / `hidden md:table-cell` convention LifterDetail
+  already had. Phones keep what matters: meet pages show Pl / Lifter /
+  Total, Rankings shows # / Lifter / Standing / Total.
+
+Verified at real widths, not by inspection: at 375 px the meet table fits
+its 343 px container with no horizontal scroll and no body overflow; at
+1280 px all nine columns return, so the columns are responsive rather
+than deleted.
+
+Measurement gotcha worth remembering: when the browser pane is not
+compositing, `window.innerWidth` reads 0 and every `offsetParent`
+visibility check reports hidden — which looks identical to a broken
+layout. Set an explicit viewport and use `getComputedStyle().display`.
+
+**Next: Phase 2+ is deliberately unscoped.** Accounts, claiming, follows
+and notifications are gated on the auth-platform decision the ADR
+declined to make. Revisit on a demand signal, not on a schedule.
+
+Nearer-term items unrelated to the social layer:
+- Add `E2E (Playwright smoke)` to GitHub required status checks.
+- Cross-sex GLP puts women atop the unfiltered Rankings board — decide
+  whether the default should split by sex.
+- Pipeline-health surface, `/api/v1/` envelope, Compare as a first-class
+  entry point, percentile tier naming.
 
 ### Backlog: name the percentile tiers
 

@@ -258,7 +258,7 @@ specifically, not the first meet of any kind.
   security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 95 Vitest unit tests (ogMeta + route + percentile + useUrlState
+- `cd frontend && npm run test` -- 107 Vitest unit tests (ogMeta + route + percentile + useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard + Scout roster/override helpers).
   Runs in jsdom, ~4 s.
@@ -364,7 +364,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**389 pytest + 105 Vitest + 7 Playwright passing.** Pytest covers
+**389 pytest + 107 Vitest + 7 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and
