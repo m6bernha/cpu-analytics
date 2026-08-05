@@ -110,7 +110,7 @@ touch (ShareButton already does this).
 |---|---|---|
 | 0 | ~~/api/tiers + tier badges + Rankings tab~~ **SHIPPED 2026-08-04** | 1 session |
 | 1a | ~~Path routing + /athlete/{name} profile page~~ **SHIPPED 2026-08-04** | 1 session |
-| 1b | OG edge function + middleware | 1 session |
+| 1b | ~~OG edge function + middleware~~ **SHIPPED 2026-08-04** | 1 session |
 | 1c | Meet pages + cross-linking | 1 session |
 | 1d | Share-card tier polish + mobile pass | 0.5 session |
 
@@ -154,3 +154,37 @@ not settle:
 The tab stack stays mounted-but-hidden while a profile is open so tab state
 survives the round trip; `isActive` is forced false for every tab in that
 state so no Recharts container renders at 0x0.
+
+## Phase 1b as built (2026-08-04)
+
+Built to spec (`@vercel/og` edge function + edge middleware injecting
+`og:*` into the SPA shell). Decisions the design did not settle:
+
+1. **Cold-backend fallback.** The backend is Render free tier (up to ~50 s
+   cold start) but crawlers give up in ~5-10 s. Both the card endpoint and
+   the middleware call the backend with a 3 s `AbortSignal.timeout` and
+   degrade rather than fail: the card falls back to a name-only branded
+   layout, the description falls back to a generic line. A plainer preview
+   beats a broken one.
+2. **24 h cache on cards**, overriding `@vercel/og`'s 1-year immutable
+   default, which would freeze a lifter's numbers in every shared link
+   forever. Weekly data refresh means a day is comfortably fresh.
+   Middleware HTML gets `s-maxage=3600`.
+3. **Middleware applies to humans too**, not just crawlers. No user-agent
+   sniffing to get wrong, and `curl` reproduces exactly what a crawler
+   sees.
+4. **Meta tags are replaced, not appended.** `index.html` already ships
+   site-wide `og:*`/`twitter:*`; appending would leave two competing
+   `og:title` values. `injectAthleteMeta` strips the tags it owns and
+   re-emits each once. It is a pure string transform in `src/lib/ogMeta.ts`
+   so it is unit-testable without an edge runtime (11 cases, including
+   attribute-escape).
+
+**Known gap:** `api/` and `middleware.ts` sit outside
+`tsconfig.app.json`'s `include: ["src"]`, so `tsc -b` (the CI frontend
+gate) does not type-check them. Vercel compiles them at deploy, so a
+mistake fails the DEPLOY and the previous deployment keeps serving — it
+does not break the live site. Type-check them by hand when editing:
+`npx tsc --noEmit --ignoreConfig --jsx react-jsx --module esnext
+--moduleResolution bundler --target es2023 --lib es2023,dom --skipLibCheck
+--strict --types node api/og/athlete.tsx middleware.ts`

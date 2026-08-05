@@ -85,6 +85,32 @@ One dynamic route exists: `/athlete/{encoded-name}` (ADR 0002 Phase 1a).
   only, so real static files (robots.txt, sitemap.xml) keep 404-ing
   honestly instead of silently returning index.html.
 
+## Edge layer (`frontend/api/` + `frontend/middleware.ts`)
+
+Added 2026-08-04 for per-athlete link previews (ADR 0002 Phase 1b). This is
+the only server-side code outside the Render backend.
+
+- `api/og/athlete.tsx` renders a 1200x630 card via `@vercel/og`
+  (`runtime: 'edge'`). `middleware.ts` (matcher `/athlete/:path*`) fetches
+  the SPA shell and rewrites `og:*` / `twitter:*` / `<title>` / canonical.
+- **Both call the backend with a 3 s `AbortSignal.timeout` and degrade.**
+  Render free tier can take ~50 s to wake; crawlers give up in ~5-10 s. Do
+  NOT raise this timeout to "get better cards" — a slow call means NO
+  preview, which is worse than a plain one.
+- **Meta tags are replaced, not appended.** `index.html` ships site-wide
+  `og:*`; two `og:title` tags make crawlers pick unpredictably. The
+  transform lives in `src/lib/ogMeta.ts` as a pure function precisely so it
+  is unit-testable (`ogMeta.test.ts`) without an edge runtime.
+- Middleware fetches `/`, and its matcher covers only `/athlete/*`, so it
+  cannot re-enter itself. Keep it that way.
+- **`api/` and `middleware.ts` are NOT type-checked by CI** —
+  `tsconfig.app.json` has `include: ["src"]`. Vercel compiles them at
+  deploy, so an error fails the DEPLOY (previous deployment keeps serving)
+  rather than breaking the site. Check by hand when editing; the exact
+  command is in `docs/adr/0002-social-layer-stateless.md`.
+- `@vercel/og` must never be imported from `src/` — it would land in the
+  client bundle. Only the edge function imports it.
+
 ## URL state conventions
 
 Every user-facing, shareable view is encoded in `window.location.search` via the
@@ -209,7 +235,7 @@ specifically, not the first meet of any kind.
   security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 84 Vitest unit tests (route + percentile + useUrlState
+- `cd frontend && npm run test` -- 95 Vitest unit tests (ogMeta + route + percentile + useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard + Scout roster/override helpers).
   Runs in jsdom, ~4 s.
@@ -315,7 +341,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**371 pytest + 84 Vitest + 7 Playwright passing.** Pytest covers
+**371 pytest + 95 Vitest + 7 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

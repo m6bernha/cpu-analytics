@@ -97,9 +97,34 @@ names degrade to a helpful empty state, console clean. e2e 6 -> 7 tests
 (the legacy-link test now asserts the redirect), all green against the
 synthetic fixture backend.
 
-**Next:** ADR 0002 Phase 1b — Vercel OG edge function + middleware so
-shared `/athlete/*` links preview with the lifter's name, total, and
-standing. Then 1c (meet pages), 1d (share-card polish).
+### Phase 1b SHIPPED (same session)
+
+Shared `/athlete/*` links now preview with the lifter's own card.
+
+- **`frontend/api/og/athlete.tsx`** — `@vercel/og` edge function rendering
+  a 1200x630 card (name, standing, best total, class, IPF GL, meet count)
+  in the locked palette.
+- **`frontend/middleware.ts`** — matcher `/athlete/:path*`, fetches the SPA
+  shell and rewrites `og:*` / `twitter:*` / `<title>` / canonical so
+  crawlers (which do not run JS) see per-athlete metadata.
+- **`src/lib/ogMeta.ts`** — the injection is a PURE string transform kept
+  out of middleware so it is unit-testable without an edge runtime. 11
+  Vitest cases including attribute-escape (a name cannot break out of a
+  `content="..."` attribute).
+- Both edge paths call the backend with a **3 s timeout and degrade**:
+  Render can take ~50 s cold, crawlers give up in ~5-10 s. Card falls back
+  to name-only branded; description falls back to a generic line.
+- Cards cache **24 h** (not `@vercel/og`'s 1-year immutable default, which
+  would freeze numbers in shared links).
+
+**Known gap to remember:** `api/` and `middleware.ts` are outside
+`tsconfig.app.json`'s `include: ["src"]`, so CI does NOT type-check them.
+A mistake fails the Vercel DEPLOY (previous deployment keeps serving), it
+does not break the live site. Hand-check command is in ADR 0002.
+
+**Next:** ADR 0002 Phase 1c — meet result pages (`/meet/{name}/{date}`)
+plus cross-linking, which closes the internal link graph for SEO. Then 1d
+(share-card polish + mobile pass).
 
 ### Backlog: name the percentile tiers
 
