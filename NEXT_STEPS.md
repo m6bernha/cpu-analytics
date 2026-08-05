@@ -218,21 +218,25 @@ the approved roadmap, all deployed and verified live:
 
 ---
 
-**New follow-ups from the sprint (unstarted):**
+**New follow-ups from the sprint** (status refreshed 2026-08-04):
 
+- ~~Accessibility: focus-visible rings on all inputs, skip-to-content link,
+  manual-entry form validation feedback.~~ **SHIPPED 2026-08-04** (`f4874da`).
+- ~~CI e2e job has no backend, fails at baseline with ERR_CONNECTION_REFUSED.~~
+  **SHIPPED 2026-08-04** (`2567b37` + `e2af4cd`) — real backend on synthetic
+  fixtures, `continue-on-error` removed, now a blocking gate.
+- Real-phone mobile pass — **partially shipped**: tap targets landed in
+  `f4874da`; the actual phone walk (chart aspect ratios on a real device)
+  is still Matthias-driven.
 - **Manual (Matthias):** submit sitemap.xml in Google Search Console;
   analytics (Plausible) + Sentry (skipped item 5); Render Hobby $7/mo
   upgrade (skipped item 6, kills the 20-50 s cold start).
 - Pipeline health surface: `/api/pipeline-health` + QT-feed staleness
-  banner + GHA failure notifications.
+  banner + GHA failure notifications. **Still open.**
 - API envelope consistency + `/api/v1/` prefix (do before any external
-  API consumer exists).
-- Real-phone mobile pass (chart aspect ratios, tap targets).
-- Accessibility: focus-visible rings on all inputs, skip-to-content link,
-  manual-entry form validation feedback.
-- Surface Compare as a first-class entry point.
-- CI e2e job has no backend, fails at baseline with ERR_CONNECTION_REFUSED
-  (verified pre-existing). Fix = backend service or API mocks in the job.
+  API consumer exists). **Still open** — note the social layer added
+  `/api/rankings*` since, so the surface to version keeps growing.
+- Surface Compare as a first-class entry point. **Still open.**
 
 ---
 
