@@ -26,6 +26,7 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchPercentileCurves } from '../lib/api'
+import { meetPath, navigate } from '../lib/route'
 import type { LifterHistory, LifterMeet, QtStandardRow } from '../lib/api'
 import { fmtDate, fmtDateShort, fmtKg } from '../lib/format'
 import { downloadCsv, slugify } from '../lib/csv'
@@ -724,7 +725,25 @@ export default function LifterDetail({
                 return (
                   <tr key={i} className={rowClass}>
                     <td className="py-2 pr-3 whitespace-nowrap">{fmtDate(m.Date)}</td>
-                    <td className="py-2 pr-3">{m.MeetName ?? '—'}</td>
+                    <td className="py-2 pr-3">
+                      {m.MeetName ? (
+                        // Closes the internal link graph: profile -> meet ->
+                        // other profiles (ADR 0002 Phase 1c).
+                        <a
+                          href={meetPath(m.MeetName, String(m.Date).slice(0, 10))}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                            e.preventDefault()
+                            navigate(meetPath(m.MeetName!, String(m.Date).slice(0, 10)))
+                          }}
+                          className="hover:text-orange-300 underline underline-offset-2 decoration-zinc-800"
+                        >
+                          {m.MeetName}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td
                       className="py-2 pr-2 whitespace-nowrap"
                       title={eventTitle(m.Event)}

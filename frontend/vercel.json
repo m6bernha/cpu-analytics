@@ -8,6 +8,10 @@
     {
       "source": "/athlete/:name*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/meet/:path*",
+      "destination": "/index.html"
     }
   ],
   "headers": [

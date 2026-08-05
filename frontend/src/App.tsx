@@ -23,6 +23,7 @@ import { useUrlState } from './lib/useUrlState'
 // Own chunk: the profile route is entered from a shared link, not from the
 // default tab, so it should not weigh down first paint of the app shell.
 const AthleteProfile = lazy(() => import('./tabs/AthleteProfile'))
+const MeetPage = lazy(() => import('./tabs/MeetPage'))
 
 type TabKey =
   | 'progression' | 'rankings' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
@@ -54,11 +55,14 @@ export default function App() {
   // main.tsx before the first render, so by here the path is already right.
   const route = useRoute()
   const onAthletePage = route.kind === 'athlete'
+  const onMeetPage = route.kind === 'meet'
+  // Any non-shell route hides the tab stack and suppresses tab isActive.
+  const onSubPage = onAthletePage || onMeetPage
 
-  // Tab clicks always return to the app shell. From a profile page that is a
+  // Tab clicks always return to the app shell. From a sub-page that is a
   // real navigation; from the shell it is just a query-string change.
   const setTab = (t: TabKey) => {
-    if (onAthletePage) navigate(t === 'progression' ? '/' : `/?tab=${t}`)
+    if (onSubPage) navigate(t === 'progression' ? '/' : `/?tab=${t}`)
     else setUrl({ tab: t })
   }
 
@@ -115,10 +119,18 @@ export default function App() {
       </header>
 
       <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {onAthletePage && (
+        {route.kind === 'athlete' && (
           <ErrorBoundary label="Athlete profile">
             <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
               <AthleteProfile name={route.name} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+
+        {route.kind === 'meet' && (
+          <ErrorBoundary label="Meet results">
+            <Suspense fallback={<LoadingSkeleton lines={6} />}>
+              <MeetPage name={route.name} date={route.date} />
             </Suspense>
           </ErrorBoundary>
         )}
@@ -127,41 +139,41 @@ export default function App() {
             unmounted) so tab-internal state survives the round trip, matching
             the display:none convention the tabs already use between
             themselves. */}
-        <div style={{ display: onAthletePage ? 'none' : undefined }}>
+        <div style={{ display: onSubPage ? 'none' : undefined }}>
         <WelcomeHero onNavigate={(t) => setTab(t as TabKey)} />
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">
-            <Progression isActive={!onAthletePage && tab === 'progression'} />
+            <Progression isActive={!onSubPage && tab === 'progression'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'rankings' ? undefined : 'none' }}>
           <ErrorBoundary label="Rankings">
-            <Rankings isActive={!onAthletePage && tab === 'rankings'} />
+            <Rankings isActive={!onSubPage && tab === 'rankings'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'projection' ? undefined : 'none' }}>
           <ErrorBoundary label="Athlete Projection">
-            <AthleteProjection isActive={!onAthletePage && tab === 'projection'} />
+            <AthleteProjection isActive={!onSubPage && tab === 'projection'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'lookup' ? undefined : 'none' }}>
           <ErrorBoundary label="Lifter Lookup">
-            <LifterLookup isActive={!onAthletePage && tab === 'lookup'} />
+            <LifterLookup isActive={!onSubPage && tab === 'lookup'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
           <ErrorBoundary label="Qualifying Totals">
-            <QTSqueeze isActive={!onAthletePage && tab === 'qt'} />
+            <QTSqueeze isActive={!onSubPage && tab === 'qt'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'scout' ? undefined : 'none' }}>
           <ErrorBoundary label="Scout">
-            <Scout isActive={!onAthletePage && tab === 'scout'} />
+            <Scout isActive={!onSubPage && tab === 'scout'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'about' ? undefined : 'none' }}>
           <ErrorBoundary label="About">
-            <About isActive={!onAthletePage && tab === 'about'} />
+            <About isActive={!onSubPage && tab === 'about'} />
           </ErrorBoundary>
         </div>
         </div>

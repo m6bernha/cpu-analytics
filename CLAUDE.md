@@ -67,7 +67,10 @@ full commands. Summary: `npm run build`, `python -m pytest backend/tests/`,
 
 `useUrlState` owns the QUERY STRING; `route.ts` owns the PATHNAME. They
 compose because `writeUrl` preserves `window.location.pathname` verbatim.
-One dynamic route exists: `/athlete/{encoded-name}` (ADR 0002 Phase 1a).
+Two dynamic routes exist: `/athlete/{encoded-name}` (Phase 1a) and
+`/meet/{encoded-name}/{YYYY-MM-DD}` (Phase 1c). Meet is matched FIRST and
+anchored on the trailing date, so a meet name containing an encoded slash
+still parses.
 
 - **Slug is the URL-encoded EXACT OpenIPF name.** Pretty hyphenated slugs
   would collide with genuinely hyphenated names (`Amélie Picher-Plante`),
@@ -78,9 +81,21 @@ One dynamic route exists: `/athlete/{encoded-name}` (ADR 0002 Phase 1a).
   runs after layout effects, so a redirect fired from a layout effect
   dispatches to no listener and the shell renders instead of the profile.
   Compare links (`mode=compare`) deliberately do NOT redirect.
-- **The tab stack stays mounted but hidden while a profile is open** so tab
+- **The tab stack stays mounted but hidden while a sub-page is open** so tab
   state survives, and every tab's `isActive` is forced false in that state
-  so no Recharts container renders at 0x0.
+  (`onSubPage`) so no Recharts container renders at 0x0.
+- **Meet pages are a RECORD, not a leaderboard** (`backend/app/meets.py`).
+  CPU awards placings PER DIVISION, so one weight class holds several 1st
+  places; results sort by division then place and the division column is
+  always shown. At Nationals 2026-03-14 two lifters share Open 83 kg 1st
+  with nothing in the source data distinguishing them (checked against the
+  raw OpenIPF CSV — `MeetTown`/`MeetState` are identical), so the page must
+  never pick a winner. Meet pages also include EVERY event and equipment
+  category, unlike Rankings, so nobody vanishes from their own meet.
+- **A meet page shows Canadian lifters only.** The parquet is
+  Country=Canada scoped, so an international meet renders the Canadian
+  contingent; `canadian_scope_only` ships in the response and the UI says
+  so when `meet_country != Canada`.
 - `frontend/vercel.json` has an SPA rewrite scoped to `/athlete/:name*`
   only, so real static files (robots.txt, sitemap.xml) keep 404-ing
   honestly instead of silently returning index.html.
@@ -236,7 +251,7 @@ specifically, not the first meet of any kind.
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  371 backend tests, 1 skipped, ~65 s, covering rankings, progression (incl.
+  389 backend tests, 1 skipped, ~80 s, covering rankings, meets, progression (incl.
   Bodyweight bucket + per-lift guard), lifters, projection, athlete
   projection (Engine C + D), QT (federal + provincial scrapers), manual
   entry, scout (incl. manual-override recency), rate limiting,
@@ -349,7 +364,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**371 pytest + 95 Vitest + 7 Playwright passing.** Pytest covers
+**389 pytest + 105 Vitest + 7 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

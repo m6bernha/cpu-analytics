@@ -615,6 +615,51 @@ export async function fetchPercentileCurves(): Promise<PercentileCurves> {
   return getJson<PercentileCurves>(`${API_BASE}/api/rankings/percentiles`)
 }
 
+// ---------------------------------------------------------------------------
+// Meet result pages: GET /api/meet
+// ---------------------------------------------------------------------------
+
+export interface MeetResultRow {
+  place: string | null
+  name: string
+  division: string | null
+  bodyweight_kg: number | null
+  squat_kg: number | null
+  bench_kg: number | null
+  deadlift_kg: number | null
+  total_kg: number | null
+  glp: number | null
+}
+
+export interface MeetGroup {
+  sex: string | null
+  equipment: string | null
+  event: string | null
+  weight_class: string | null
+  n_results: number
+  n_divisions: number
+  results: MeetResultRow[]
+}
+
+export interface MeetResponse {
+  found: boolean
+  meet_name: string
+  date: string
+  federation: string | null
+  meet_country: string | null
+  n_results: number
+  n_lifters: number
+  groups: MeetGroup[]
+  /** Parquet is Country=Canada scoped: an international meet shows only
+   *  the Canadian contingent, never the full field. */
+  canadian_scope_only: boolean
+}
+
+export function fetchMeet(name: string, date: string): Promise<MeetResponse> {
+  const qs = new URLSearchParams({ name, date })
+  return getJson<MeetResponse>(`${API_BASE}/api/meet?${qs}`)
+}
+
 export async function postScoutReport(req: ScoutMeetRequest): Promise<ScoutMeetReport> {
   const res = await fetch(`${API_BASE}/api/scout/report`, {
     method: 'POST',

@@ -17,9 +17,9 @@
 // `tsconfig.edge.json` via `npm run build`. See api/og/athlete.tsx.
 
 // Explicit .js extension: see the note in api/og/athlete.tsx.
-import { injectAthleteMeta, summarize } from './src/lib/ogMeta.js'
+import { injectAthleteMeta, injectMeetMeta, summarize } from './src/lib/ogMeta.js'
 
-export const config = { matcher: '/athlete/:path*' }
+export const config = { matcher: ['/athlete/:path*', '/meet/:path*'] }
 
 const API_BASE =
   process.env.VITE_API_BASE ?? 'https://cpu-analytics-backend.onrender.com'
@@ -28,26 +28,47 @@ const API_BASE =
 // costs a slightly plainer description, a slow response costs the preview.
 const BACKEND_TIMEOUT_MS = 3000
 
-function decodeName(pathname: string): string | null {
-  const m = pathname.match(/^\/athlete\/(.+?)\/?$/)
-  if (!m) return null
-  try {
-    const name = decodeURIComponent(m[1]).trim()
-    return name || null
-  } catch {
-    return null
+type Target =
+  | { kind: 'athlete'; name: string }
+  | { kind: 'meet'; name: string; date: string }
+  | null
+
+// Mirrors parseRoute() in src/lib/route.ts. Kept separate because the edge
+// runtime must not pull in the React-facing module graph.
+function parseTarget(pathname: string): Target {
+  const decode = (raw: string): string | null => {
+    try {
+      const s = decodeURIComponent(raw).trim()
+      return s || null
+    } catch {
+      return null
+    }
   }
+
+  const meet = pathname.match(/^\/meet\/(.+)\/(\d{4}-\d{2}-\d{2})\/?$/)
+  if (meet) {
+    const name = decode(meet[1])
+    return name ? { kind: 'meet', name, date: meet[2] } : null
+  }
+
+  const athlete = pathname.match(/^\/athlete\/(.+?)\/?$/)
+  if (athlete) {
+    const name = decode(athlete[1])
+    return name ? { kind: 'athlete', name } : null
+  }
+
+  return null
 }
 
 export default async function middleware(request: Request) {
   const url = new URL(request.url)
-  const name = decodeName(url.pathname)
+  const target = parseTarget(url.pathname)
 
   // Fetch the SPA shell. On any failure fall through to normal serving
   // rather than erroring the page: a missing preview is recoverable, a
-  // blank profile page is not.
+  // blank page is not.
   const shellRes = await fetch(new URL('/', url)).catch(() => null)
-  if (!name || !shellRes || !shellRes.ok) return
+  if (!target || !shellRes || !shellRes.ok) return
 
   const contentType = shellRes.headers.get('content-type') ?? ''
   if (!contentType.includes('text/html')) return
@@ -55,24 +76,53 @@ export default async function middleware(request: Request) {
   const html = await shellRes.text().catch(() => null)
   if (!html) return
 
-  let summary: string | null = null
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/lifters/${encodeURIComponent(name)}/history`,
-      { signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS) },
-    )
-    if (res.ok) summary = summarize(await res.json())
-  } catch {
-    // Cold or slow backend: keep the generic description.
-  }
-
   const origin = `${url.protocol}//${url.host}`
-  const out = injectAthleteMeta(html, {
-    name,
-    summary,
-    url: `${origin}/athlete/${encodeURIComponent(name)}`,
-    image: `${origin}/api/og/athlete?name=${encodeURIComponent(name)}`,
-  })
+  const enc = encodeURIComponent
+  let out: string
+
+  if (target.kind === 'meet') {
+    let summary: string | null = null
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/meet?name=${enc(target.name)}&date=${enc(target.date)}`,
+        { signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS) },
+      )
+      if (res.ok) {
+        const d: any = await res.json()
+        if (d?.found) {
+          summary =
+            `${d.n_lifters} Canadian lifters · ${d.n_results} results` +
+            (d.federation ? ` · ${d.federation}` : '')
+        }
+      }
+    } catch {
+      // Cold or slow backend: keep the generic description.
+    }
+    out = injectMeetMeta(html, {
+      name: target.name,
+      date: target.date,
+      summary,
+      url: `${origin}/meet/${enc(target.name)}/${target.date}`,
+      image: `${origin}/api/og/meet?name=${enc(target.name)}&date=${enc(target.date)}`,
+    })
+  } else {
+    let summary: string | null = null
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/lifters/${enc(target.name)}/history`,
+        { signal: AbortSignal.timeout(BACKEND_TIMEOUT_MS) },
+      )
+      if (res.ok) summary = summarize(await res.json())
+    } catch {
+      // Cold or slow backend: keep the generic description.
+    }
+    out = injectAthleteMeta(html, {
+      name: target.name,
+      summary,
+      url: `${origin}/athlete/${enc(target.name)}`,
+      image: `${origin}/api/og/athlete?name=${enc(target.name)}`,
+    })
+  }
 
   return new Response(out, {
     status: 200,

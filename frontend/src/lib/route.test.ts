@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { athletePath, parseRoute, redirectLegacyLifterUrl } from './route'
+import { athletePath, meetPath, parseRoute, redirectLegacyLifterUrl } from './route'
 
 function setUrl(url: string) {
   window.history.replaceState(null, '', url)
@@ -45,6 +45,45 @@ describe('parseRoute', () => {
 
   it('treats a whitespace-only name as no route', () => {
     expect(parseRoute('/athlete/%20%20')).toEqual({ kind: 'app' })
+  })
+})
+
+describe('meet routes', () => {
+  it('round-trips a meet name and date', () => {
+    expect(meetPath('BC Open', '2025-01-15')).toBe('/meet/BC%20Open/2025-01-15')
+    expect(parseRoute('/meet/BC%20Open/2025-01-15')).toEqual({
+      kind: 'meet',
+      name: 'BC Open',
+      date: '2025-01-15',
+    })
+  })
+
+  it('handles meet names containing slashes and accents', () => {
+    for (const name of ['Est/Ouest Championnat', 'Championnat Québécois']) {
+      expect(parseRoute(meetPath(name, '2026-03-14'))).toEqual({
+        kind: 'meet',
+        name,
+        date: '2026-03-14',
+      })
+    }
+  })
+
+  it('requires a well-formed trailing date', () => {
+    expect(parseRoute('/meet/BC%20Open')).toEqual({ kind: 'app' })
+    expect(parseRoute('/meet/BC%20Open/2025-1-5')).toEqual({ kind: 'app' })
+    expect(parseRoute('/meet/BC%20Open/not-a-date')).toEqual({ kind: 'app' })
+  })
+
+  it('tolerates a trailing slash', () => {
+    expect(parseRoute('/meet/BC%20Open/2025-01-15/')).toEqual({
+      kind: 'meet',
+      name: 'BC Open',
+      date: '2025-01-15',
+    })
+  })
+
+  it('does not confuse an athlete path for a meet path', () => {
+    expect(parseRoute('/athlete/Bob%20B')).toEqual({ kind: 'athlete', name: 'Bob B' })
   })
 })
 

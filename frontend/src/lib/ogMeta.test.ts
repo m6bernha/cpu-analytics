@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { injectAthleteMeta, summarize } from './ogMeta'
+import { injectAthleteMeta, injectMeetMeta, summarize } from './ogMeta'
 
 // Mirrors the real index.html head: site-wide og/twitter tags already
 // present, which the injector must REPLACE rather than duplicate.
@@ -91,6 +91,44 @@ describe('injectAthleteMeta', () => {
 
   it('returns the input unchanged when there is no head to inject into', () => {
     expect(injectAthleteMeta('<p>no head</p>', META)).toBe('<p>no head</p>')
+  })
+})
+
+describe('injectMeetMeta', () => {
+  const MEET = {
+    name: 'Nationals',
+    date: '2026-03-14',
+    image: 'https://x.test/api/og/meet?name=Nationals&date=2026-03-14',
+    url: 'https://x.test/meet/Nationals/2026-03-14',
+  }
+
+  it('titles with the meet name and date', () => {
+    const out = injectMeetMeta(HTML, MEET)
+    expect(out).toContain('<title>Nationals (2026-03-14) — CPU Powerlifting Analytics</title>')
+  })
+
+  it('still emits exactly one of each owned tag', () => {
+    const out = injectMeetMeta(HTML, MEET)
+    expect(count(out, /property="og:title"/g)).toBe(1)
+    expect(count(out, /property="og:image"/g)).toBe(1)
+    expect(count(out, /<title>/g)).toBe(1)
+    expect(out).not.toContain('og-image.png')
+  })
+
+  it('uses the stat summary when present', () => {
+    const out = injectMeetMeta(HTML, { ...MEET, summary: '730 Canadian lifters · 847 results' })
+    expect(out).toContain('730 Canadian lifters · 847 results')
+  })
+
+  it('falls back to a generic description', () => {
+    const out = injectMeetMeta(HTML, MEET)
+    expect(out).toContain('Canadian results from Nationals on 2026-03-14.')
+  })
+
+  it('escapes a hostile meet name', () => {
+    const out = injectMeetMeta(HTML, { ...MEET, name: 'Evil" onload="x' })
+    expect(out).not.toContain('onload="x"')
+    expect(out).toContain('&quot;')
   })
 })
 

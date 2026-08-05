@@ -129,9 +129,37 @@ verified by negative control, and (3) explicit `.js` import extensions that
 resolve under either mode. The live site was never affected — the failed
 deploy left the previous one serving.
 
-**Next:** ADR 0002 Phase 1c — meet result pages (`/meet/{name}/{date}`)
-plus cross-linking, which closes the internal link graph for SEO. Then 1d
-(share-card polish + mobile pass).
+### Phase 1c SHIPPED (2026-08-05)
+
+Meet pages + the cross-linking that closes the internal link graph.
+
+- **`backend/app/meets.py`** + `GET /api/meet?name=&date=` (18 pytests).
+  Groups sex -> equipment -> event -> weight class; results sort by
+  division then place. Verified on real data: Nationals 2026-03-14 returns
+  730 lifters / 847 results / 68 groups.
+- **`/meet/{name}/{date}`** route, matched BEFORE `/athlete` and anchored
+  on the trailing date so encoded slashes in meet names still parse.
+- **Cross-links both ways**: meet rows link to profiles, and every profile
+  meet-table row links back to its meet. Verified live: meet -> athlete ->
+  a different meet, all in-app, accented names intact.
+- **Meet OG cards** reuse the 1b edge layer (`api/og/meet.tsx`, second
+  middleware matcher, `injectMeetMeta`).
+
+**Two honesty findings baked into the page:**
+
+1. **A weight class can hold several 1st places** — CPU awards per
+   division. At Nationals 2026-03-14 two lifters share Open 83 kg 1st and
+   *nothing in the source data separates them*: checked the raw OpenIPF
+   CSV and `MeetTown`/`MeetState` (which preprocess drops) are identical
+   for all 866 rows, so adding those columns would NOT fix it. The page
+   presents a record ordered by division then place and never names a
+   winner.
+2. **Canadian lifters only.** An international meet shows the Canadian
+   contingent; the response carries `canadian_scope_only` and the UI says
+   so explicitly.
+
+**Next:** ADR 0002 Phase 1d — share-card tier polish + the real-phone
+mobile pass. That closes Phase 1.
 
 ### Backlog: name the percentile tiers
 

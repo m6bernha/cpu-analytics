@@ -111,7 +111,7 @@ touch (ShareButton already does this).
 | 0 | ~~/api/tiers + tier badges + Rankings tab~~ **SHIPPED 2026-08-04** | 1 session |
 | 1a | ~~Path routing + /athlete/{name} profile page~~ **SHIPPED 2026-08-04** | 1 session |
 | 1b | ~~OG edge function + middleware~~ **SHIPPED 2026-08-04** | 1 session |
-| 1c | Meet pages + cross-linking | 1 session |
+| 1c | ~~Meet pages + cross-linking~~ **SHIPPED 2026-08-05** | 1 session |
 | 1d | Share-card tier polish + mobile pass | 0.5 session |
 
 Phase 0 has no routing risk and ships value alone; start there.
@@ -209,3 +209,35 @@ three ways:
 
 Blast radius held as designed: the failed deploy left the previous
 deployment serving, so the live site was never broken.
+
+## Phase 1c as built (2026-08-05)
+
+`/meet/{encoded-name}/{date}` + `GET /api/meet`, cross-linked with
+profiles in both directions. Decisions and one data finding:
+
+1. **Complete record, not Raw SBD.** Unlike Rankings, a meet page lists
+   every event and equipment category, so a bench-only or equipped lifter
+   does not vanish from their own meet. Groups are sex -> equipment ->
+   event -> weight class.
+2. **Meet OG cards** reuse the Phase 1b edge layer: a second card function
+   (`api/og/meet.tsx`) and a second middleware matcher, with
+   `injectMeetMeta` delegating to the same replace-don't-append transform.
+3. **No meets index.** Discovery is Rankings -> profile -> meet -> other
+   profiles, which closes the crawl loop per the design.
+
+**Data finding that shaped the page.** The design said "group by class and
+placing", but CPU awards placings PER DIVISION, so one weight class
+legitimately holds several 1st places. Worse, at Nationals 2026-03-14 two
+lifters share Open 83 kg 1st with *no column in the source data
+distinguishing them* — verified by checking the raw OpenIPF CSV, where
+`MeetTown`/`MeetState` (dropped by preprocess) are identical
+(`St. John's, NL`) for all 866 rows. So this is ambiguous upstream, not a
+preprocessing loss, and adding those columns would not fix it.
+
+The page therefore presents results as a RECORD: ordered by division then
+place, division always visible, and a methodology note saying placings are
+reproduced as recorded. It never picks or implies a single winner.
+
+Also surfaced honestly: the parquet is Country=Canada scoped, so an
+international meet shows the Canadian contingent only. Responses carry
+`canadian_scope_only` and the UI states it when `meet_country != Canada`.

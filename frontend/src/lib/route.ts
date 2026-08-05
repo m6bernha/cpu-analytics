@@ -18,25 +18,44 @@ export const ROUTE_EVENT = 'cpu-analytics:routechange'
 export type Route =
   | { kind: 'app' }
   | { kind: 'athlete'; name: string }
+  | { kind: 'meet'; name: string; date: string }
 
 export function athletePath(name: string): string {
   return `/athlete/${encodeURIComponent(name)}`
 }
 
-export function parseRoute(pathname: string = window.location.pathname): Route {
-  const m = pathname.match(/^\/athlete\/(.+?)\/?$/)
-  if (!m) return { kind: 'app' }
-  let name: string
+/** A meet is keyed by (name, date); the date disambiguates recurring names. */
+export function meetPath(name: string, date: string): string {
+  return `/meet/${encodeURIComponent(name)}/${date}`
+}
+
+function decodeSegment(raw: string): string | null {
   try {
-    name = decodeURIComponent(m[1])
+    const s = decodeURIComponent(raw).trim()
+    return s || null
   } catch {
-    // Malformed percent-encoding: treat as a non-route rather than throwing
-    // during render.
-    return { kind: 'app' }
+    // Malformed percent-encoding: treat as a non-route rather than
+    // throwing during render.
+    return null
   }
-  name = name.trim()
-  if (!name) return { kind: 'app' }
-  return { kind: 'athlete', name }
+}
+
+export function parseRoute(pathname: string = window.location.pathname): Route {
+  // Meet first: its name segment can itself contain slashes only when
+  // encoded, so the date anchor keeps this unambiguous.
+  const meet = pathname.match(/^\/meet\/(.+)\/(\d{4}-\d{2}-\d{2})\/?$/)
+  if (meet) {
+    const name = decodeSegment(meet[1])
+    return name ? { kind: 'meet', name, date: meet[2] } : { kind: 'app' }
+  }
+
+  const athlete = pathname.match(/^\/athlete\/(.+?)\/?$/)
+  if (athlete) {
+    const name = decodeSegment(athlete[1])
+    return name ? { kind: 'athlete', name } : { kind: 'app' }
+  }
+
+  return { kind: 'app' }
 }
 
 function announce() {

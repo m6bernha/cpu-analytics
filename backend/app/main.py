@@ -34,6 +34,7 @@ logging.basicConfig(
 from . import athlete_projection as athlete_proj_mod
 from . import filters as filters_mod
 from . import lifters as lifters_mod
+from . import meets as meets_mod
 from . import meta as meta_mod
 from . import progression as progression_mod
 from . import qt as qt_mod
@@ -454,6 +455,20 @@ def api_lifters_search(
 @app.get("/api/lifters/{name}/history")
 def api_lifter_history(name: str) -> dict[str, Any]:
     return _clean(lifters_mod.get_lifter_history(name))
+
+
+@app.get("/api/meet")
+def api_meet(
+    name: str = Query(..., min_length=1, max_length=300),
+    date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
+) -> dict[str, Any]:
+    """All recorded results for one meet, keyed by (MeetName, Date).
+
+    Canadian lifters only — the parquet is Country=Canada scoped, so an
+    international meet returns the Canadian contingent. The response
+    carries `canadian_scope_only` so the UI can say so.
+    """
+    return _clean(meets_mod.get_meet_results(name, date))
 
 
 @app.get("/api/rankings/percentiles")

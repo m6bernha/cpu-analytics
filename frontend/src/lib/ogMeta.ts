@@ -17,6 +17,9 @@ export interface AthleteMeta {
   url: string
   /** Optional one-line stat summary; falls back to a generic line. */
   summary?: string | null
+  /** Used by injectMeetMeta to reuse this transform with its own title. */
+  titleOverride?: string
+  imageAltOverride?: string
 }
 
 // Tags this module owns end-to-end. Anything not listed here (charset,
@@ -56,7 +59,7 @@ function stripOwnedTags(html: string): string {
 }
 
 export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
-  const title = `${meta.name} — CPU Powerlifting Analytics`
+  const title = meta.titleOverride ?? `${meta.name} — CPU Powerlifting Analytics`
   const description =
     meta.summary && meta.summary.trim()
       ? meta.summary.trim()
@@ -68,7 +71,7 @@ export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
     `<meta property="og:description" content="${escapeAttr(description)}" />`,
     `<meta property="og:url" content="${escapeAttr(meta.url)}" />`,
     `<meta property="og:image" content="${escapeAttr(meta.image)}" />`,
-    `<meta property="og:image:alt" content="${escapeAttr(`${meta.name} lifting summary card`)}" />`,
+    `<meta property="og:image:alt" content="${escapeAttr(meta.imageAltOverride ?? `${meta.name} lifting summary card`)}" />`,
     `<meta name="twitter:title" content="${escapeAttr(title)}" />`,
     `<meta name="twitter:description" content="${escapeAttr(description)}" />`,
     `<meta name="twitter:image" content="${escapeAttr(meta.image)}" />`,
@@ -78,6 +81,31 @@ export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
   const stripped = stripOwnedTags(html)
   if (!/<\/head>/i.test(stripped)) return stripped
   return stripped.replace(/<\/head>/i, `  ${tags}\n  </head>`)
+}
+
+export interface MeetMeta {
+  name: string
+  date: string
+  image: string
+  url: string
+  summary?: string | null
+}
+
+/** Meet-page variant of the same replace-don't-append transform. */
+export function injectMeetMeta(html: string, meta: MeetMeta): string {
+  const title = `${meta.name} (${meta.date}) — CPU Powerlifting Analytics`
+  const description =
+    meta.summary && meta.summary.trim()
+      ? meta.summary.trim()
+      : `Canadian results from ${meta.name} on ${meta.date}.`
+  return injectAthleteMeta(html, {
+    name: meta.name,
+    image: meta.image,
+    url: meta.url,
+    summary: description,
+    titleOverride: title,
+    imageAltOverride: `${meta.name} results summary card`,
+  })
 }
 
 /** One-line stat summary for the card + description, from the history payload. */
