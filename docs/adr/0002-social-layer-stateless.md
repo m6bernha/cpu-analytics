@@ -109,7 +109,7 @@ touch (ShareButton already does this).
 | Phase | Work | Estimate |
 |---|---|---|
 | 0 | ~~/api/tiers + tier badges + Rankings tab~~ **SHIPPED 2026-08-04** | 1 session |
-| 1a | Path routing + /athlete/{name} profile page | 1 session |
+| 1a | ~~Path routing + /athlete/{name} profile page~~ **SHIPPED 2026-08-04** | 1 session |
 | 1b | OG edge function + middleware | 1 session |
 | 1c | Meet pages + cross-linking | 1 session |
 | 1d | Share-card tier polish + mobile pass | 0.5 session |
@@ -133,3 +133,24 @@ Three deviations from the design above, all deliberate:
 Also added: the leaderboard is scoped to lifters **active in the last 24
 months**, a question the design did not settle. The window anchors to the
 newest meet in the parquet rather than wall-clock today.
+
+## Phase 1a as built (2026-08-04)
+
+Built to spec (hand-rolled routing, URL-encoded exact-name slug, app shell
+retained, composes the existing LifterDetail). Two decisions the design did
+not settle:
+
+1. **Legacy `?tab=lookup&lifter=X` links redirect** to `/athlete/X` rather
+   than both URLs coexisting, so there is one canonical URL per athlete.
+   Compare links (`mode=compare`) and the bare lookup tab are untouched —
+   they are workspaces, not profiles. Unrelated params (era, view_mode)
+   ride along.
+2. **The redirect runs in `main.tsx` before the first render**, not in an
+   effect. An effect is too late: `useRoute` registers its listener in a
+   passive effect, which runs *after* layout effects, so a redirect fired
+   from a layout effect dispatches to nobody and the app renders the shell
+   instead of the profile. This was caught in the browser, not by tests.
+
+The tab stack stays mounted-but-hidden while a profile is open so tab state
+survives the round trip; `isActive` is forced false for every tab in that
+state so no Recharts container renders at 0x0.

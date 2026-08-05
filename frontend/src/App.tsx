@@ -4,6 +4,8 @@
 // links are shareable. Tabs are kept mounted (display: none for inactive
 // ones) so local state survives switches.
 
+import { Suspense, lazy } from 'react'
+
 import About from './tabs/About'
 import AthleteProjection from './tabs/AthleteProjection'
 import Progression from './tabs/Progression'
@@ -14,7 +16,13 @@ import Scout from './tabs/Scout'
 import { WelcomeHero } from './components/WelcomeHero'
 import { ErrorBoundary } from './lib/ErrorBoundary'
 import { FreshnessBadge } from './lib/FreshnessBadge'
+import { LoadingSkeleton } from './lib/QueryStatus'
+import { navigate, useRoute } from './lib/route'
 import { useUrlState } from './lib/useUrlState'
+
+// Own chunk: the profile route is entered from a shared link, not from the
+// default tab, so it should not weigh down first paint of the app shell.
+const AthleteProfile = lazy(() => import('./tabs/AthleteProfile'))
 
 type TabKey =
   | 'progression' | 'rankings' | 'projection' | 'lookup' | 'qt' | 'scout' | 'about'
@@ -41,7 +49,18 @@ export default function App() {
   const tab: TabKey = VALID_TABS.includes(url.tab as TabKey)
     ? (url.tab as TabKey)
     : 'progression'
-  const setTab = (t: TabKey) => setUrl({ tab: t })
+
+  // Legacy ?tab=lookup&lifter=X links are canonicalized to /athlete/X in
+  // main.tsx before the first render, so by here the path is already right.
+  const route = useRoute()
+  const onAthletePage = route.kind === 'athlete'
+
+  // Tab clicks always return to the app shell. From a profile page that is a
+  // real navigation; from the shell it is just a query-string change.
+  const setTab = (t: TabKey) => {
+    if (onAthletePage) navigate(t === 'progression' ? '/' : `/?tab=${t}`)
+    else setUrl({ tab: t })
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
@@ -96,41 +115,55 @@ export default function App() {
       </header>
 
       <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {onAthletePage && (
+          <ErrorBoundary label="Athlete profile">
+            <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
+              <AthleteProfile name={route.name} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+
+        {/* The tab stack stays MOUNTED while a profile is open (hidden, not
+            unmounted) so tab-internal state survives the round trip, matching
+            the display:none convention the tabs already use between
+            themselves. */}
+        <div style={{ display: onAthletePage ? 'none' : undefined }}>
         <WelcomeHero onNavigate={(t) => setTab(t as TabKey)} />
         <div style={{ display: tab === 'progression' ? undefined : 'none' }}>
           <ErrorBoundary label="Progression">
-            <Progression isActive={tab === 'progression'} />
+            <Progression isActive={!onAthletePage && tab === 'progression'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'rankings' ? undefined : 'none' }}>
           <ErrorBoundary label="Rankings">
-            <Rankings isActive={tab === 'rankings'} />
+            <Rankings isActive={!onAthletePage && tab === 'rankings'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'projection' ? undefined : 'none' }}>
           <ErrorBoundary label="Athlete Projection">
-            <AthleteProjection isActive={tab === 'projection'} />
+            <AthleteProjection isActive={!onAthletePage && tab === 'projection'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'lookup' ? undefined : 'none' }}>
           <ErrorBoundary label="Lifter Lookup">
-            <LifterLookup isActive={tab === 'lookup'} />
+            <LifterLookup isActive={!onAthletePage && tab === 'lookup'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'qt' ? undefined : 'none' }}>
           <ErrorBoundary label="Qualifying Totals">
-            <QTSqueeze isActive={tab === 'qt'} />
+            <QTSqueeze isActive={!onAthletePage && tab === 'qt'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'scout' ? undefined : 'none' }}>
           <ErrorBoundary label="Scout">
-            <Scout isActive={tab === 'scout'} />
+            <Scout isActive={!onAthletePage && tab === 'scout'} />
           </ErrorBoundary>
         </div>
         <div style={{ display: tab === 'about' ? undefined : 'none' }}>
           <ErrorBoundary label="About">
-            <About isActive={tab === 'about'} />
+            <About isActive={!onAthletePage && tab === 'about'} />
           </ErrorBoundary>
+        </div>
         </div>
       </main>
 

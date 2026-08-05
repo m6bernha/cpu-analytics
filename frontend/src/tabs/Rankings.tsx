@@ -17,6 +17,7 @@ import { PercentileBadge } from '../components/PercentileBadge'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import { ShareButton } from '../lib/ShareButton'
 import { fmtKg } from '../lib/format'
+import { athletePath, navigate } from '../lib/route'
 import { useUrlState } from '../lib/useUrlState'
 
 interface RankingsProps {
@@ -205,7 +206,14 @@ export default function Rankings({ isActive }: RankingsProps) {
                     </td>
                     <td className="pr-3 py-1.5">
                       <a
-                        href={`?tab=lookup&lifter=${encodeURIComponent(r.name)}`}
+                        href={athletePath(r.name)}
+                        onClick={(e) => {
+                          // Plain left-click routes in-app; modified clicks
+                          // keep the browser's open-in-new-tab behaviour.
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                          e.preventDefault()
+                          navigate(athletePath(r.name))
+                        }}
                         className="hover:text-orange-300 underline underline-offset-2 decoration-zinc-700"
                       >
                         {r.name}

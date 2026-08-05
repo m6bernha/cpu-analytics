@@ -71,21 +71,32 @@ test('/?tab=lookup shows search input', async ({ page }) => {
   check()
 })
 
-// Route 4: pre-selected lifter renders the detail view. The `lifter` URL
-// key selects the lifter directly; the search input stays empty by design
-// (query is ephemeral local state). Asserts the detail heading, which
-// requires the synthetic fixture backend.
-test('/?tab=lookup&lifter=Alice%20A renders detail', async ({ page }) => {
+// Route 4: the legacy single-lifter deep link canonicalizes to the profile
+// route (ADR 0002 Phase 1a). The redirect runs in main.tsx before first
+// render, so by the time the page settles the URL is already /athlete/{name}.
+// Requires the synthetic fixture backend.
+test('/?tab=lookup&lifter=Alice%20A redirects to the athlete profile', async ({ page }) => {
   const check = watchConsoleErrors(page)
   await page.goto('/?tab=lookup&lifter=Alice%20A')
-  await expect(
-    page.getByRole('tab', { name: 'Lifter Lookup' })
-  ).toHaveAttribute('aria-selected', 'true')
-  // Two headings carry the name (AthleteCard h2 + detail h3); either proves
-  // the detail view rendered.
+  await expect(page).toHaveURL(/\/athlete\/Alice(%20|\s)A$/)
+  // Several headings carry the name (profile h1 + AthleteCard h2 + detail
+  // h3); any visible one proves the profile rendered.
   await expect(
     page.getByRole('heading', { name: 'Alice A' }).filter({ visible: true }).first()
   ).toBeVisible()
+  check()
+})
+
+// Route 4b: the canonical profile URL loads directly (cold entry from a
+// shared link, exercising the SPA rewrite path).
+test('/athlete/{name} renders the profile directly', async ({ page }) => {
+  const check = watchConsoleErrors(page)
+  await page.goto('/athlete/Bob%20B')
+  await expect(
+    page.getByRole('heading', { name: 'Bob B' }).filter({ visible: true }).first()
+  ).toBeVisible()
+  // App shell stays available so a visitor can explore from a shared link.
+  await expect(page.getByRole('tablist', { name: 'Main tabs' })).toBeVisible()
   check()
 })
 

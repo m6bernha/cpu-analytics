@@ -63,6 +63,28 @@ See the "Pre-push checklist" section further down (line ~150) for the
 full commands. Summary: `npm run build`, `python -m pytest backend/tests/`,
 `npm run test` (Vitest), optionally `npm run test:e2e` (Playwright local).
 
+## Path routing (`frontend/src/lib/route.ts`)
+
+`useUrlState` owns the QUERY STRING; `route.ts` owns the PATHNAME. They
+compose because `writeUrl` preserves `window.location.pathname` verbatim.
+One dynamic route exists: `/athlete/{encoded-name}` (ADR 0002 Phase 1a).
+
+- **Slug is the URL-encoded EXACT OpenIPF name.** Pretty hyphenated slugs
+  would collide with genuinely hyphenated names (`Amélie Picher-Plante`),
+  and OpenIPF keys on the exact string, so the round-trip must be lossless.
+- **Legacy `?tab=lookup&lifter=X` redirects to `/athlete/X`**, and the
+  redirect runs in `main.tsx` BEFORE the first render. Do not move it into
+  an effect: `useRoute` registers its listener in a passive effect, which
+  runs after layout effects, so a redirect fired from a layout effect
+  dispatches to no listener and the shell renders instead of the profile.
+  Compare links (`mode=compare`) deliberately do NOT redirect.
+- **The tab stack stays mounted but hidden while a profile is open** so tab
+  state survives, and every tab's `isActive` is forced false in that state
+  so no Recharts container renders at 0x0.
+- `frontend/vercel.json` has an SPA rewrite scoped to `/athlete/:name*`
+  only, so real static files (robots.txt, sitemap.xml) keep 404-ing
+  honestly instead of silently returning index.html.
+
 ## URL state conventions
 
 Every user-facing, shareable view is encoded in `window.location.search` via the
@@ -187,7 +209,7 @@ specifically, not the first meet of any kind.
   security, weight class Hypothesis, and concurrency.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
-- `cd frontend && npm run test` -- 72 Vitest unit tests (percentile + useUrlState
+- `cd frontend && npm run test` -- 84 Vitest unit tests (route + percentile + useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard + Scout roster/override helpers).
   Runs in jsdom, ~4 s.
@@ -293,7 +315,7 @@ actually reaches production.
   handler.
 - Plus CompareView lazy-loaded as its own 8 KB chunk.
 
-**371 pytest + 72 Vitest + 6 Playwright passing.** Pytest covers
+**371 pytest + 84 Vitest + 7 Playwright passing.** Pytest covers
 progression, lifters, projection, athlete projection (Engine C +
 IPF-GL), qt (federal + OPA + MPA + NSPL + NLPA + APU + FQD parsers),
 manual, security, weight_class (with 19 Hypothesis property tests), and

@@ -65,9 +65,41 @@ Note: ranking by GLP with sex=All puts women at the top of the board
 cross-sex GLP normalization means and the filter is one click away, but
 it is worth a look before Phase 1.
 
-**Next:** ADR 0002 Phase 1a — path routing + `/athlete/{name}` profile
-pages. Phases 1b (OG edge function), 1c (meet pages), 1d (share-card
-polish) follow.
+### Phase 1a SHIPPED (same session)
+
+`/athlete/{name}` is a real, shareable URL.
+
+- **`frontend/src/lib/route.ts`** owns the pathname (useUrlState still owns
+  the query string; they compose because `writeUrl` preserves the path).
+  Hand-rolled, no react-router: the app has exactly one dynamic route.
+  12 Vitest cases cover encode/decode round-trips (accents, hyphens,
+  slashes, apostrophes), malformed percent-encoding, and the redirect rules.
+- **Legacy `?tab=lookup&lifter=X` canonicalizes to `/athlete/X`** so there
+  is one URL per athlete. Compare links are left alone. `era`/`view_mode`
+  ride along.
+- **`AthleteProfile.tsx`** is thin by design: it fetches the same payloads
+  Lifter Lookup uses and composes the existing `LifterDetail`. Ships as its
+  own 1.09 KB gzip chunk; `LifterDetail` stayed a shared lazy chunk.
+- Rankings rows now link to the canonical path, with modified-click
+  (cmd/ctrl/shift) still opening a real new tab.
+- `vercel.json` SPA rewrite scoped to `/athlete/:name*`.
+
+**Bug caught in the browser, not by tests:** the redirect originally ran in
+a `useLayoutEffect`. Layout effects run BEFORE passive effects, and
+`useRoute` registers its listener in a passive effect, so the redirect
+dispatched its event to nobody and the app rendered the shell at the
+correct URL. Moved to `main.tsx` before first render. Worth remembering
+that a passing test suite did not catch this — only opening the page did.
+
+Verified: profile renders with shell intact, back button works, in-app
+nav from Rankings works, accented/hyphenated names round-trip, unknown
+names degrade to a helpful empty state, console clean. e2e 6 -> 7 tests
+(the legacy-link test now asserts the redirect), all green against the
+synthetic fixture backend.
+
+**Next:** ADR 0002 Phase 1b — Vercel OG edge function + middleware so
+shared `/athlete/*` links preview with the lifter's name, total, and
+standing. Then 1c (meet pages), 1d (share-card polish).
 
 ### Backlog: name the percentile tiers
 

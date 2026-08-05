@@ -3,6 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.tsx'
+import { redirectLegacyLifterUrl } from './lib/route'
+
+// Canonicalize legacy `?tab=lookup&lifter=X` links to `/athlete/X` BEFORE
+// the first render. Doing it in an effect instead would be too late: the
+// route hook reads location during mount and registers its listener in a
+// passive effect, so a redirect fired from a layout effect dispatches to
+// nobody and the app renders the wrong view.
+redirectLegacyLifterUrl()
 
 // Defaults tuned for the Render free-tier backend:
 //   - retry: 3 -- cold-start + network hiccups are common.
