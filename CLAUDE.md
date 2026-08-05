@@ -103,11 +103,19 @@ the only server-side code outside the Render backend.
   is unit-testable (`ogMeta.test.ts`) without an edge runtime.
 - Middleware fetches `/`, and its matcher covers only `/athlete/*`, so it
   cannot re-enter itself. Keep it that way.
-- **`api/` and `middleware.ts` are NOT type-checked by CI** —
-  `tsconfig.app.json` has `include: ["src"]`. Vercel compiles them at
-  deploy, so an error fails the DEPLOY (previous deployment keeps serving)
-  rather than breaking the site. Check by hand when editing; the exact
-  command is in `docs/adr/0002-social-layer-stateless.md`.
+- **The edge layer is type-checked by `tsconfig.edge.json`**, run from
+  `npm run build` (`tsc -b && tsc -p tsconfig.edge.json && vite build`), so
+  CI covers it. `tsconfig.app.json` still has `include: ["src"]` and does
+  NOT reach these files, which is why the separate project exists.
+- **`tsconfig.json`'s `compilerOptions` block exists for VERCEL, not for
+  `tsc -b`.** Vercel reads the root tsconfig when compiling `api/` and
+  `middleware.ts` at deploy; with the old solution-style file (`files: []`,
+  references only, no compilerOptions) it fell back to `moduleResolution:
+  node16` with no `--jsx` and no node types, and the Phase 1b deploy failed
+  on TS17004 + TS2835 + TS2591 while every local gate was green. Keep that
+  block and `tsconfig.edge.json` in sync.
+- Relative imports in the edge layer carry explicit **`.js` extensions** so
+  they resolve under node16 as well as bundler resolution.
 - `@vercel/og` must never be imported from `src/` — it would land in the
   client bundle. Only the edge function imports it.
 

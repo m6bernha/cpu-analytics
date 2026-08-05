@@ -13,10 +13,11 @@
 // The matcher covers only /athlete/*, so fetching '/' below cannot re-enter
 // this middleware.
 //
-// NOTE: outside `tsconfig.app.json`'s `include: ["src"]`, so `tsc -b` does
-// NOT type-check this file. Vercel compiles it at deploy.
+// NOTE: outside `tsconfig.app.json`'s `include: ["src"]`; type-checked by
+// `tsconfig.edge.json` via `npm run build`. See api/og/athlete.tsx.
 
-import { injectAthleteMeta, summarize } from './src/lib/ogMeta'
+// Explicit .js extension: see the note in api/og/athlete.tsx.
+import { injectAthleteMeta, summarize } from './src/lib/ogMeta.js'
 
 export const config = { matcher: '/athlete/:path*' }
 

@@ -180,11 +180,32 @@ Built to spec (`@vercel/og` edge function + edge middleware injecting
    so it is unit-testable without an edge runtime (11 cases, including
    attribute-escape).
 
-**Known gap:** `api/` and `middleware.ts` sit outside
-`tsconfig.app.json`'s `include: ["src"]`, so `tsc -b` (the CI frontend
-gate) does not type-check them. Vercel compiles them at deploy, so a
-mistake fails the DEPLOY and the previous deployment keeps serving — it
-does not break the live site. Type-check them by hand when editing:
-`npx tsc --noEmit --ignoreConfig --jsx react-jsx --module esnext
---moduleResolution bundler --target es2023 --lib es2023,dom --skipLibCheck
---strict --types node api/og/athlete.tsx middleware.ts`
+**The first deploy of this phase FAILED, and the fix is instructive.**
+
+`api/` and `middleware.ts` sit outside `tsconfig.app.json`'s
+`include: ["src"]`, so no local gate checked them. A hand-check was run
+first, but it passed explicit `--jsx --moduleResolution bundler --types
+node` flags. Vercel uses none of those: it reads the ROOT `tsconfig.json`,
+which was solution-style (`files: []` + references, no `compilerOptions`),
+so it fell back to `moduleResolution: node16` with no JSX support and no
+node types. Deploy `dpl_MbYmZcar...` failed on TS17004 (no `--jsx`),
+TS2835 (extensionless relative imports) and TS2591 (no `process` type)
+while build, tests, and the hand-check were all green.
+
+The lesson is not "check by hand" — it is that a hand-check with
+self-chosen flags does not model the compiler that actually runs. Fixed
+three ways:
+
+1. `tsconfig.json` gained a `compilerOptions` block. It is ignored by
+   `tsc -b` (the referenced projects carry their own) and exists purely so
+   Vercel compiles the edge layer with the right options.
+2. New `tsconfig.edge.json` covering `api/**/*` + `middleware.ts`, wired
+   into `npm run build`, so CI now fails on these files. Verified by
+   negative control: removing `jsx` from it reproduces Vercel's exact
+   TS17004.
+3. Relative imports carry explicit `.js` extensions, valid under both
+   node16 and bundler resolution, so the code no longer depends on which
+   one is in effect.
+
+Blast radius held as designed: the failed deploy left the previous
+deployment serving, so the live site was never broken.

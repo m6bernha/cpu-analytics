@@ -8,14 +8,18 @@
 // branded card always beats a broken preview, so on timeout or error this
 // falls back to a name-only card rather than failing the request.
 //
-// NOTE: this file is outside `tsconfig.app.json`'s `include: ["src"]`, so
-// `tsc -b` does NOT type-check it. Vercel compiles it at deploy time; a
-// mistake here fails the deploy (the previous deployment keeps serving),
-// it does not break the live site.
+// NOTE: this file is outside `tsconfig.app.json`'s `include: ["src"]`. It
+// is type-checked by `tsconfig.edge.json`, which `npm run build` runs, so
+// CI covers it. Vercel compiles it at deploy using the compilerOptions in
+// the ROOT tsconfig.json — keep those two in sync or the deploy fails on
+// options no local gate exercises.
 
 import { ImageResponse } from '@vercel/og'
 
-import { percentileFor, formatPercentile } from '../../src/lib/percentile'
+// Explicit .js extension: Vercel may compile this file under node16
+// module resolution, which rejects extensionless relative imports. The
+// extension is also valid under bundler resolution, so it works either way.
+import { percentileFor, formatPercentile } from '../../src/lib/percentile.js'
 
 export const config = { runtime: 'edge' }
 

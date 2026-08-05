@@ -1,0 +1,27 @@
+{
+  // Type-checks the Vercel edge layer (api/ + middleware.ts), which
+  // tsconfig.app.json deliberately excludes via include: ["src"].
+  //
+  // Wired into `npm run build` so CI covers these files. Before this
+  // existed, a Phase 1b deploy failed on errors no local gate caught
+  // (2026-08-04, deployment dpl_MbYmZcar...): Vercel compiles functions
+  // with its own defaults (moduleResolution node16, no --jsx, no node
+  // types) when the root tsconfig supplies no compilerOptions.
+  //
+  // Keep these options in sync with the compilerOptions block in
+  // tsconfig.json, which is what Vercel actually reads at deploy time.
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["api/**/*", "middleware.ts"]
+}

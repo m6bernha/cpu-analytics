@@ -117,10 +117,17 @@ Shared `/athlete/*` links now preview with the lifter's own card.
 - Cards cache **24 h** (not `@vercel/og`'s 1-year immutable default, which
   would freeze numbers in shared links).
 
-**Known gap to remember:** `api/` and `middleware.ts` are outside
-`tsconfig.app.json`'s `include: ["src"]`, so CI does NOT type-check them.
-A mistake fails the Vercel DEPLOY (previous deployment keeps serving), it
-does not break the live site. Hand-check command is in ADR 0002.
+**The first 1b deploy FAILED and the gate that missed it is now closed.**
+`api/` and `middleware.ts` are outside `tsconfig.app.json`'s
+`include: ["src"]`, so nothing local checked them. The hand-check that was
+run passed self-chosen flags; Vercel reads the ROOT `tsconfig.json`, which
+had no `compilerOptions`, so it fell back to node16 with no JSX and no node
+types and failed on TS17004 / TS2835 / TS2591. Fixed by (1) adding a
+`compilerOptions` block to the root tsconfig purely for Vercel, (2) a new
+`tsconfig.edge.json` wired into `npm run build` so CI fails on these files,
+verified by negative control, and (3) explicit `.js` import extensions that
+resolve under either mode. The live site was never affected — the failed
+deploy left the previous one serving.
 
 **Next:** ADR 0002 Phase 1c — meet result pages (`/meet/{name}/{date}`)
 plus cross-linking, which closes the internal link graph for SEO. Then 1d
