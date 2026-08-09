@@ -33,6 +33,13 @@ const META = {
 
 const count = (s: string, re: RegExp) => (s.match(re) ?? []).length
 
+const MEET = {
+  name: 'Nationals',
+  date: '2026-03-14',
+  image: 'https://x.test/api/og/meet?name=Nationals&date=2026-03-14',
+  url: 'https://x.test/meet/Nationals/2026-03-14',
+}
+
 describe('injectAthleteMeta', () => {
   it('emits exactly one of each owned tag', () => {
     const out = injectAthleteMeta(HTML, META)
@@ -95,13 +102,6 @@ describe('injectAthleteMeta', () => {
 })
 
 describe('injectMeetMeta', () => {
-  const MEET = {
-    name: 'Nationals',
-    date: '2026-03-14',
-    image: 'https://x.test/api/og/meet?name=Nationals&date=2026-03-14',
-    url: 'https://x.test/meet/Nationals/2026-03-14',
-  }
-
   it('titles with the meet name and date', () => {
     const out = injectMeetMeta(HTML, MEET)
     expect(out).toContain('<title>Nationals (2026-03-14) — CPU Powerlifting Analytics</title>')
@@ -129,6 +129,80 @@ describe('injectMeetMeta', () => {
     const out = injectMeetMeta(HTML, { ...MEET, name: 'Evil" onload="x' })
     expect(out).not.toContain('onload="x"')
     expect(out).toContain('&quot;')
+  })
+})
+
+describe('search-snippet description', () => {
+  // og:description drives the social preview; the plain `description` meta
+  // is what search engines show as the result snippet. Before this was an
+  // owned tag every athlete and meet page inherited index.html's single
+  // site-wide sentence.
+  it('replaces the site-wide description rather than leaving it', () => {
+    const out = injectAthleteMeta(HTML, { ...META, summary: '565 kg best total' })
+    expect(count(out, /name="description"/g)).toBe(1)
+    expect(out).toContain('<meta name="description" content="565 kg best total" />')
+    expect(out).not.toContain('content="site description"')
+  })
+
+  it('gives meet pages their own snippet', () => {
+    const out = injectMeetMeta(HTML, MEET)
+    expect(count(out, /name="description"/g)).toBe(1)
+    expect(out).not.toContain('content="site description"')
+  })
+})
+
+describe('JSON-LD structured data', () => {
+  const ldOf = (html: string) => {
+    const m = html.match(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+    )
+    return m ? JSON.parse(m[1]) : null
+  }
+
+  it('describes an athlete as a ProfilePage wrapping a Person', () => {
+    const ld = ldOf(injectAthleteMeta(HTML, { ...META, summary: '565 kg best total' }))
+    expect(ld['@context']).toBe('https://schema.org')
+    expect(ld['@type']).toBe('ProfilePage')
+    expect(ld.mainEntity['@type']).toBe('Person')
+    expect(ld.mainEntity.name).toBe('Bob B')
+    expect(ld.mainEntity.url).toBe('https://x.test/athlete/Bob%20B')
+  })
+
+  it('describes a meet as a SportsEvent with its date', () => {
+    const ld = ldOf(injectMeetMeta(HTML, MEET))
+    expect(ld['@type']).toBe('SportsEvent')
+    expect(ld.name).toBe('Nationals')
+    expect(ld.startDate).toBe('2026-03-14')
+    expect(ld.sport).toBe('Powerlifting')
+  })
+
+  it('asserts nothing the dataset does not know', () => {
+    // location is dropped at preprocess and these meets are already over,
+    // so claiming either would be fabrication.
+    const ld = ldOf(injectMeetMeta(HTML, MEET))
+    expect(ld.location).toBeUndefined()
+    expect(ld.eventStatus).toBeUndefined()
+    const athlete = ldOf(injectAthleteMeta(HTML, META))
+    expect(athlete.mainEntity.award).toBeUndefined()
+    expect(athlete.mainEntity.affiliation).toBeUndefined()
+  })
+
+  it('cannot be broken out of by a name containing a closing script tag', () => {
+    // Meet names are federation-entered free text.
+    const hostile = '</script><img src=x onerror=alert(1)>'
+    const out = injectMeetMeta(HTML, { ...MEET, name: hostile })
+    // Exactly one ld+json block, and the payload never closed it early.
+    expect(count(out, /<script type="application\/ld\+json">/g)).toBe(1)
+    expect(out).not.toContain('<img src=x onerror=alert(1)>')
+    // Still valid JSON, and the value survives intact after unescaping.
+    expect(ldOf(out).name).toBe(hostile)
+  })
+
+  it('emits exactly one block even when run against already-injected HTML', () => {
+    const once = injectAthleteMeta(HTML, META)
+    const twice = injectAthleteMeta(once, META)
+    expect(count(twice, /application\/ld\+json/g)).toBe(1)
+    expect(count(twice, /name="description"/g)).toBe(1)
   })
 })
 

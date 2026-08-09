@@ -40,6 +40,10 @@ import type { LiftKey } from './athlete-projection/ControlPanels'
 
 const LIFT_KEYS_STATIC = ['total', 'squat', 'bench', 'deadlift'] as const
 
+// How many rows the search dropdown asks for. Shared by the fetch and by
+// the dropdown's "showing the top N" notice so the two cannot disagree.
+const SEARCH_LIMIT = 12
+
 // Find the QT kg value for a specific weight class in a live-coverage
 // response. Returns undefined if the class is not present in the returned
 // rows (e.g. the lifter's class is outside the scope of the published feed).
@@ -145,7 +149,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
 
   const searchQuery = useQuery({
     queryKey: ['ap-search', debouncedQuery],
-    queryFn: () => fetchLifterSearch(debouncedQuery, 12),
+    queryFn: () => fetchLifterSearch(debouncedQuery, SEARCH_LIMIT),
     enabled: debouncedQuery.trim().length >= 2 && !selected,
     staleTime: 5 * 60 * 1000,
   })
@@ -296,6 +300,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
         setQuery={setQuery}
         searchResults={searchQuery.data ?? []}
         searchIsLoading={searchQuery.isLoading && debouncedQuery.trim().length >= 2}
+        searchLimit={SEARCH_LIMIT}
         onSelect={onSelectLifter}
         onReset={resetSelection}
         engine={engine}

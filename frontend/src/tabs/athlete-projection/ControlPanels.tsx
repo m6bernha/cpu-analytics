@@ -18,6 +18,7 @@ function SelectorPanel({
   setQuery,
   searchResults,
   searchIsLoading,
+  searchLimit,
   onSelect,
   onReset,
   engine,
@@ -39,6 +40,8 @@ function SelectorPanel({
   setQuery: (v: string) => void
   searchResults: LifterSearchResult[]
   searchIsLoading: boolean
+  /** Passed through to the dropdown's truncation notice. */
+  searchLimit: number
   onSelect: (r: LifterSearchResult) => void
   onReset: () => void
   engine: AthleteProjectionEngine
@@ -72,6 +75,7 @@ function SelectorPanel({
           setQuery={setQuery}
           searchResults={searchResults}
           searchIsLoading={searchIsLoading}
+          searchLimit={searchLimit}
           selected={selected}
           onSelect={onSelect}
           onReset={onReset}

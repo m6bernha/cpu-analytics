@@ -20,11 +20,24 @@ export interface AthleteMeta {
   /** Used by injectMeetMeta to reuse this transform with its own title. */
   titleOverride?: string
   imageAltOverride?: string
+  /**
+   * schema.org object to emit as JSON-LD. Defaults to a ProfilePage
+   * wrapping a Person; injectMeetMeta passes a SportsEvent instead.
+   */
+  structuredData?: Record<string, unknown>
 }
 
 // Tags this module owns end-to-end. Anything not listed here (charset,
 // viewport, favicon, og:type, twitter:card) is left untouched.
+//
+// `description` is in this list and that is the whole point of it being
+// here: og:description drives the SOCIAL preview, but the plain
+// `<meta name="description">` is what a search engine shows as the result
+// snippet. Without owning it, every one of the ~23k athlete and meet pages
+// inherited index.html's single site-wide sentence, so they would all have
+// competed for the same snippet in search results.
 const OWNED_META = [
+  'description',
   'og:title',
   'og:description',
   'og:url',
@@ -55,7 +68,26 @@ function stripOwnedTags(html: string): string {
   }
   out = out.replace(/\s*<link[^>]*rel=["']canonical["'][^>]*>/gi, '')
   out = out.replace(/\s*<title>[\s\S]*?<\/title>/i, '')
+  // Same replace-don't-append rule as the meta tags: two ld+json blocks
+  // describing the same page is an ambiguity we control, so remove any
+  // before emitting ours.
+  out = out.replace(
+    /\s*<script[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi,
+    '',
+  )
   return out
+}
+
+/**
+ * Serialize JSON-LD for embedding in an HTML <script> block.
+ *
+ * `<` is escaped to < so a value containing "</script>" cannot close
+ * the block early and turn data into markup. That is valid JSON and valid
+ * JSON-LD, and parsers unescape it transparently. Meet names come from
+ * federation-entered free text, so this is a real input, not a hypothetical.
+ */
+function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c')
 }
 
 export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
@@ -65,8 +97,24 @@ export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
       ? meta.summary.trim()
       : `Meet history, progression, and qualifying-total standing for ${meta.name}.`
 
+  // Only claims what the dataset actually knows: who, where the page is,
+  // and the public-record summary. No awards, ratings, or affiliations are
+  // asserted, because inventing them would be both wrong and a structured-
+  // data policy violation.
+  const structuredData = meta.structuredData ?? {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      name: meta.name,
+      url: meta.url,
+      description,
+    },
+  }
+
   const tags = [
     `<link rel="canonical" href="${escapeAttr(meta.url)}" />`,
+    `<meta name="description" content="${escapeAttr(description)}" />`,
     `<meta property="og:title" content="${escapeAttr(title)}" />`,
     `<meta property="og:description" content="${escapeAttr(description)}" />`,
     `<meta property="og:url" content="${escapeAttr(meta.url)}" />`,
@@ -76,6 +124,7 @@ export function injectAthleteMeta(html: string, meta: AthleteMeta): string {
     `<meta name="twitter:description" content="${escapeAttr(description)}" />`,
     `<meta name="twitter:image" content="${escapeAttr(meta.image)}" />`,
     `<title>${escapeAttr(title)}</title>`,
+    `<script type="application/ld+json">${serializeJsonLd(structuredData)}</script>`,
   ].join('\n    ')
 
   const stripped = stripOwnedTags(html)
@@ -105,6 +154,21 @@ export function injectMeetMeta(html: string, meta: MeetMeta): string {
     summary: description,
     titleOverride: title,
     imageAltOverride: `${meta.name} results summary card`,
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'SportsEvent',
+      name: meta.name,
+      startDate: meta.date,
+      url: meta.url,
+      sport: 'Powerlifting',
+      description,
+      // No `location`: preprocess drops MeetTown/MeetState, so the town is
+      // genuinely unknown here. Google needs location for Event rich
+      // results, so this markup aids understanding without earning a rich
+      // result -- which is the correct trade against inventing a venue.
+      // No `eventStatus` either: these are completed meets, and asserting
+      // EventScheduled on a past event would be false.
+    },
   })
 }
 

@@ -7,6 +7,7 @@ function SelectorSearch({
   setQuery,
   searchResults,
   searchIsLoading,
+  searchLimit,
   selected,
   onSelect,
   onReset,
@@ -15,6 +16,9 @@ function SelectorSearch({
   setQuery: (v: string) => void
   searchResults: LifterSearchResult[]
   searchIsLoading: boolean
+  /** How many results the caller asked for. Passed in rather than
+   *  hardcoded so the truncation notice cannot drift from the fetch. */
+  searchLimit: number
   selected: LifterSearchResult | null
   onSelect: (r: LifterSearchResult) => void
   onReset: () => void
@@ -112,6 +116,17 @@ function SelectorSearch({
                   </li>
                 ))}
               </ul>
+            )}
+            {/* A full page of results means the list was cut off, not that
+                the search is exhausted. Common names hit this hard: "Lee"
+                matches ~199 lifters and only the top few appear. Without
+                this the user scrolls to the bottom and concludes they are
+                simply not in the dataset. */}
+            {!searchIsLoading && searchResults.length >= searchLimit && (
+              <p className="px-3 py-2 text-zinc-500 text-xs border-t border-zinc-800">
+                Showing the top {searchLimit} by best total. Type more of the
+                name if you don't see who you want.
+              </p>
             )}
           </div>
         )}
