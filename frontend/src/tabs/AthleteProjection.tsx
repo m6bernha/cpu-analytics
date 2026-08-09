@@ -319,7 +319,7 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
       />
 
       {!selected && (
-        <div className="mt-6 text-zinc-500 text-sm max-w-3xl">
+        <div className="mt-6 text-zinc-400 text-sm max-w-3xl">
           Start by searching a lifter above. The projection updates when you
           change engine, horizon, or lift.
         </div>

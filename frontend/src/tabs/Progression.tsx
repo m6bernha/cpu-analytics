@@ -116,7 +116,7 @@ function Select({
           </option>
         ))}
       </select>
-      {hint && <div className="text-zinc-500 text-xs mt-1">{hint}</div>}
+      {hint && <div className="text-zinc-400 text-xs mt-1">{hint}</div>}
     </label>
   )
 }
@@ -252,9 +252,9 @@ export default function Progression({ isActive }: { isActive: boolean }) {
         </div>
         <div className={(filtersOpenMobile ? 'block' : 'hidden') + ' md:block'}>
         {filtersQuery.isLoading && (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             Loading filters…
-            <div className="text-zinc-600 text-xs mt-1">
+            <div className="text-zinc-400 text-xs mt-1">
               First visit after a while can take up to ~50 s while the server wakes up.
             </div>
           </div>
@@ -374,7 +374,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-zinc-100 text-lg font-semibold">Cohort progression</h2>
-            <p className="text-zinc-500 text-sm">
+            <p className="text-zinc-400 text-sm">
               Average change in total from each lifter's first meet in the selected cohort.
             </p>
           </div>
@@ -394,7 +394,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                     )
                   }}
                   className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-                  aria-label="Download the cohort curve as CSV"
+                  aria-label="Download CSV of the cohort curve"
                 >
                   Download CSV
                 </button>
@@ -404,7 +404,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
         </div>
 
         {filters.per_lift === 'true' && liftProgQuery.isLoading && (
-          <div className="text-zinc-500 text-sm">Loading per-lift progression…</div>
+          <div className="text-zinc-400 text-sm">Loading per-lift progression…</div>
         )}
         {filters.per_lift === 'true' && liftProgQuery.error && (
           <div className="text-red-400 text-sm">
@@ -412,7 +412,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
           </div>
         )}
         {filters.per_lift === 'true' && perLiftEmpty && (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             No per-lift data for this filter combination. Per-lift view
             supports time-based x-axes only (Meet # / Days / Weeks / Months /
             Years). Try switching the x-axis or loosening a filter.
@@ -516,7 +516,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
         )}
 
         {filters.per_lift !== 'true' && progQuery.data && progQuery.data.points.length === 0 && (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             No data for this filter combination. Try loosening one of the filters.
           </div>
         )}
@@ -527,7 +527,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
               <div>
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_lifters.toLocaleString()}</span> of{' '}
                 <span className="text-zinc-200 tabular-nums">{progQuery.data.n_all_lifters.toLocaleString()}</span> lifters
-                <span className="text-zinc-500 ml-1">
+                <span className="text-zinc-400 ml-1">
                   ({progQuery.data.n_all_lifters > 0
                     ? `${Math.round(100 * progQuery.data.n_lifters / progQuery.data.n_all_lifters)}% returned for 2+ meets`
                     : 'no lifters in scope'})
@@ -540,7 +540,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                 <div>
                   Avg first {METRIC_LABELS[filters.metric] ?? filters.metric}:{' '}
                   <span className="text-zinc-200 tabular-nums">{progQuery.data.avg_first_value.toFixed(1)}</span>
-                  <span className="text-zinc-500 ml-1">(all lifters incl. one-and-done)</span>
+                  <span className="text-zinc-400 ml-1">(all lifters incl. one-and-done)</span>
                 </div>
               )}
               {progQuery.data.trend && (
@@ -550,7 +550,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                     {progQuery.data.trend.slope >= 0 ? '+' : ''}
                     {progQuery.data.trend.slope.toFixed(3)} kg/{progQuery.data.trend.unit}
                   </span>
-                  <span className="text-zinc-500 ml-2">
+                  <span className="text-zinc-400 ml-2">
                     R<sup>2</sup> = {progQuery.data.trend.r_squared.toFixed(3)}
                   </span>
                 </div>
@@ -641,10 +641,10 @@ export default function Progression({ isActive }: { isActive: boolean }) {
 
             {/* Survivorship bias + methodology notes */}
             <details className="mt-3 max-w-2xl">
-              <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+              <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
                 Methodology notes
               </summary>
-              <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+              <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
                 <p>
                   <span className="text-zinc-400 font-medium">Survivorship bias:</span> Only
                   lifters with 2+ meets appear in this chart. Lifters who competed once and

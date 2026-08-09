@@ -293,7 +293,7 @@ export default function LifterDetail({
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <h3 className="text-zinc-100 text-lg font-semibold">{history.name}</h3>
-          <div className="text-zinc-500 text-xs mt-0.5">
+          <div className="text-zinc-400 text-xs mt-0.5">
             {history.sex} · {history.latest_weight_class} kg · {history.latest_equipment} ·{' '}
             {history.federation}
             {history.country ? ' · ' + history.country : ''}
@@ -303,7 +303,7 @@ export default function LifterDetail({
           <div className="text-zinc-200 tabular-nums text-lg">
             {history.best_total_kg?.toFixed(1)} kg
           </div>
-          <div className="text-zinc-500 text-xs">
+          <div className="text-zinc-400 text-xs">
             {history.meet_count} meets
             {history.rate_kg_per_month != null && (
               <span className="ml-2">
@@ -333,7 +333,7 @@ export default function LifterDetail({
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-zinc-900 border border-zinc-800 text-zinc-400"
             >
               {c.from_class} &rarr; {c.to_class}
-              <span className="text-zinc-600">{fmtDate(c.date)}</span>
+              <span className="text-zinc-400">{fmtDate(c.date)}</span>
             </span>
           ))}
         </div>
@@ -352,7 +352,7 @@ export default function LifterDetail({
             type="button"
             onClick={handleExportCard}
             className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-            aria-label="Download athlete card as PNG"
+            aria-label="Download PNG of the athlete card"
           >
             Download PNG
           </button>
@@ -402,12 +402,12 @@ export default function LifterDetail({
           ))}
         </div>
         {regionalsQt && (
-          <span className="text-zinc-500 text-xs">
+          <span className="text-zinc-400 text-xs">
             Regionals {regionalsQt.toFixed(1)} · Nationals {nationalsQt?.toFixed(1)}
           </span>
         )}
         {!regionalsQt && (
-          <span className="text-zinc-500 text-xs">No QT for this class</span>
+          <span className="text-zinc-400 text-xs">No QT for this class</span>
         )}
       </div>
 
@@ -436,7 +436,7 @@ export default function LifterDetail({
       </div>
 
       {nonSbdCount > 0 && (
-        <p className="text-zinc-500 text-xs mb-2">
+        <p className="text-zinc-400 text-xs mb-2">
           Chart shows full-power (SBD) meets only. {nonSbdCount} other meet
           {nonSbdCount === 1 ? '' : 's'} (bench-only, push-pull, etc.)
           {' '}appear in the table below.
@@ -444,7 +444,7 @@ export default function LifterDetail({
       )}
 
       {!hasChartData ? (
-        <div className="h-[200px] bg-zinc-900 rounded border border-zinc-800 p-6 flex items-center justify-center text-zinc-500 text-sm text-center">
+        <div className="h-[200px] bg-zinc-900 rounded border border-zinc-800 p-6 flex items-center justify-center text-zinc-400 text-sm text-center">
           No full-power (SBD) meets for this lifter. See the table below for
           their bench-only or other meets.
         </div>
@@ -669,7 +669,7 @@ export default function LifterDetail({
               )
             }
             className="px-2.5 py-1.5 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-            aria-label="Download this lifter's meet history as CSV"
+            aria-label="Download CSV of this lifter's meet history"
           >
             Download CSV
           </button>
@@ -714,10 +714,10 @@ export default function LifterDetail({
                 const isSbd = m.Event === 'SBD'
                 const muted = !isSbd
                 const rowClass = muted
-                  ? 'border-b border-zinc-900 text-zinc-500'
+                  ? 'border-b border-zinc-900 text-zinc-400'
                   : 'border-b border-zinc-900'
                 const totalCellClass = muted
-                  ? 'py-2 pl-2 text-right tabular-nums text-zinc-500'
+                  ? 'py-2 pl-2 text-right tabular-nums text-zinc-400'
                   : 'py-2 pl-2 text-right tabular-nums'
                 const delta =
                   isSbd && firstSbdTotal != null && m.TotalKg != null
@@ -754,7 +754,7 @@ export default function LifterDetail({
                           'inline-block px-1.5 py-0.5 rounded text-xs font-mono ' +
                           (isSbd
                             ? 'bg-zinc-800 text-zinc-300'
-                            : 'bg-zinc-900 text-zinc-500 border border-zinc-800')
+                            : 'bg-zinc-900 text-zinc-400 border border-zinc-800')
                         }
                       >
                         {eventLabel(m.Event)}
@@ -776,15 +776,15 @@ export default function LifterDetail({
                         <span className="ml-1 text-emerald-400 text-xs" title="Personal record">PR</span>
                       )}
                     </td>
-                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden md:table-cell">
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-400 hidden md:table-cell">
                       {fmtKg(m.Goodlift, 2)}
                     </td>
-                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500 hidden lg:table-cell">
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-400 hidden lg:table-cell">
                       {m.TotalKg && m.Best3SquatKg && m.Best3BenchKg && m.Best3DeadliftKg
                         ? `${Math.round(100 * m.Best3SquatKg / m.TotalKg)}/${Math.round(100 * m.Best3BenchKg / m.TotalKg)}/${Math.round(100 * m.Best3DeadliftKg / m.TotalKg)}`
                         : '—'}
                     </td>
-                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-500">
+                    <td className="py-2 pl-2 text-right tabular-nums text-zinc-400">
                       {delta == null
                         ? '—'
                         : (delta >= 0 ? '+' : '') + delta.toFixed(1)}

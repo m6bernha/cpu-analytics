@@ -179,7 +179,7 @@ export default function QtLiveCoveragePanel() {
         <h3 className="text-zinc-100 text-base font-semibold">
           CPU qualifying-total coverage
         </h3>
-        <span className="text-zinc-500 text-xs">
+        <span className="text-zinc-400 text-xs">
           Data fetched {fmtFetchedAt(filters.fetched_at)} from powerlifting.ca
           {provinceApplies && ' and ontariopowerlifting.org'}
         </span>
@@ -280,7 +280,7 @@ export default function QtLiveCoveragePanel() {
             <p className="text-zinc-300 font-medium mb-1">
               {provinceConfig.name} provincials are open entry
             </p>
-            <p className="text-zinc-500 text-xs leading-relaxed">
+            <p className="text-zinc-400 text-xs leading-relaxed">
               {provinceConfig.note}
             </p>
           </div>
@@ -321,7 +321,7 @@ export default function QtLiveCoveragePanel() {
               </p>
             )}
             {rows.length === 0 && !provinceApplies ? (
-              <p className="text-zinc-500 text-sm">
+              <p className="text-zinc-400 text-sm">
                 No live QT data for this combination.
               </p>
             ) : rows.length > 0 && (

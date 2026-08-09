@@ -52,7 +52,7 @@ function InfoPanel({
             )}
           </>
         ) : (
-          <div className="text-zinc-500 text-xs">Cohort info unavailable.</div>
+          <div className="text-zinc-400 text-xs">Cohort info unavailable.</div>
         )}
       </InfoCard>
 
@@ -218,7 +218,7 @@ function monthsToReach(
 }
 
 function PerLiftShrinkageSummary({ data }: { data: AthleteProjectionResponse }) {
-  if (!data.lifts) return <div className="text-zinc-500 text-xs">-</div>
+  if (!data.lifts) return <div className="text-zinc-400 text-xs">-</div>
   return (
     <div className="space-y-1.5 text-xs">
       {(['squat', 'bench', 'deadlift'] as const).map((k) => {

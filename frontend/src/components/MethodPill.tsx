@@ -135,20 +135,25 @@ export function MethodPill({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Switch projection method"
+        // No aria-label: it read "Switch projection method" while the
+        // visible text is "Method · <current method>", so the accessible
+        // name did not contain the visible text (WCAG 2.5.3) and voice
+        // control could not target the pill. The name now comes from the
+        // content, with the decorative caret hidden below so it does not
+        // get announced.
         title="Switch projection method"
         className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-800 text-xs uppercase tracking-wide text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-colors focus:outline-none focus:border-zinc-600"
       >
-        <span className="text-zinc-500">Method ·</span>
+        <span className="text-zinc-400">Method ·</span>
         <span>{label}</span>
-        <span className="text-zinc-500 ml-0.5 leading-none">▾</span>
+        <span aria-hidden="true" className="text-zinc-400 ml-0.5 leading-none">▾</span>
       </button>
       {open && (
         <div
           role="menu"
           className="absolute z-20 left-0 mt-2 w-96 p-2 bg-zinc-900 border border-zinc-700 rounded shadow-lg normal-case"
         >
-          <div className="text-zinc-500 text-[10px] uppercase tracking-wide px-2 pt-1 pb-2">
+          <div className="text-zinc-400 text-[10px] uppercase tracking-wide px-2 pt-1 pb-2">
             Projection method
           </div>
           {options.map((opt) => {
@@ -166,7 +171,7 @@ export function MethodPill({
               <>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium">{opt.label}</span>
-                  <span className="text-zinc-500 text-[10px] uppercase tracking-wide shrink-0">
+                  <span className="text-zinc-400 text-[10px] uppercase tracking-wide shrink-0">
                     {isActive ? 'Current' : opt.short}
                   </span>
                 </div>
@@ -174,7 +179,7 @@ export function MethodPill({
                   {opt.description}
                 </div>
                 {opt.disabled && opt.disabledReason && (
-                  <div className="text-zinc-500 text-[10px] italic mt-1">
+                  <div className="text-zinc-400 text-[10px] italic mt-1">
                     {opt.disabledReason}
                   </div>
                 )}

@@ -58,11 +58,36 @@ export function QueryErrorCard({ error, onRetry, label }: Props) {
 type SkeletonProps = {
   lines?: number
   chart?: boolean
+  /**
+   * Hold at least one viewport of height while loading.
+   *
+   * Use on WHOLE-PAGE loads (the /athlete and /meet routes), not on
+   * in-page panels. Those pages replace a ~480 px skeleton with content
+   * that measures ~2,200 px (profile) to ~9,100 px (meet), which shoved
+   * the footer down by more than a screen and scored CLS 0.72 / 0.59 --
+   * both far past the 0.25 "poor" threshold, on the very pages the
+   * sitemap points search engines at.
+   *
+   * Reserving the fold means the footer starts below it and stays below
+   * it, so the growth happens off-screen and is not a visible shift.
+   * Every skeleton in one route's loading sequence must set this, or the
+   * shift just moves to the handoff between two skeletons.
+   */
+  reserveViewport?: boolean
 }
 
-export function LoadingSkeleton({ lines = 3, chart = false }: SkeletonProps) {
+export function LoadingSkeleton({
+  lines = 3,
+  chart = false,
+  reserveViewport = false,
+}: SkeletonProps) {
   return (
-    <div className="animate-pulse space-y-2 max-w-3xl">
+    <div
+      className={
+        'animate-pulse space-y-2 max-w-3xl' +
+        (reserveViewport ? ' min-h-screen' : '')
+      }
+    >
       {Array.from({ length: lines }).map((_, i) => (
         <div
           key={i}

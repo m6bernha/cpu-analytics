@@ -53,7 +53,7 @@ export default function MeetPage({ name, date }: { name: string; date: string })
 
   return (
     <div className="space-y-4">
-      <nav className="text-xs text-zinc-500">
+      <nav className="text-xs text-zinc-400">
         <a
           href="/?tab=rankings"
           onClick={(e) => {
@@ -73,7 +73,7 @@ export default function MeetPage({ name, date }: { name: string; date: string })
         <ShareButton surface="meet_page" ariaLabel="Copy shareable link to this meet" />
       </div>
 
-      <div className="text-zinc-500 text-xs flex flex-wrap gap-x-4 gap-y-1">
+      <div className="text-zinc-400 text-xs flex flex-wrap gap-x-4 gap-y-1">
         <span>{date}</span>
         {meet?.federation && <span>{meet.federation}</span>}
         {meet?.meet_country && <span>{meet.meet_country}</span>}
@@ -92,7 +92,7 @@ export default function MeetPage({ name, date }: { name: string; date: string })
           label="Meet results"
         />
       )}
-      {meetQuery.isLoading && <LoadingSkeleton lines={6} />}
+      {meetQuery.isLoading && <LoadingSkeleton lines={6} reserveViewport />}
 
       {meet && !meet.found && !meetQuery.isLoading && (
         <p className="text-zinc-300 text-sm max-w-2xl">
@@ -115,7 +115,7 @@ export default function MeetPage({ name, date }: { name: string; date: string })
               <section key={`${g.sex}-${g.equipment}-${g.event}-${g.weight_class}-${i}`}>
                 <h2 className="text-zinc-200 text-sm font-medium mb-1.5">
                   {groupTitle(g)}
-                  <span className="ml-2 text-zinc-500 font-normal">
+                  <span className="ml-2 text-zinc-400 font-normal">
                     {g.n_results} {g.n_results === 1 ? 'result' : 'results'}
                   </span>
                 </h2>
@@ -182,10 +182,10 @@ export default function MeetPage({ name, date }: { name: string; date: string })
           </div>
 
           <details className="mt-2">
-            <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+            <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
               Methodology notes
             </summary>
-            <div className="text-zinc-500 text-xs mt-2 space-y-1.5 max-w-2xl">
+            <div className="text-zinc-400 text-xs mt-2 space-y-1.5 max-w-2xl">
               <p>
                 <span className="text-zinc-400 font-medium">Placings are as recorded.</span>{' '}
                 CPU awards placings per division, so one weight class can hold

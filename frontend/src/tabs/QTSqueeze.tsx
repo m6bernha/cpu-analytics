@@ -29,10 +29,10 @@ export default function QTSqueeze({ isActive: _isActive }: { isActive: boolean }
           the view.
         </p>
         <details className="mt-2 max-w-3xl">
-          <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+          <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
             Methodology and caveats
           </summary>
-          <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+          <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
             <p>
               <span className="text-zinc-400 font-medium">Data source:</span>{' '}
               CPU Nationals and Regionals standards are scraped weekly from

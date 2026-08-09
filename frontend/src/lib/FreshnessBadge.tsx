@@ -33,7 +33,7 @@ export function FreshnessBadge() {
     <span
       className={
         'block text-[11px] mt-0.5 ' +
-        (isStale ? 'text-amber-500' : 'text-zinc-600')
+        (isStale ? 'text-amber-500' : 'text-zinc-400')
       }
       title="Most recent meet date in the dataset. Refreshed weekly from the OpenIPF export."
     >

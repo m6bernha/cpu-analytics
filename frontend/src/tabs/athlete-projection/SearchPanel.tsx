@@ -66,7 +66,7 @@ function SelectorSearch({
           onFocus={() => setOpen(true)}
           placeholder="Type a name"
           aria-label="Search lifter by name"
-          className="w-full pl-4 pr-9 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+          className="w-full pl-4 pr-9 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-zinc-500"
         />
         {(query.length > 0 || selected) && (
           <button
@@ -77,7 +77,7 @@ function SelectorSearch({
             }}
             aria-label="Clear lifter"
             title="Clear lifter"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-red-400 text-base leading-none px-1 transition-colors focus:outline-none focus:text-red-400"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-400 text-base leading-none px-1 transition-colors focus:outline-none focus:text-red-400"
           >
             ×
           </button>
@@ -85,10 +85,10 @@ function SelectorSearch({
         {showDropdown && (
           <div className="absolute top-full left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-800 rounded shadow-lg z-10">
             {searchIsLoading && (
-              <div className="px-3 py-2 text-zinc-500 text-sm">Searching...</div>
+              <div className="px-3 py-2 text-zinc-400 text-sm">Searching...</div>
             )}
             {!searchIsLoading && searchResults.length === 0 && (
-              <div className="px-3 py-2 text-zinc-500 text-sm">No matches.</div>
+              <div className="px-3 py-2 text-zinc-400 text-sm">No matches.</div>
             )}
             {searchResults.length > 0 && (
               <ul className="divide-y divide-zinc-800">
@@ -106,7 +106,7 @@ function SelectorSearch({
                       }
                     >
                       <div className="text-zinc-100 text-sm">{r.Name}</div>
-                      <div className="text-zinc-500 text-xs mt-0.5">
+                      <div className="text-zinc-400 text-xs mt-0.5">
                         {r.Sex} · {r.LatestWeightClass} kg ·{' '}
                         {r.LatestEquipment} ·{' '}
                         {r.MeetCount} meet{r.MeetCount === 1 ? '' : 's'} · best{' '}
@@ -123,7 +123,7 @@ function SelectorSearch({
                 this the user scrolls to the bottom and concludes they are
                 simply not in the dataset. */}
             {!searchIsLoading && searchResults.length >= searchLimit && (
-              <p className="px-3 py-2 text-zinc-500 text-xs border-t border-zinc-800">
+              <p className="px-3 py-2 text-zinc-400 text-xs border-t border-zinc-800">
                 Showing the top {searchLimit} by best total. Type more of the
                 name if you don't see who you want.
               </p>

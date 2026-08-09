@@ -93,7 +93,7 @@ export default function Rankings({ isActive }: RankingsProps) {
           <h2 className="text-zinc-100 text-base font-semibold">Rankings</h2>
           <ShareButton surface="rankings" />
         </div>
-        <p className="text-zinc-500 text-xs mt-1 max-w-2xl">
+        <p className="text-zinc-400 text-xs mt-1 max-w-2xl">
           Canadian lifters at IPF-sanctioned meets who competed in the last
           24 months, ranked by their best result in that window. Raw full
           power only.
@@ -238,7 +238,7 @@ export default function Rankings({ isActive }: RankingsProps) {
                     <td className="pr-3 py-1.5 text-right tabular-nums text-zinc-300 hidden sm:table-cell">
                       {r.glp?.toFixed(1) ?? '—'}
                     </td>
-                    <td className="pr-3 py-1.5 text-zinc-500 text-xs hidden md:table-cell">
+                    <td className="pr-3 py-1.5 text-zinc-400 text-xs hidden md:table-cell">
                       {r.date ?? '—'}
                       {r.meet_name ? ` · ${r.meet_name}` : ''}
                     </td>
@@ -272,10 +272,10 @@ export default function Rankings({ isActive }: RankingsProps) {
       )}
 
       <details className="mt-2">
-        <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+        <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
           Methodology notes
         </summary>
-        <div className="text-zinc-500 text-xs mt-2 space-y-1.5 max-w-2xl">
+        <div className="text-zinc-400 text-xs mt-2 space-y-1.5 max-w-2xl">
           <p>
             <span className="text-zinc-400 font-medium">Active window.</span>{' '}
             A lifter appears if they competed within 24 months of the most

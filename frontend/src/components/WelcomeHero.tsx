@@ -75,7 +75,7 @@ export function WelcomeHero({ onNavigate }: WelcomeHeroProps) {
         </div>
         <button
           onClick={dismiss}
-          className="text-zinc-500 hover:text-zinc-200 text-xs whitespace-nowrap focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 rounded px-1"
+          className="text-zinc-400 hover:text-zinc-200 text-xs whitespace-nowrap focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 rounded px-1"
           aria-label="Dismiss getting started panel"
         >
           Hide this
@@ -89,7 +89,7 @@ export function WelcomeHero({ onNavigate }: WelcomeHeroProps) {
             className="text-left rounded-md border border-zinc-800 bg-zinc-950 p-3 hover:border-[#569cd6] hover:bg-zinc-900 transition-colors focus:outline-none focus-visible:ring focus-visible:ring-zinc-400"
           >
             <div className="text-zinc-100 text-sm font-medium">{c.title}</div>
-            <div className="text-zinc-500 text-xs mt-1 leading-relaxed">{c.body}</div>
+            <div className="text-zinc-400 text-xs mt-1 leading-relaxed">{c.body}</div>
           </button>
         ))}
       </div>
