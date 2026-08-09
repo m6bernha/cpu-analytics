@@ -449,6 +449,11 @@ export type AthleteProjectionMeta = {
   bracket_transitions: number      // count of boundary crossings in the projection
   engine_d_available?: boolean
   engine_d_note?: string
+  // Slope-damping time constant in days, null when damping is off. See
+  // docs/adr/0004: projected gain saturates at slope * tau instead of
+  // growing linearly, because the undamped engine measured +5.09% signed
+  // bias at 12 months and +12.06% at 36.
+  damping_tau_days?: number | null
 }
 
 export type AthleteProjectionResponse = {

@@ -65,3 +65,30 @@ SMALL_N_THRESHOLD: int = 5
 
 MIN_COHORT_CELL_SIZE: int = 20
 """Minimum lifters per (division × bracket × lift) cell before merging."""
+
+SLOPE_DAMPING_TAU_DAYS: float | None = 60.0
+"""Time constant for the saturating slope, in days. None = no damping.
+
+Projected gain is `slope * tau * (1 - exp(-t / tau))` rather than
+`slope * t`, so the gain approaches an asymptote of `slope * tau` instead
+of growing without bound. The instantaneous rate at t=0 is still exactly
+`slope`, so near-term projections are unchanged in character.
+
+Set from the offline backtest, see docs/adr/0005. Engine C without damping
+measured a signed bias of +5.09% at 12 months and +12.06% at 36, against
+its own 36-month MAPE of 12.72%: the error was almost entirely
+one-directional overshoot, and it came from the slope rather than the
+level convention.
+
+60 days was chosen from a sweep of 30 / 45 / 60 / 90 / 120 / 180. All of
+30 through 90 pass every ship gate; 120 and 180 fail the 12-month bias
+gate. Within the passing set the choice is a trade, because a shorter
+constant suits long-history lifters and a longer one suits the climbing
+and short-history groups. 60 minimises the WORST bias across career-stage
+strata (2.31 pp, versus 2.64 at tau=30 and 2.60 at tau=90), keeps
+headroom on the tightest gate (+1.55 pp against a +/-2.0 limit), and its
+MAPE is within 0.01 pp of the best candidate.
+
+Do not raise it past 90 without re-running the sweep: the 12-month bias
+gate fails at 120.
+"""

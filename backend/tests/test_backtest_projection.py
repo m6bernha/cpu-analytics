@@ -33,7 +33,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from data.backtest_projection import (  # noqa: E402
-    ENGINE_KEYS,
     HOLDOUT_SPAN_MONTHS,
     HORIZON_BUCKETS,
     HORIZONS_MONTHS,
@@ -43,6 +42,7 @@ from data.backtest_projection import (  # noqa: E402
     _cluster_bootstrap_ci,
     bucket_for,
     build_artifact,
+    engines_present,
     head_to_head,
     select_scoring_meets,
     split_train_holdout,
@@ -313,10 +313,30 @@ def test_head_to_head_pairs_are_unique():
     assert len(pairs) == len(set(pairs)), f"duplicate head-to-head pair in {pairs}"
 
 
-def test_every_engine_key_is_summarized():
-    observations = [_obs("a", 12, 100.0, engine_c=101.0)]
+def test_summarised_engines_are_derived_from_the_data():
+    """Engine keys come from the observations, not from a declared list.
+
+    A tau sweep adds `damped_tau*` engines that ENGINE_KEYS cannot know
+    about, and a rebuild via --from-observations has no idea which sweep
+    produced the dump it is reading. Declared engines still come first so
+    the published table keeps a fixed reading order.
+    """
+    observations = [
+        _obs("a", 12, 100.0, engine_c=101.0, flat_level=99.0, damped_tau60=100.5),
+    ]
     artifact = build_artifact(observations, Path("dummy.parquet"), pool_lifters=1)
-    assert [e["engine"] for e in artifact["summary"]["engines"]] == list(ENGINE_KEYS)
+    keys = [e["engine"] for e in artifact["summary"]["engines"]]
+
+    assert keys == ["engine_c", "flat_level", "damped_tau60"]
+    # An engine nobody predicted must not appear as a row of nulls.
+    assert "gompertz" not in keys
+
+
+def test_engines_present_orders_declared_before_sweep_keys():
+    observations = [
+        _obs("a", 12, 100.0, damped_tau90=100.0, engine_c=101.0, damped_tau30=99.0),
+    ]
+    assert engines_present(observations) == ["engine_c", "damped_tau30", "damped_tau90"]
 
 
 def test_ship_gates_cover_bias_not_just_magnitude():
