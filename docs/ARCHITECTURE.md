@@ -280,6 +280,32 @@ The weekly refresh regenerates the sitemaps and opens an auto-merging PR
 rather than pushing to `main`, because `main` requires status checks that a
 freshly pushed commit cannot have.
 
+### Per-page metadata and structured data
+
+`src/lib/ogMeta.ts` is a pure string transform (unit-testable without an
+edge runtime) that the middleware runs over the fetched SPA shell. It owns
+three things per page:
+
+1. **`<meta name="description">`** — the SEARCH SNIPPET. Distinct from
+   `og:description`, which only drives social previews. Until 2026-08-09
+   this tag was not owned, so all ~23k athlete and meet pages inherited
+   index.html's single site-wide sentence and competed for the same snippet.
+2. **`og:*` / `twitter:*` / `<title>` / canonical** — replaced, never
+   appended, so there is exactly one of each.
+3. **JSON-LD** — `ProfilePage` wrapping a `Person` for athletes,
+   `SportsEvent` for meets.
+
+The JSON-LD deliberately asserts only what the dataset knows. Meets carry
+no `location` (preprocess drops `MeetTown`/`MeetState`, so the town is
+genuinely unknown) and no `eventStatus` (these are completed meets, so
+`EventScheduled` would be false). Omitting `location` costs Google Event
+rich results; inventing a venue would be a policy violation and a lie, so
+the trade is not close.
+
+Values are serialized with `<` escaped to `<` so a meet name
+containing `</script>` cannot close the block and become markup. Meet names
+are federation-entered free text, so that is a real input.
+
 ### Analytics
 
 Vercel Web Analytics, mounted in `main.tsx`. Cookieless, so no consent

@@ -91,15 +91,69 @@ pytest / 107 Vitest, not the documented 351 / 53.
   before merging. A green `tsc` proves nothing here — the failure mode
   (missing default font, runtime mismatch) is invisible to the type checker.
 
-### Next up (session 2): SEO deepening + data honesty
+---
 
-- Submit the sitemap index to Google Search Console (needs Matthias for DNS
-  verification, ~10 min).
-- JSON-LD structured data on profile + meet pages.
-- Surface `n_lifters_before_age_filter`: the Age column is ~70% NULL, and an
-  age filter silently drops most of the cohort with no warning in the UI.
-- Search result cap: 200 is silent, so "no more results" and "hit the cap"
-  look identical.
+## 2026-08-09 -- SEO depth SHIPPED (upgrade arc, session 2 of 8)
+
+**Two of the four planned items turned out to be already done or obsolete.**
+The session-2 plan was drafted from an exploration of the pre-pull checkout,
+which was 40 commits stale. Checked before building, which is the only
+reason they were not rebuilt:
+
+- **Age-NULL warning: obsolete.** The plan called for warning when an age
+  filter silently thins the cohort. But `age_category` is not sent by the
+  frontend at all any more — the dropdown was removed and Division replaced
+  it, for exactly this reason (see the comment at `Progression.tsx:292`).
+  There is no silent drop left to warn about, so a warning would have been
+  dead UI for a control nobody can reach.
+- **Search cap affordance: already existed in Lifter Lookup.** It renders
+  "Showing top N by best total" at >= 25, and `search_lifters` genuinely
+  does `ORDER BY best_total DESC`, so the copy is accurate.
+
+What was actually missing, and shipped:
+
+### `<meta name="description">` was not per-page (the real find)
+
+`og:description` was personalized per athlete and meet, but the plain
+`description` meta was NOT in `OWNED_META`. Google uses the plain one for
+the result snippet. So all ~23k pages were serving index.html's single
+site-wide sentence as their search snippet and competing with each other,
+while the social cards looked fine. Now owned and per-page.
+
+This is the kind of bug that never shows up in testing: the social preview
+(the thing you look at) was correct, and the search snippet (the thing you
+do not see until you are indexed) was not.
+
+### JSON-LD structured data
+
+`ProfilePage` + `Person` for athletes, `SportsEvent` for meets, emitted
+from the same pure `ogMeta.ts` transform. Deliberately asserts nothing the
+dataset does not know: **no `location`** on meets (preprocess drops
+`MeetTown`/`MeetState`) and **no `eventStatus`** (these meets are over, so
+`EventScheduled` would be false). Omitting location forfeits Google Event
+rich results — accepted, because inventing a venue is both a policy
+violation and a lie.
+
+Serialized with `<` escaped to `<` so a meet name containing
+`</script>` cannot close the block and become markup. Meet names are
+federation-entered free text, so that is a real input, and it is locked by
+a test that feeds in `</script><img src=x onerror=alert(1)>`.
+
+### Athlete Projection search truncation notice
+
+Lifter Lookup had a truncation note; the Projection dropdown did not, and
+it caps at 12. Searching "Lee" (199 matches) showed 12 with no indication.
+The limit is now a single `SEARCH_LIMIT` constant passed through as a prop,
+so the notice cannot drift from the fetch.
+
+7 new Vitest cases (107 -> 114).
+
+### Still open for session 3
+
+- **Google Search Console** submission (needs Matthias: DNS/dashboard).
+- Pre-existing lint error at `AthleteProjection.tsx:127`
+  (`setState` inside the URL-bootstrap effect). Untouched here because
+  fixing it changes bootstrap behaviour and deserves its own change.
 
 ---
 
