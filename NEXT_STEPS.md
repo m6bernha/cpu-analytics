@@ -9,6 +9,100 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Measurement + discoverability SHIPPED (upgrade arc, session 1 of 8)
+
+First session of a planned multi-session upgrade arc. Plan lives at
+`~/.claude/plans/ive-got-tokens-to-snuggly-hummingbird.md`. This session
+closed the two gaps that were blocking everything downstream.
+
+**Gap 1: nothing measured anything.** ADR 0002 gates accounts/follows on the
+stateless layer "proving demand", but the site had no analytics of any kind,
+so there was no way to prove or disprove it. Vercel Web Analytics now mounts
+in `main.tsx` (cookieless, no consent banner, free on Hobby), with seven
+custom events behind `frontend/src/lib/analytics.ts`:
+
+| Event | Answers |
+|---|---|
+| `tab_viewed` | Which tabs get used. Tabs are query-string state, so automatic pageviews cannot tell them apart. |
+| `scout_report_generated` | Whether coaches actually use Scout. Decides Scout Phases 2-3. |
+| `share_used` | Whether the growth loop works, split native-sheet vs clipboard, by surface. |
+| `export_used` | CSV / PNG / PDF by surface. The strongest "worth keeping" signal available. |
+| `compare_used` | Whether anyone reaches a feature that is three clicks deep. |
+| `projection_viewed` | Whether anyone switches off the default engine now that Engine D is live. |
+| `manual_entry_used` | Whether the buried hypothetical-trajectory feature gets found. |
+
+Two rules are enforced structurally rather than by convention: no user-typed
+or identifying values as properties, and unbounded numbers get bucketed
+through `sizeBucket()`. Instrumentation sits at the chokepoints, so
+`ShareButton` and the three export helpers take a **required** `surface`
+argument and a new button cannot compile without one.
+
+**Gap 2: the sitemap listed six URLs.** Phase 1 built `/athlete/{name}` and
+`/meet/{name}/{date}` pages explicitly for search, then left them reachable
+only by crawling JS-rendered links. New `data/generate_sitemap.py` emits
+**23,584 URLs** (20,780 athletes + 2,797 meets + 7 tabs) as static files
+under `frontend/public/`, with `sitemap.xml` becoming the index so
+`robots.txt` and any existing search-engine record stay valid.
+
+Things worth remembering from the build:
+
+- **Static files, not a backend endpoint.** A sitemap served from Render
+  would put a ~50 s cold start in front of a crawler that quits in 5-10 s,
+  meaning the crawl fails precisely when the site is idle.
+- **The weekly refresh opens an auto-merging PR instead of pushing.** A
+  direct push was the obvious design and would have failed every Sunday:
+  `main` requires status checks, a new commit has none, and
+  `github-actions[bot]` is not an admin. Checking `git log` for bot commits
+  showed **zero have ever landed**, so the same pattern already sitting in
+  `qt_refresh.yml` is unproven and will fail the same way when CPU finally
+  revises standards. Repo `allow_auto_merge` was enabled to support this.
+- **Encoding correctness is untestable from the outside.** `vercel.json`
+  rewrites every `/athlete/*` to index.html, so a wrongly encoded URL still
+  returns 200 and renders "lifter not found". A status-code smoke test would
+  pass while the whole sitemap pointed at nothing. Locked by 17 new pytests
+  whose expected strings were confirmed by fetching the live site (accented
+  names, `#2` disambiguators, path-splitting characters), and negative-
+  controlled against two realistic wrong implementations.
+
+**Also this session:** `E2E (Playwright smoke)` added to the required checks
+on `main` (previously queued, now all three CI jobs gate merges).
+`docs/ARCHITECTURE.md` endpoint list rewritten as a real table -- it had
+drifted badly, listing five paths that no longer exist
+(`/api/progression`, `/api/lifter/search`, ...) while omitting nine real
+ones. Test counts corrected across the docs: the true numbers were 389
+pytest / 107 Vitest, not the documented 351 / 53.
+
+### Open: @vercel/og ships two high-severity sharp CVEs
+
+`npm audit` flags CVE-2026-33327 / 33328 / 35590 / 35591 via
+`@vercel/og@0.11.1 -> sharp <0.35.0`. **Not fixed this session, deliberately.**
+
+- **Exposure is low.** Both OG functions declare `runtime: 'edge'`, which
+  uses the WASM (satori + resvg) path, not sharp's libvips. The cards render
+  text we generate, never a user-supplied image.
+- **The fix is not verified safe.** `@vercel/og@1.0.1` drops sharp entirely
+  (deps become satori + @resvg/resvg-wasm), which is the right destination,
+  but research could not reach authoritative v1 release notes, and registry
+  data says **v1.0.1 requires Node 22+** while v1.0.0 carries oddly
+  pre-release dependency pins. Upgrading on that basis risks breaking link
+  previews, the exact feature this session's SEO work amplifies.
+- **To close it:** upgrade on a branch, confirm Vercel's build image is on
+  Node 22+, and **verify a card actually renders on the preview deployment**
+  before merging. A green `tsc` proves nothing here — the failure mode
+  (missing default font, runtime mismatch) is invisible to the type checker.
+
+### Next up (session 2): SEO deepening + data honesty
+
+- Submit the sitemap index to Google Search Console (needs Matthias for DNS
+  verification, ~10 min).
+- JSON-LD structured data on profile + meet pages.
+- Surface `n_lifters_before_age_filter`: the Age column is ~70% NULL, and an
+  age filter silently drops most of the cohort with no warning in the UI.
+- Search result cap: 200 is silent, so "no more results" and "hit the cap"
+  look identical.
+
+---
+
 ## 2026-08-04 -- Social layer Phase 0 SHIPPED (Rankings + percentile standing)
 
 First build wave off ADR 0002. Decisions taken in the pre-build interview,

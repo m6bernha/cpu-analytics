@@ -7,12 +7,19 @@
 
 import { useState } from 'react'
 
+import { trackEvent } from './analytics'
+
 export function ShareButton({
+  surface,
   label = 'Share',
   copiedLabel = 'Copied!',
   ariaLabel = 'Copy shareable link to this view',
   className,
 }: {
+  /** Which view is being shared. Required so a new share button cannot ship
+   *  uninstrumented. Never the shared URL itself, which contains lifter
+   *  names. */
+  surface: string
   label?: string
   copiedLabel?: string
   ariaLabel?: string
@@ -31,6 +38,9 @@ export function ShareButton({
           title: document.title,
           url: window.location.href,
         })
+        // Only counted once the sheet resolves, so a cancelled share is not
+        // recorded as a share.
+        trackEvent('share_used', { surface, method: 'native' })
         return
       } catch {
         // User cancelled or share failed; fall through to clipboard.
@@ -38,6 +48,7 @@ export function ShareButton({
     }
     try {
       await navigator.clipboard.writeText(window.location.href)
+      trackEvent('share_used', { surface, method: 'clipboard' })
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1500)
       return
@@ -52,6 +63,7 @@ export function ShareButton({
     ta.select()
     try {
       document.execCommand('copy')
+      trackEvent('share_used', { surface, method: 'clipboard' })
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1500)
     } catch {

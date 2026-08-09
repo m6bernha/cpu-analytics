@@ -19,7 +19,7 @@ export default function QTSqueeze({ isActive: _isActive }: { isActive: boolean }
       <div className="mb-6">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-zinc-100 text-lg font-semibold">Qualifying Totals</h2>
-          <ShareButton ariaLabel="Copy shareable link to this coverage view" />
+          <ShareButton surface="qualifying_totals" ariaLabel="Copy shareable link to this coverage view" />
         </div>
         <p className="text-zinc-300 text-sm mt-1 max-w-3xl">
           Percent of Canadian IPF lifters in each weight class whose best SBD

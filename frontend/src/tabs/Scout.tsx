@@ -18,6 +18,7 @@ import {
   type ScoutMeetRequest,
   type ScoutStatusTag,
 } from '../lib/api'
+import { sizeBucket, trackEvent } from '../lib/analytics'
 import { exportReportPdf } from '../lib/exportReportPdf'
 import { fmtInt, fmtKg } from '../lib/format'
 import {
@@ -90,6 +91,15 @@ export default function Scout({ isActive }: ScoutProps) {
 
   const mutation = useMutation<ScoutMeetReport, Error, ScoutMeetRequest>({
     mutationFn: postScoutReport,
+    // Reported on success only, so a failed or rate-limited attempt is not
+    // counted as adoption. Sizes are bucketed and no roster name is sent.
+    onSuccess: (data, vars) => {
+      const matched = data.class_blocks.reduce((n, cb) => n + cb.athletes.length, 0)
+      trackEvent('scout_report_generated', {
+        roster_bucket: sizeBucket(vars.roster.length),
+        matched_bucket: sizeBucket(matched),
+      })
+    },
   })
 
   const roster = useMemo(() => parseRoster(form.rosterText), [form.rosterText])
@@ -145,6 +155,7 @@ export default function Scout({ isActive }: ScoutProps) {
       await exportReportPdf(
         reportRef.current,
         `scout-${slug}-${report.request.meet_date}.pdf`,
+        'scout_report',
       )
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'PDF export failed')

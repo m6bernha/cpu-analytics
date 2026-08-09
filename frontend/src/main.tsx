@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.tsx'
 import { redirectLegacyLifterUrl } from './lib/route'
@@ -34,6 +35,12 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <App />
+      {/* Vercel Web Analytics. Cookieless and no consent banner needed, so it
+          mounts unconditionally. Automatic pageviews cover the real paths
+          (/athlete/*, /meet/*); the tab stack lives in the query string, so
+          tab usage is reported explicitly from App.tsx instead. Inert until
+          Web Analytics is enabled on the Vercel project. */}
+      <Analytics />
     </QueryClientProvider>
   </StrictMode>,
 )

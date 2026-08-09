@@ -91,7 +91,7 @@ export default function Rankings({ isActive }: RankingsProps) {
       <div>
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-zinc-100 text-base font-semibold">Rankings</h2>
-          <ShareButton />
+          <ShareButton surface="rankings" />
         </div>
         <p className="text-zinc-500 text-xs mt-1 max-w-2xl">
           Canadian lifters at IPF-sanctioned meets who competed in the last

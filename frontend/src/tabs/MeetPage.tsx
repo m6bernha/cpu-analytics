@@ -70,7 +70,7 @@ export default function MeetPage({ name, date }: { name: string; date: string })
 
       <div className="flex items-center gap-3 flex-wrap">
         <h1 className="text-zinc-100 text-xl font-semibold">{name}</h1>
-        <ShareButton ariaLabel="Copy shareable link to this meet" />
+        <ShareButton surface="meet_page" ariaLabel="Copy shareable link to this meet" />
       </div>
 
       <div className="text-zinc-500 text-xs flex flex-wrap gap-x-4 gap-y-1">

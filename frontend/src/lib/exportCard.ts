@@ -8,13 +8,17 @@
 // Used by the Download PNG button mounted alongside AthleteCard. See ADR
 // 0001 for the design and bundle reasoning.
 
+import { trackEvent } from './analytics'
+
 export async function exportCardToPng(
   node: HTMLElement | null,
   filename: string,
+  surface: string,
 ): Promise<void> {
   if (!node) {
     return
   }
+  trackEvent('export_used', { kind: 'png', surface })
   const { toPng } = await import('html-to-image')
   const dataUrl = await toPng(node, {
     pixelRatio: 2,
