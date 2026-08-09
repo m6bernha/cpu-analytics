@@ -42,7 +42,7 @@ export default function AthleteProfile({ name }: { name: string }) {
 
   return (
     <div className="space-y-4">
-      <nav className="text-xs text-zinc-500">
+      <nav className="text-xs text-zinc-400">
         <a
           href="/?tab=rankings"
           onClick={(e) => {
@@ -79,12 +79,12 @@ export default function AthleteProfile({ name }: { name: string }) {
           label="Athlete profile"
         />
       )}
-      {historyQuery.isLoading && <LoadingSkeleton lines={3} chart />}
+      {historyQuery.isLoading && <LoadingSkeleton lines={3} chart reserveViewport />}
 
       {history && !history.found && (
         <div className="text-sm text-zinc-300 space-y-2 max-w-2xl">
           <p>No Canadian IPF-affiliated meets found for this name.</p>
-          <p className="text-zinc-500 text-xs">
+          <p className="text-zinc-400 text-xs">
             Names must match the OpenIPF spelling exactly. Try{' '}
             <a
               href="/?tab=lookup"
@@ -102,7 +102,7 @@ export default function AthleteProfile({ name }: { name: string }) {
       )}
 
       {history && history.found && (
-        <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
+        <Suspense fallback={<LoadingSkeleton lines={3} chart reserveViewport />}>
           <LifterDetail
             history={history}
             standards={standardsQuery.data}

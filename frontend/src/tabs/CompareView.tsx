@@ -230,7 +230,7 @@ function LifterCard({
   if (!history || !history.found) {
     return (
       <div
-        className="rounded border bg-zinc-900 p-3 text-xs text-zinc-500"
+        className="rounded border bg-zinc-900 p-3 text-xs text-zinc-400"
         style={{ borderColor: color }}
       >
         <div className="font-medium mb-1" style={{ color }}>
@@ -298,7 +298,7 @@ function LifterCard({
 
       {/* QT status chips */}
       {latestClass && (
-        <div className="text-zinc-500 mb-1">{latestClass} kg class</div>
+        <div className="text-zinc-400 mb-1">{latestClass} kg class</div>
       )}
       <div className="flex flex-wrap gap-1">
         {QT_CHIPS.map((chip) => {
@@ -311,8 +311,8 @@ function LifterCard({
                 (hit === true
                   ? 'bg-emerald-900 text-emerald-300 border border-emerald-700'
                   : hit === false
-                    ? 'bg-zinc-800 text-zinc-500 border border-zinc-700'
-                    : 'bg-zinc-900 text-zinc-600 border border-zinc-800')
+                    ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                    : 'bg-zinc-900 text-zinc-400 border border-zinc-800')
               }
             >
               {hit === true ? '✓' : hit === false ? '✗' : '?'} {chip.label}
@@ -553,7 +553,7 @@ export default function CompareView({
                 <span className="text-zinc-200">{s.name}</span>
                 <button
                   onClick={() => removeCompare(s.name)}
-                  className="ml-1 text-zinc-500 hover:text-red-400"
+                  className="ml-1 text-zinc-400 hover:text-red-400"
                   aria-label={`Remove ${s.name}`}
                 >
                   ×
@@ -571,14 +571,14 @@ export default function CompareView({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Add lifter (${compareNames.length}/${MAX_COMPARE})`}
               aria-label="Add lifter to comparison by name"
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-zinc-500"
             />
             <div className="mt-4">
               {query.trim().length > 0 && query.trim().length < 2 && (
-                <p className="text-zinc-500 text-sm">Type at least 2 characters.</p>
+                <p className="text-zinc-400 text-sm">Type at least 2 characters.</p>
               )}
               {searchIsFetching && debouncedQuery.trim().length >= 2 && (
-                <p className="text-zinc-500 text-sm">Searching…</p>
+                <p className="text-zinc-400 text-sm">Searching…</p>
               )}
               {searchError != null && (
                 <p className="text-red-400 text-sm">
@@ -586,7 +586,7 @@ export default function CompareView({
                 </p>
               )}
               {searchResults && searchResults.length === 0 && !searchIsFetching && (
-                <p className="text-zinc-500 text-sm">No lifters match that name.</p>
+                <p className="text-zinc-400 text-sm">No lifters match that name.</p>
               )}
               {searchResults && searchResults.length > 0 && (
                 <ul className="divide-y divide-zinc-800">
@@ -612,10 +612,10 @@ export default function CompareView({
                           <div className="text-zinc-100 text-sm">
                             {lifter.Name}
                             {already && (
-                              <span className="text-zinc-500 text-xs ml-2">(added)</span>
+                              <span className="text-zinc-400 text-xs ml-2">(added)</span>
                             )}
                           </div>
-                          <div className="text-zinc-500 text-xs mt-0.5">
+                          <div className="text-zinc-400 text-xs mt-0.5">
                             {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
                             {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
                           </div>
@@ -628,7 +628,7 @@ export default function CompareView({
             </div>
           </>
         ) : (
-          <p className="text-zinc-500 text-xs">
+          <p className="text-zinc-400 text-xs">
             Max {MAX_COMPARE} lifters per comparison. Remove one to add another.
           </p>
         )}
@@ -652,15 +652,15 @@ export default function CompareView({
         )}
 
         {compareNames.length === 0 ? (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             Add lifters from the search at left to compare their SBD trajectories.
             Each lifter's curve starts at month 0 (their own first full-power meet)
             so you're comparing progression rates, not calendar dates.
           </div>
         ) : !hasData && anyLoading ? (
-          <div className="text-zinc-500 text-sm">Loading trajectories…</div>
+          <div className="text-zinc-400 text-sm">Loading trajectories…</div>
         ) : !hasData ? (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             None of the selected lifters have SBD meets in the dataset.
           </div>
         ) : (
@@ -730,10 +730,10 @@ export default function CompareView({
             </div>
 
             <details className="mb-2 max-w-2xl">
-              <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+              <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
                 Methodology and caveats
               </summary>
-              <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+              <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
                 <p>
                   <span className="text-zinc-400 font-medium">X-axis anchoring:</span>{' '}
                   Each lifter's curve starts at month 0, defined as their own first

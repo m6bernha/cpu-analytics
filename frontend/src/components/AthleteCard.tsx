@@ -142,12 +142,12 @@ export function AthleteCard({ lifter, percentileCurves, ref }: AthleteCardProps)
           moves up next to the year span to make room. `break-all` keeps a
           long encoded name inside the 3:4 frame instead of overflowing the
           PNG. */}
-      <div className="absolute bottom-3 left-6 right-6 space-y-0.5 text-xs text-zinc-500">
+      <div className="absolute bottom-3 left-6 right-6 space-y-0.5 text-xs text-zinc-400">
         <div className="flex items-baseline justify-between">
           <span>{lifter.meet_count ?? meets.length} meets</span>
           <span>{yearSpan}</span>
         </div>
-        <div className="text-[10px] text-zinc-600 break-all" data-testid="athlete-card-url">
+        <div className="text-[10px] text-zinc-400 break-all" data-testid="athlete-card-url">
           {profileUrl}
         </div>
       </div>
@@ -170,7 +170,7 @@ function Callout({
   const text = highlight ? 'text-amber-300' : 'text-zinc-200'
   return (
     <div className={`rounded-md p-2 text-center ${wrap}`}>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+      <div className="text-[10px] uppercase tracking-wider text-zinc-400">
         {label}
       </div>
       <div className={`text-sm font-semibold mt-0.5 ${text}`}>{value}</div>
@@ -182,7 +182,7 @@ function Sparkline({ points }: { points: number[] }) {
   if (points.length < 2) {
     return (
       <div
-        className="h-20 mt-2 flex items-center justify-center text-xs text-zinc-500"
+        className="h-20 mt-2 flex items-center justify-center text-xs text-zinc-400"
         data-testid="athlete-card-sparkline-empty"
       >
         Not enough meets to plot

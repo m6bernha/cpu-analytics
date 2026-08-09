@@ -45,7 +45,7 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
     <article className="max-w-3xl text-zinc-300 text-sm leading-relaxed">
       <header className="mb-8">
         <h2 className="text-zinc-100 text-xl font-semibold mb-1">About</h2>
-        <p className="text-zinc-500 text-sm">
+        <p className="text-zinc-400 text-sm">
           Methodology and disclaimers for cpu-analytics, with emphasis on
           the Athlete Projection BETA tab. Short methodology notes on each
           user-facing tab link here for the full version.
@@ -459,7 +459,7 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                     >
                       {mape != null ? `${mape.toFixed(2)}%` : '\u2014'}
                       {n != null && (
-                        <span className="text-zinc-500 ml-1">
+                        <span className="text-zinc-400 ml-1">
                           (n={n})
                         </span>
                       )}
@@ -475,7 +475,7 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
         </table>
       </div>
 
-      <div className="text-zinc-500 text-xs space-y-1">
+      <div className="text-zinc-400 text-xs space-y-1">
         <p>
           {artifact.summary.processed_lifters} lifters, holdout last{' '}
           {artifact.inputs.holdout} meets, minimum{' '}
@@ -558,7 +558,7 @@ function Gate({
 }) {
   const icon =
     pass === null ? (
-      <span className="text-zinc-500" aria-label="unavailable">&#x25CB;</span>
+      <span className="text-zinc-400" aria-label="unavailable">&#x25CB;</span>
     ) : pass ? (
       <span className="text-emerald-400" aria-label="pass">&#x2713;</span>
     ) : (

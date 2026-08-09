@@ -197,12 +197,12 @@ function ProjectionTooltip({
         </div>
       )}
       {row.piBand && row.piBand[0] !== row.piBand[1] && (
-        <div className="text-zinc-500">
+        <div className="text-zinc-400">
           PI: [{row.piBand[0].toFixed(1)}, {row.piBand[1].toFixed(1)}]
         </div>
       )}
       {(row.date || sinceLabel) && (
-        <div className="mt-1 pt-1 border-t border-zinc-800 text-zinc-500">
+        <div className="mt-1 pt-1 border-t border-zinc-800 text-zinc-400">
           {row.date && <div>{fmtDateLong(row.date)}</div>}
           {sinceLabel && <div>{sinceLabel}</div>}
         </div>

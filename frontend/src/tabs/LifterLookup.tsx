@@ -146,20 +146,20 @@ function ManualEntryForm({
   return (
     <div>
       <h3 className="text-zinc-100 text-lg font-semibold mb-1">Manual entry</h3>
-      <p className="text-zinc-500 text-sm mb-2">
+      <p className="text-zinc-400 text-sm mb-2">
         Enter your meets below if you're not in the OpenIPF dataset, or to project a
         hypothetical trajectory.
       </p>
-      <p className="text-zinc-500 text-xs mb-2">
+      <p className="text-zinc-400 text-xs mb-2">
         Enter a total on its own, or fill all three lifts (squat, bench, deadlift)
         to populate the per-lift chart. If you enter both, they must match.
       </p>
 
       <details className="mb-4 max-w-2xl">
-        <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+        <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
           Methodology and caveats
         </summary>
-        <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+        <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
           <p>
             <span className="text-zinc-400 font-medium">Personal-only projection:</span>{' '}
             The trajectory and projection shown below come solely from the meets you
@@ -305,7 +305,7 @@ function ManualEntryForm({
                   <button
                     onClick={() => removeRow(i)}
                     disabled={rows.length === 1}
-                    className="text-zinc-500 hover:text-red-400 disabled:opacity-30 text-sm"
+                    className="text-zinc-400 hover:text-red-400 disabled:opacity-30 text-sm"
                   >
                     ×
                   </button>
@@ -328,12 +328,12 @@ function ManualEntryForm({
             <button
               onClick={() => removeRow(i)}
               disabled={rows.length === 1}
-              className="absolute top-2 right-2 text-zinc-500 hover:text-red-400 disabled:opacity-30 text-lg leading-none px-2 py-1"
+              className="absolute top-2 right-2 text-zinc-400 hover:text-red-400 disabled:opacity-30 text-lg leading-none px-2 py-1"
               aria-label="Remove meet"
             >
               ×
             </button>
-            <div className="text-zinc-500 text-xs mb-2">Meet #{i + 1}</div>
+            <div className="text-zinc-400 text-xs mb-2">Meet #{i + 1}</div>
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
                 <span className="text-zinc-400 text-xs uppercase tracking-wide block mb-1">
@@ -639,16 +639,16 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
       <div className="mb-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
         <div className="max-w-2xl">
           <h2 className="text-zinc-100 text-lg font-semibold">Lifter lookup</h2>
-          <p className="text-zinc-500 text-sm">
+          <p className="text-zinc-400 text-sm">
             Search any Canadian lifter in the CPU/IPF dataset, or enter your meets manually
             to project a trajectory. Lifters who share the same name in the OpenPowerlifting
             database may show merged histories.
           </p>
           <details className="mt-2">
-            <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+            <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
               Methodology and caveats
             </summary>
-            <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+            <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
               <p>
                 <span className="text-zinc-400 font-medium">Scope:</span> All trends,
                 projections, and percentile ranks on this page are computed against Canadian
@@ -740,13 +740,13 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Type a name"
               aria-label="Search lifters by name"
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-zinc-500"
               // autoFocus removed: on phones it pops the keyboard and pushes content down
             />
 
             {pinned.length > 0 && (
               <div className="mt-3">
-                <div className="text-zinc-500 text-[11px] uppercase tracking-wide mb-1.5">
+                <div className="text-zinc-400 text-[11px] uppercase tracking-wide mb-1.5">
                   My lifters
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -770,10 +770,10 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
 
             <div className="mt-4">
               {query.trim().length > 0 && query.trim().length < 2 && (
-                <p className="text-zinc-500 text-sm">Type at least 2 characters.</p>
+                <p className="text-zinc-400 text-sm">Type at least 2 characters.</p>
               )}
               {searchQuery.isFetching && debouncedQuery.trim().length >= 2 && (
-                <p className="text-zinc-500 text-sm">Searching…</p>
+                <p className="text-zinc-400 text-sm">Searching…</p>
               )}
               {searchQuery.error && (
                 <p className="text-red-400 text-sm">
@@ -781,7 +781,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                 </p>
               )}
               {searchQuery.data && searchQuery.data.length === 0 && !searchQuery.isFetching && (
-                <p className="text-zinc-500 text-sm">No lifters match that name.</p>
+                <p className="text-zinc-400 text-sm">No lifters match that name.</p>
               )}
               {searchQuery.data && searchQuery.data.length > 0 && (
                 <>
@@ -796,7 +796,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                           }
                         >
                           <div className="text-zinc-100 text-sm">{lifter.Name}</div>
-                          <div className="text-zinc-500 text-xs mt-0.5">
+                          <div className="text-zinc-400 text-xs mt-0.5">
                             {lifter.Sex} · {lifter.LatestWeightClass} kg ·{' '}
                             {lifter.BestTotalKg.toFixed(1)} kg · {lifter.MeetCount} meets
                           </div>
@@ -814,7 +814,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                             'px-2 rounded transition-colors focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 ' +
                             (isPinned(lifter.Name)
                               ? 'text-amber-400 hover:text-amber-300'
-                              : 'text-zinc-600 hover:text-zinc-300')
+                              : 'text-zinc-400 hover:text-zinc-300')
                           }
                         >
                           {isPinned(lifter.Name) ? '★' : '☆'}
@@ -823,7 +823,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
                     ))}
                   </ul>
                   {searchQuery.data.length >= 25 && (
-                    <p className="text-zinc-600 text-xs mt-3">
+                    <p className="text-zinc-400 text-xs mt-3">
                       Showing top {searchQuery.data.length} by best total. If you don't see
                       yourself, type more of your name.
                     </p>
@@ -836,7 +836,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
           {/* Right pane: detail */}
           <div className="lg:col-span-2">
             {!selectedName && (
-              <div className="text-zinc-500 text-sm">
+              <div className="text-zinc-400 text-sm">
                 Select a lifter from the search results to see their trajectory and
                 qualifying total comparison.
               </div>
@@ -873,14 +873,14 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
               </Suspense>
             )}
             {historyQuery.data && !historyQuery.data.found && (
-              <div className="text-zinc-500 text-sm">No history found for {selectedName}.</div>
+              <div className="text-zinc-400 text-sm">No history found for {selectedName}.</div>
             )}
           </div>
         </div>
       )}
 
       {mode === 'compare' && (
-        <Suspense fallback={<div className="text-zinc-500 text-sm">Loading compare view...</div>}>
+        <Suspense fallback={<div className="text-zinc-400 text-sm">Loading compare view...</div>}>
           <CompareView
             compareNames={compareNames}
             addCompare={addCompare}

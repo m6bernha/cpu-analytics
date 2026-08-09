@@ -94,13 +94,18 @@ export default function App() {
       <header className="border-b border-zinc-800 px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3">
           <div>
+            {/* No aria-label: it read "CPU Powerlifting Analytics home"
+                while the link's visible text also includes the tagline
+                below, so the accessible name did not contain the visible
+                text and voice control could not target it (WCAG 2.5.3).
+                Letting the name come from the content makes the two match
+                by construction. */}
             <a
               href="/"
-              aria-label="CPU Powerlifting Analytics home"
               className="hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring focus-visible:ring-zinc-400 rounded"
             >
               <h1 className="text-lg sm:text-xl font-semibold">CPU Powerlifting Analytics</h1>
-              <p className="text-zinc-500 text-xs">Canadian lifters, IPF-sanctioned meets</p>
+              <p className="text-zinc-400 text-xs">Canadian lifters, IPF-sanctioned meets</p>
             </a>
             <FreshnessBadge />
           </div>
@@ -138,7 +143,7 @@ export default function App() {
       <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {route.kind === 'athlete' && (
           <ErrorBoundary label="Athlete profile">
-            <Suspense fallback={<LoadingSkeleton lines={3} chart />}>
+            <Suspense fallback={<LoadingSkeleton lines={3} chart reserveViewport />}>
               <AthleteProfile name={route.name} />
             </Suspense>
           </ErrorBoundary>
@@ -146,7 +151,7 @@ export default function App() {
 
         {route.kind === 'meet' && (
           <ErrorBoundary label="Meet results">
-            <Suspense fallback={<LoadingSkeleton lines={6} />}>
+            <Suspense fallback={<LoadingSkeleton lines={6} reserveViewport />}>
               <MeetPage name={route.name} date={route.date} />
             </Suspense>
           </ErrorBoundary>
@@ -197,7 +202,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-zinc-900 mt-12 px-4 sm:px-6 py-5">
-        <div className="max-w-6xl mx-auto text-zinc-500 text-xs space-y-3">
+        <div className="max-w-6xl mx-auto text-zinc-400 text-xs space-y-3">
           <div className="flex flex-wrap gap-x-6 gap-y-1 items-center">
             <div className="text-zinc-400">
               Made by{' '}
@@ -228,11 +233,11 @@ export default function App() {
               Source on GitHub
             </a>
           </div>
-          <div className="text-zinc-500">
+          <div className="text-zinc-400">
             Thanks for using this site. If you're a CPU lifter, I hope it's
             useful. If you're a coach, I'd love to hear what else would help.
           </div>
-          <div className="text-zinc-600">
+          <div className="text-zinc-400">
             Data from{' '}
             <a
               href="https://www.openpowerlifting.org"

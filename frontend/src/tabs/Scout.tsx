@@ -226,7 +226,7 @@ export default function Scout({ isActive }: ScoutProps) {
         <h2 className="text-zinc-100 text-base font-semibold mb-1">
           Meet Scout
         </h2>
-        <p className="text-zinc-500 text-xs mb-4 max-w-2xl">
+        <p className="text-zinc-400 text-xs mb-4 max-w-2xl">
           Paste a roster and generate a per-meet scouting report: per-class
           projected gaps, status tags, homies highlighted, unranked appendix.
           Names not found in OpenIPF fall to the Unranked Field section.
@@ -304,7 +304,7 @@ export default function Scout({ isActive }: ScoutProps) {
           <label className="text-xs text-zinc-400 space-y-1 md:col-span-2">
             <span>
               Roster ({roster.length} {roster.length === 1 ? 'name' : 'names'}) *
-              <span className="text-zinc-500 ml-2">
+              <span className="text-zinc-400 ml-2">
                 One name per line. Prefix with @ to tag as a homie.
               </span>
             </span>
@@ -330,7 +330,7 @@ export default function Scout({ isActive }: ScoutProps) {
               >
                 Add override
               </button>
-              <span className="text-zinc-500 text-xs">
+              <span className="text-zinc-400 text-xs">
                 For lifters missing from OpenIPF. Best total stands in as the
                 projection. Matches a roster line by name, or adds the lifter
                 if no line matches.
@@ -341,7 +341,7 @@ export default function Scout({ isActive }: ScoutProps) {
                 key={i}
                 className="grid grid-cols-2 md:grid-cols-9 gap-2 rounded border border-zinc-800 bg-zinc-900/50 p-2"
               >
-                <label className="text-[10px] text-zinc-500 space-y-0.5 col-span-2">
+                <label className="text-[10px] text-zinc-400 space-y-0.5 col-span-2">
                   <span>Name *</span>
                   <input
                     type="text"
@@ -351,7 +351,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>Total kg *</span>
                   <input
                     type="number"
@@ -363,7 +363,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>S kg</span>
                   <input
                     type="number"
@@ -375,7 +375,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>B kg</span>
                   <input
                     type="number"
@@ -387,7 +387,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>D kg</span>
                   <input
                     type="number"
@@ -399,7 +399,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     className="block w-full bg-zinc-900 border border-zinc-800 rounded px-1.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>Class</span>
                   <input
                     type="text"
@@ -410,7 +410,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     placeholder="83"
                   />
                 </label>
-                <label className="text-[10px] text-zinc-500 space-y-0.5">
+                <label className="text-[10px] text-zinc-400 space-y-0.5">
                   <span>Sex</span>
                   <select
                     value={d.sex}
@@ -425,7 +425,7 @@ export default function Scout({ isActive }: ScoutProps) {
                   </select>
                 </label>
                 <div className="flex items-end gap-1">
-                  <label className="text-[10px] text-zinc-500 space-y-0.5 flex-1">
+                  <label className="text-[10px] text-zinc-400 space-y-0.5 flex-1">
                     <span>Last meet</span>
                     <input
                       type="date"
@@ -438,7 +438,7 @@ export default function Scout({ isActive }: ScoutProps) {
                     type="button"
                     onClick={() => removeOverride(i)}
                     aria-label={`Remove override ${d.name || i + 1}`}
-                    className="pb-1 text-zinc-500 hover:text-red-400 text-sm leading-none"
+                    className="pb-1 text-zinc-400 hover:text-red-400 text-sm leading-none"
                   >
                     ×
                   </button>
@@ -466,7 +466,7 @@ export default function Scout({ isActive }: ScoutProps) {
 
       {!SCOUT_LOCKED && report && (
         <div className="print:hidden flex items-center gap-2 flex-wrap">
-          <span className="text-zinc-500 text-xs uppercase tracking-wide">Show</span>
+          <span className="text-zinc-400 text-xs uppercase tracking-wide">Show</span>
           {(
             [
               ['all', 'All'],
@@ -526,7 +526,7 @@ function ReportView({
         <h1 className="text-xl font-semibold">
           {req.generator_brand || 'Vireo Powerlifting'} — {req.meet_name} Scouting Report
         </h1>
-        <div className="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+        <div className="text-xs text-zinc-400 mt-1 flex flex-wrap gap-x-4 gap-y-1">
           {req.federation && <span>{req.federation}</span>}
           {req.location && <span>{req.location}</span>}
           <span>Meet date: {req.meet_date}</span>
@@ -574,10 +574,10 @@ function ReportView({
       )}
 
       <details className="mt-2">
-        <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+        <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
           Methodology
         </summary>
-        <div className="text-zinc-500 text-xs mt-2 max-w-2xl">
+        <div className="text-zinc-400 text-xs mt-2 max-w-2xl">
           <p>{report.methodology}</p>
         </div>
       </details>
@@ -620,7 +620,7 @@ function ReportView({
 
       <section className="space-y-6">
         <h2 className="text-zinc-100 text-base font-semibold">Per-class deep dive</h2>
-        <p className="text-zinc-500 text-xs -mt-4 max-w-2xl">
+        <p className="text-zinc-400 text-xs -mt-4 max-w-2xl">
           Classes are ordered by the projected gap between #1 and #2, tightest
           battle first. Projections run each athlete's per-lift Engine C
           forecast to meet day; ±PI is the 95% interval summed across S/B/D.
@@ -637,7 +637,7 @@ function ReportView({
           <h2 className="text-zinc-100 text-base font-semibold mb-2">
             Unranked Field
           </h2>
-          <p className="text-zinc-500 text-xs mb-2">
+          <p className="text-zinc-400 text-xs mb-2">
             Roster names without an OpenIPF match. Listed alphabetically.
           </p>
           <ul className="text-zinc-300 text-xs grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1">
@@ -648,7 +648,7 @@ function ReportView({
                   <button
                     type="button"
                     onClick={() => onAddOverride(n)}
-                    className="print:hidden text-[10px] text-zinc-500 hover:text-orange-300 border border-zinc-800 hover:border-zinc-600 rounded px-1"
+                    className="print:hidden text-[10px] text-zinc-400 hover:text-orange-300 border border-zinc-800 hover:border-zinc-600 rounded px-1"
                     title="Seed a manual override in the form above, then regenerate"
                   >
                     Add data
@@ -660,7 +660,7 @@ function ReportView({
         </section>
       )}
 
-      <footer className="border-t border-zinc-900 pt-3 text-zinc-500 text-xs">
+      <footer className="border-t border-zinc-900 pt-3 text-zinc-400 text-xs">
         Informational, not a prediction. Projections derive from the most
         recent Canadian IPF-affiliated meet history per athlete. Athletes can
         and do change preparation. Cite responsibly.
@@ -677,7 +677,7 @@ function ClassBlock({ block, rank }: { block: ScoutClassBlock; rank: number }) {
         #{rank} · {block.weight_class || '(unclassified)'} kg · {block.n_athletes}{' '}
         {block.n_athletes === 1 ? 'athlete' : 'athletes'}
         {block.projected_gap_kg !== null && (
-          <span className="ml-2 text-zinc-500">
+          <span className="ml-2 text-zinc-400">
             projected gap {fmtKg(block.projected_gap_kg, 1)} kg
           </span>
         )}
@@ -743,7 +743,7 @@ function ClassBlock({ block, rank }: { block: ScoutClassBlock; rank: number }) {
                 <td className="pr-3 py-1 text-zinc-400">
                   {a.inline_tags.length > 0 ? a.inline_tags.join('; ') : ''}
                   {a.glp_score !== null && (
-                    <span className="ml-2 text-zinc-500">GLP {fmtInt(a.glp_score)}</span>
+                    <span className="ml-2 text-zinc-400">GLP {fmtInt(a.glp_score)}</span>
                   )}
                 </td>
               </tr>

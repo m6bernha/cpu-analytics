@@ -28,13 +28,13 @@ describe('MethodPill', () => {
   it('opens the method menu on click', () => {
     render(<MethodPill variant="lifter-lookup" />)
     expect(screen.queryByRole('menu')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     expect(screen.queryByRole('menu')).not.toBeNull()
   })
 
   it('lists all three methods inside the menu', () => {
     render(<MethodPill variant="lifter-lookup" />)
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     const menu = screen.getByRole('menu')
     expect(menu.textContent).toMatch(/Linear regression/i)
     expect(menu.textContent).toMatch(/Engine C/i)
@@ -43,7 +43,7 @@ describe('MethodPill', () => {
 
   it('marks Engine D as disabled when engineDAvailable=false (default)', () => {
     render(<MethodPill variant="athlete-projection" />)
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     const menu = screen.getByRole('menu')
     expect(menu.textContent).toMatch(/below 90% convergence/i)
   })
@@ -52,14 +52,14 @@ describe('MethodPill', () => {
     render(
       <MethodPill variant="athlete-projection" engineDAvailable={true} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     const menu = screen.getByRole('menu')
     expect(menu.textContent).not.toMatch(/below 90% convergence/i)
   })
 
   it('renders the active variant with no nav link, and the other as a link', () => {
     render(<MethodPill variant="lifter-lookup" currentLifter="Test Lifter" />)
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     // Only the engine-c row should render as an anchor (cross-nav). Linear
     // is the active variant; Engine D is disabled.
     const menuitems = screen.getAllByRole('menuitem')
@@ -69,7 +69,7 @@ describe('MethodPill', () => {
 
   it('cross-nav anchor preserves the lifter in the destination tab key', () => {
     render(<MethodPill variant="lifter-lookup" currentLifter="Test Lifter" />)
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     const anchor = screen
       .getAllByRole('menuitem')
       .find((el) => el.tagName === 'A') as HTMLAnchorElement | undefined
@@ -85,7 +85,7 @@ describe('MethodPill', () => {
 
   it('closes the menu on Escape', () => {
     render(<MethodPill variant="lifter-lookup" />)
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     expect(screen.queryByRole('menu')).not.toBeNull()
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('menu')).toBeNull()
@@ -98,7 +98,7 @@ describe('MethodPill', () => {
         <button data-testid="outside">outside</button>
       </div>,
     )
-    fireEvent.click(screen.getByRole('button', { name: /switch projection method/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Method ·/i }))
     expect(screen.queryByRole('menu')).not.toBeNull()
     fireEvent.mouseDown(screen.getByTestId('outside'))
     expect(screen.queryByRole('menu')).toBeNull()
@@ -106,11 +106,42 @@ describe('MethodPill', () => {
 
   it('flips aria-expanded when toggled', () => {
     render(<MethodPill variant="athlete-projection" />)
-    const trigger = screen.getByRole('button', { name: /switch projection method/i })
+    const trigger = screen.getByRole('button', { name: /^Method ·/i })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(trigger)
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(trigger)
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  // WCAG 2.5.3 "Label in Name": the accessible name must contain the
+  // visible text, otherwise voice control cannot target the control by what
+  // the user can read. The pill used to carry aria-label="Switch projection
+  // method", which overrode the visible "Method · <label>" entirely and
+  // failed the check. Guards against someone reintroducing an aria-label.
+  it('accessible name contains the visible label (WCAG 2.5.3)', () => {
+    render(<MethodPill variant="lifter-lookup" />)
+    const trigger = screen.getByRole('button', { name: /^Method ·/i })
+
+    // No aria-label at all: an aria-label overrides the content entirely,
+    // which is exactly how the visible text stopped being in the name.
+    expect(trigger.getAttribute('aria-label')).toBeNull()
+
+    // The words a user can read must be in the name they can speak.
+    // Whitespace is stripped from both sides because the accessible-name
+    // algorithm inserts separators that textContent does not.
+    const squash = (s: string) => s.replace(/\s+/g, '')
+    const visibleLabel = 'Linear regression — this lifter only'
+    expect(squash(trigger.textContent ?? '')).toContain(squash(visibleLabel))
+    expect(squash(trigger.textContent ?? '')).toContain(squash('Method ·'))
+  })
+
+  it('hides the decorative caret from screen readers', () => {
+    render(<MethodPill variant="lifter-lookup" />)
+    const caret = screen
+      .getByRole('button', { name: /^Method ·/i })
+      .querySelector('[aria-hidden="true"]')
+    expect(caret).not.toBeNull()
+    expect(caret?.textContent).toBe('▾')
   })
 })

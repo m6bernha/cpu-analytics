@@ -1,10 +1,10 @@
 function MethodologyBlock() {
   return (
     <details className="mt-8 max-w-3xl">
-      <summary className="text-zinc-500 text-xs cursor-pointer hover:text-zinc-300">
+      <summary className="text-zinc-400 text-xs cursor-pointer hover:text-zinc-300">
         Methodology and caveats
       </summary>
-      <div className="text-zinc-500 text-xs mt-2 space-y-1.5">
+      <div className="text-zinc-400 text-xs mt-2 space-y-1.5">
         <p>
           <span className="text-zinc-400 font-medium">Engine C (Simple):</span>{' '}
           Bayesian shrinkage combines the lifter's own Huber-robust slope with
