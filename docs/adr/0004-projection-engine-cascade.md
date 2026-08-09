@@ -31,8 +31,9 @@ The evidence it was to be judged against looked like this:
 | 18 mo | 6.69% | 5.06% | +1.63 pp |
 
 Before reading anything into a fresh 24/36-month row, that table had to be
-re-earned, because the harness that produced it had three defects that all
-push in the same direction.
+re-earned. The harness that produced it had four defects, three of which
+push in the same direction, plus a fifth found while cross-checking the
+new numbers.
 
 ### Defect 1: the harness did not run Engine C
 
@@ -49,8 +50,11 @@ of a total slope, so the cohort half of the shrinkage was understated
 about threefold, and the level was a quantity no production code path
 computes. The measured engine was a lookalike.
 
-This is the failure mode already recorded in memory as "probes must mirror
-the production path", one repository over, in the same subsystem.
+This is the second time this exact failure mode has hit this subsystem.
+The first was the Engine D convergence probe of 2026-04-27, which fitted
+MixedLM on bare `(division, bracket)` cells without the production
+bracket-merge ladder and returned a "kill" verdict on 3 fits; adding the
+ladder flipped convergence from 33% to 91.7% and Engine D shipped.
 
 **Fix:** Engine C now lives in `project_from_history`;
 `shrinkage_projection` is a thin loader over it, and the backtest calls
