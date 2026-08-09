@@ -920,3 +920,81 @@ class TestSchemaVersionBumped:
     def test_schema_version_is_three(self):
         """P5 path 2 bumped the artifact schema; old v1/v2 artifacts must be rejected."""
         assert ap.SERIALIZED_TABLES_SCHEMA_VERSION == 3
+
+
+class TestProjectFromHistoryIsTheSameEngine:
+    """`shrinkage_projection` must be a thin loader over `project_from_history`.
+
+    The offline backtest calls `project_from_history` directly so that the
+    engine it measures is the engine that ships. That guarantee only holds
+    while the two paths stay identical. Before the 2026-08-09 split the
+    backtest had its own lookalike implementation, which fit the TOTAL
+    series against the SQUAT cohort cell and so measured something
+    production never computes. These tests exist so the paths cannot drift
+    apart again silently.
+    """
+
+    def test_delegation_reproduces_the_endpoint_projection(self, precomputed):
+        from backend.app.data import get_cursor
+        from backend.app.athlete_projection_engine_c import _load_lifter_history
+
+        via_name = ap.shrinkage_projection("Bob B", horizon_months=12)
+        assert via_name is not None
+
+        history = _load_lifter_history(get_cursor(), "Bob B")
+        via_history = ap.project_from_history(
+            lifter_df=history, lifter_name="Bob B", horizon_months=12,
+        )
+        assert via_history is not None
+
+        assert via_history.total_projected_points == via_name.total_projected_points
+        assert via_history.age_division == via_name.age_division
+        assert via_history.outlier_lifts == via_name.outlier_lifts
+        for lift in ("squat", "bench", "deadlift"):
+            assert (
+                via_history.lifts[lift].projected_points
+                == via_name.lifts[lift].projected_points
+            )
+
+    def test_injected_cohort_lookup_actually_changes_the_projection(self, precomputed):
+        """Negative control for the injection point.
+
+        A lookup that returns no cell must move the answer. If it did not,
+        the backtest's train-only cohort tables would be silently ignored
+        and it would be scoring production's leaked cells instead.
+        """
+        from backend.app.data import get_cursor
+        from backend.app.athlete_projection_engine_c import _load_lifter_history
+
+        history = _load_lifter_history(get_cursor(), "Bob B")
+        with_cells = ap.project_from_history(
+            lifter_df=history, lifter_name="Bob B", horizon_months=12,
+        )
+        without_cells = ap.project_from_history(
+            lifter_df=history, lifter_name="Bob B", horizon_months=12,
+            cohort_lookup=lambda _d, _b, _l: None,
+        )
+        assert with_cells is not None and without_cells is not None
+        assert (
+            with_cells.total_projected_points
+            != without_cells.total_projected_points
+        )
+
+    def test_clamp_can_be_disabled_for_the_backtest(self, precomputed):
+        """Production caps the horizon at 18 months; the backtest reads past it."""
+        from backend.app.data import get_cursor
+        from backend.app.athlete_projection_engine_c import _load_lifter_history
+
+        history = _load_lifter_history(get_cursor(), "Bob B")
+        clamped = ap.project_from_history(
+            lifter_df=history, lifter_name="Bob B", horizon_months=36,
+        )
+        unclamped = ap.project_from_history(
+            lifter_df=history, lifter_name="Bob B", horizon_months=36,
+            clamp_horizon=False,
+        )
+        assert clamped is not None and unclamped is not None
+        assert clamped.horizon_months == ap.HORIZON_MONTHS_HARD_CAP
+        assert clamped.horizon_capped is True
+        assert unclamped.horizon_months == 36
+        assert unclamped.horizon_capped is False

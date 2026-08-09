@@ -18,6 +18,7 @@ the public surface of all three.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -48,10 +49,17 @@ from .athlete_projection_tables import (
     LIFT_COLS,
     LIFT_KEYS,
     GlpCohortCell,
+    KMTable,
     _robust_slope,
     get_cohort_cell,
     get_km_table,
 )
+
+# Injection points for `project_from_history`. Production passes the
+# module-level precomputed tables; the offline backtest passes lookups
+# backed by cells fit on training rows only.
+CohortLookup = Callable[[str, str, str], "GlpCohortCell | None"]
+KmLookup = Callable[[str], "KMTable | None"]
 
 
 # =============================================================================
@@ -111,33 +119,75 @@ def shrinkage_projection(
 ) -> AthleteProjectionResult | None:
     """Engine C: Bayesian shrinkage with Huber personal + GLP-bracket cohort.
 
-    Returns None if the lifter has no meets or no age data to assign a cohort.
+    Loads the lifter's history from DuckDB and delegates to
+    `project_from_history`, which holds the actual engine.
 
-    Two-pass bracket transition: pass 1 uses the lifter's starting GLP
-    bracket's cohort slope; if the projected total crosses a bracket edge
-    during the horizon, pass 2 re-projects with per-segment cohort cells.
+    Returns None if the lifter has no meets or no age data to assign a cohort.
     """
     cursor = get_cursor()
     lifter_df = _load_lifter_history(cursor, lifter_name)
     if lifter_df is None or lifter_df.empty:
         return None
+    return project_from_history(
+        lifter_df=lifter_df,
+        lifter_name=lifter_name,
+        horizon_months=horizon_months,
+        n_points=n_points,
+    )
+
+
+def project_from_history(
+    lifter_df: pd.DataFrame,
+    lifter_name: str,
+    horizon_months: float = 12,
+    n_points: int = 6,
+    cohort_lookup: CohortLookup | None = None,
+    km_lookup: KmLookup | None = None,
+    clamp_horizon: bool = True,
+) -> AthleteProjectionResult | None:
+    """The Engine C projection itself, on an already-loaded history frame.
+
+    Split out of `shrinkage_projection` so that callers who hold their own
+    history and their own cohort tables -- specifically the offline backtest
+    in `data/backtest_projection.py` -- run the SAME code as production
+    instead of a lookalike. The backtest previously reimplemented this by
+    fitting the TOTAL series against the SQUAT cohort cell, which is not
+    what ships: production fits squat, bench and deadlift independently,
+    each against its own cohort cell, and sums the three.
+
+    `cohort_lookup` and `km_lookup` default to the module-level precomputed
+    tables. The backtest passes lookups backed by cells fit on training rows
+    only, so held-out meets cannot leak into the cohort slopes.
+
+    `clamp_horizon=False` disables the production 18-month cap and the
+    small-n 6-month clamp. Only the backtest does this, to read horizons the
+    UI deliberately refuses to serve.
+    """
+    if lifter_df is None or lifter_df.empty:
+        return None
+
+    get_cell = cohort_lookup if cohort_lookup is not None else get_cohort_cell
+    get_km = km_lookup if km_lookup is not None else get_km_table
 
     age_division = _assign_division(lifter_df)
     if age_division is None:
         return None
 
     n_total_meets = int(lifter_df["Name"].count())
-    effective_horizon, capped = _clamp_horizon(horizon_months, n_total_meets)
+    if clamp_horizon:
+        effective_horizon, capped = _clamp_horizon(horizon_months, n_total_meets)
+    else:
+        effective_horizon, capped = horizon_months, False
 
     glp, initial_bracket, bw_used, age_used, sex_used = _compute_lifter_glp(lifter_df)
 
-    km = get_km_table(age_division)
+    km = get_km(age_division)
     km_multiplier = km.multiplier(effective_horizon) if km else 1.0
 
     # Pass 1: use the initial bracket for all n_points.
     pass1_projs: dict[str, LiftProjection] = {}
     for lift in LIFT_KEYS:
-        cell = get_cohort_cell(age_division, initial_bracket, lift)
+        cell = get_cell(age_division, initial_bracket, lift)
         pass1_projs[lift] = _project_single_lift(
             lifter_df=lifter_df,
             lift=lift,
@@ -159,12 +209,12 @@ def shrinkage_projection(
         lift_results = {}
         for lift in LIFT_KEYS:
             cells_per_point = [
-                get_cohort_cell(age_division, b, lift) for b in brackets_per_point
+                get_cell(age_division, b, lift) for b in brackets_per_point
             ]
             lift_results[lift] = _project_single_lift(
                 lifter_df=lifter_df,
                 lift=lift,
-                cohort_cell=get_cohort_cell(age_division, initial_bracket, lift),
+                cohort_cell=get_cell(age_division, initial_bracket, lift),
                 horizon_months=effective_horizon,
                 n_points=n_points,
                 km_multiplier=km_multiplier,
@@ -182,7 +232,7 @@ def shrinkage_projection(
 
     # Lifter-bracket meta: pull from the squat cell as representative (all
     # three lifts share the same bracket for the initial cell).
-    primary_cell = get_cohort_cell(age_division, initial_bracket, "squat")
+    primary_cell = get_cell(age_division, initial_bracket, "squat")
     lifter_bracket_meta: dict[str, Any] | None = None
     if primary_cell is not None:
         lifter_bracket_meta = {

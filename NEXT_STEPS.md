@@ -9,6 +9,114 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Long-horizon backtest + cascade decision SHIPPED (upgrade arc, session 4)
+
+Session 4 was scoped as "extend the backtest to 24/36 months, then draft the
+Gompertz cascade ADR". The extension happened. The cascade was **rejected**,
+and the reason it was rejected is a defect in Engine C that the old harness
+could not have surfaced.
+
+**The harness was measuring the wrong engine.** `engine_c_predict` fit a
+single Huber slope to the TOTAL series and combined it with the **squat**
+cohort cell, labelled in-source as a "total-level cohort proxy". Production
+fits squat, bench and deadlift independently, each against its own cell,
+and sums them. A squat slope is about a third of a total slope, so the
+cohort half of the shrinkage was understated roughly threefold, against a
+level no production code path computes. Every About-page number since
+2026-05-01 described that lookalike. Fixed by extracting
+`project_from_history`, which `shrinkage_projection` now delegates to and
+the backtest calls directly, with injected cohort and K-M lookups.
+
+Two more defects, both pushing the same way:
+
+- **Cohort cells were fit on the held-out meets.** The in-source
+  justification was that one lifter barely moves 231 cells, which is true
+  and beside the point: every lifter's future was in there.
+- **The +/- 90 day scoring tolerance was biased along the axis being
+  measured.** It is the entire horizon at 3 months and 8% of it at 36, so
+  it flattered long horizons, in a test whose whole purpose is "does the
+  margin widen with horizon". Predictions now score at each held-out meet's
+  real date, and buckets group results afterwards.
+
+And the reading was unpaired. Gompertz declines whenever `curve_fit` fails,
+so its MAPE described an easier subset than the column beside it. All
+cross-engine claims are now paired with a bootstrap clustered on lifter; a
+row-level bootstrap was measured reporting intervals ~3.3x too narrow here.
+
+**What the corrected numbers say** (global pool, 1,635 lifters, 1,470
+scored, 5,581 observations):
+
+| | 12 mo | 36 mo |
+|---|---|---|
+| Engine C bias | +5.08% | +12.19% |
+| Engine C MAPE | 5.99% | 12.85% |
+| Engine C's level held flat, bias | +0.84% | +0.11% |
+| Engine C's level held flat, MAPE | 4.73% | 7.08% |
+
+Engine C's error is almost entirely one-directional overshoot, and holding
+its own level constant is the most accurate predictor in the comparison at
+every horizon. The level convention is fine. The slope is the whole defect.
+
+Two controls decided the ADR, and neither was in the original plan:
+
+- **Naive persistence.** Gompertz beats Engine C by 5.70 pp at 36 months
+  and a constant beats it by 5.58 pp, so the margin was never Gompertz's.
+  Head to head, Gompertz is worse than the constant at 36 months.
+- **Level-only.** Splits the overshoot into level versus slope and pins it
+  entirely on the slope.
+
+Stratification against the observations dump killed the obvious objections:
+excluding the 688 career-final observations moves the 36-month bias from
++12.19% to +11.79%, and the overshoot is **worse** for lifters who were
+still adding weight (+13.79%) than for plateaued ones (+6.86%). It is not a
+retirement artifact and not a plateau-heavy-pool artifact. Zeroing the
+slope is also ruled out: for lifters with <= 8 training meets a flat
+prediction runs 7.04% low at 36 months.
+
+Decision, ship gates and the damping design are in
+[ADR 0004](docs/adr/0004-projection-engine-cascade.md). The old gates are
+superseded: all three passed on an engine 5 to 6 percent high at both
+horizons the app serves, because each measured error magnitude and none
+measured direction.
+
+Also landed:
+
+- `backend/tests/test_backtest_projection.py`, 31 tests, plus 3 locking
+  `shrinkage_projection` to `project_from_history`. The harness is still
+  offline-only, but its tests run in CI, because it writes a committed
+  artifact the About page renders as fact.
+- `--from-observations` rebuild mode. The scoring pass is ~40 minutes, and
+  without it, adding a comparison or fixing a gate threshold tempts you to
+  hand-edit the generated artifact.
+- Determinism fix. 1,664 lifter-days in the pool carry more than one SBD
+  row, and the production fitter picks a lifter's bracket via
+  `groupby("Name").tail(1)` over a (Name, Date) ordering, so ties moved
+  run to run and MAPE wandered by up to ~0.15 pp. Full sort key, single
+  thread, insertion order preserved.
+- About page rewritten for the new artifact: own-sample and paired tables
+  kept visibly separate, signed bias shown, the two trivial controls
+  labelled as controls, and the known enrichment of the long buckets for
+  late-career meets stated on the page.
+- Stale About copy fixed: it claimed five views and called Scout a work in
+  progress. Seven views, Scout unlocked since 2026-08-04.
+
+**Open, small:** pre-existing eslint error `About.tsx:88` (`_isActive`
+unused, underscore-prefixed args are not exempt in this config); joins the
+known `AthleteProjection.tsx:127` one. Neither gates CI, which runs tsc and
+build only.
+
+**Worth doing before session 5's damping sweep:** the scoring pass refits
+each lifter's three Huber personal slopes once per horizon bucket, from an
+identical training frame, so roughly six times more RLM fits run than are
+needed. `--from-observations` does not help here, because changing the
+engine means a genuine re-score, and the sweep will want several candidate
+damping constants at ~40 minutes each. Caching the per-lifter personal fit
+across buckets, or projecting all six horizons from one call, should cut
+that several-fold. Measure before assuming the split: `curve_fit` for the
+Gompertz baseline is also in the loop and may be a comparable share.
+
+---
+
 ## 2026-08-09 -- Measurement + discoverability SHIPPED (upgrade arc, session 1 of 8)
 
 First session of a planned multi-session upgrade arc. Plan lives at
@@ -2041,7 +2149,27 @@ on every run (~30 s cold start tax per CI run, weighed against the
 ~6 smoke tests it catches). Revisit if the frontend sprouts a flaky
 interaction the unit tests miss.
 
-### Gompertz baseline evaluation -- v2 candidate
+### Gompertz baseline evaluation -- v2 candidate -- RESOLVED 2026-08-09, NO-GO
+
+**Closed by [ADR 0004](docs/adr/0004-projection-engine-cascade.md).** The
+24/36-month reading this item demanded was taken, and the widening-margin
+trend is real: Gompertz beats Engine C by 1.29 pp at 12 months growing to
+5.70 pp at 36. It is still a no-go, because a **constant** captures 5.58 of
+those 5.70 pp. Paired directly against "predict no change from the last
+meet", Gompertz is inside the noise from 6 to 24 months and significantly
+worse at 36 (+0.91 pp, CI +0.35 to +1.54).
+
+The real finding is that Engine C's error is not noise but one-directional
+overshoot, +5.08% at 12 months and +12.19% at 36, and that all of it comes
+from the projected slope rather than the level convention. The next
+projection session damps the slope instead of adding an engine. ADR 0004
+carries the numeric ship gates.
+
+The four open decisions listed below were answered as follows: coverage is
+68-70% not ~75% (worse than assumed); precompute cost never had to be
+measured; Engine D portability is moot; and the ship gates were rewritten,
+because all three of the old ones passed on an engine that was visibly
+biased. **The analysis below is retained for the record and is superseded.**
 
 Captured 2026-05-20 during the polish-sweep + Scout-MVP sprint
 (Stage 2a, plan `where-did-we-leave-elegant-sifakis.md`).
