@@ -14,8 +14,9 @@
 // - InfoPanel.tsx — data info cards (cohort, shrinkage, uncertainty, QT proximity)
 // - MethodologyBlock.tsx — collapsed methodology details
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { trackEvent } from '../lib/analytics'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
 import {
   fetchAthleteProjection,
@@ -156,6 +157,19 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
     enabled: !!selected && isActive,
     staleTime: 5 * 60 * 1000,
   })
+
+  // Which engine people actually look at. Engine D shipped at 100%
+  // convergence but Simple is still the default, so this answers whether
+  // anyone switches. Reported per engine rather than per render, and the
+  // lifter's name is deliberately not part of the event.
+  const lastEngineReported = useRef<string | null>(null)
+  useEffect(() => {
+    const shown = projectionQuery.data?.engine
+    if (!shown) return
+    if (lastEngineReported.current === shown) return
+    lastEngineReported.current = shown
+    trackEvent('projection_viewed', { engine: shown })
+  }, [projectionQuery.data?.engine])
 
   // Engine D global gate. Backend reports which engines are available
   // (`/api/athlete/projection-engines`). Used to decide whether to mount

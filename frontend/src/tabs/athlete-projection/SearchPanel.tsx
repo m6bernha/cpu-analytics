@@ -116,7 +116,7 @@ function SelectorSearch({
           </div>
         )}
       </div>
-      <ShareButton ariaLabel="Copy shareable link to this projection" />
+      <ShareButton surface="athlete_projection" ariaLabel="Copy shareable link to this projection" />
     </div>
   )
 }

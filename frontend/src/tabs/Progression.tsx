@@ -390,6 +390,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                       `cohort-progression-${filters.sex}-${filters.weight_class || 'overall'}.csv`,
                       [d.x_label, `mean ${d.y_label}`, 'std', 'lifter_count'],
                       d.points.map((p) => [p.x, p.y, p.std, p.lifter_count]),
+                      'cohort_curve',
                     )
                   }}
                   className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
@@ -398,7 +399,7 @@ export default function Progression({ isActive }: { isActive: boolean }) {
                   Download CSV
                 </button>
               )}
-            <ShareButton ariaLabel="Copy shareable link to this cohort view" />
+            <ShareButton surface="progression" ariaLabel="Copy shareable link to this cohort view" />
           </div>
         </div>
 

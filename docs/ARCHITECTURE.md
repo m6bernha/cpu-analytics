@@ -48,17 +48,7 @@ readers who want the depth.
       |    - per-request DuckDB cursor (thread-safe)               |
       |    - GZip + Cache-Control middleware                       |
       |                                                            |
-      |   Endpoints:                                               |
-      |    GET  /api/health                liveness (no DuckDB)    |
-      |    GET  /api/ready                 readiness (SELECT 1)    |
-      |    GET  /api/filters               enumerated dropdowns    |
-      |    GET  /api/progression           cohort aggregation      |
-      |    GET  /api/progression/per-lift  per-lift cohort view    |
-      |    GET  /api/qt/coverage           single-cut coverage     |
-      |    GET  /api/qt/standards          QT table data           |
-      |    GET  /api/lifter/search         name search             |
-      |    GET  /api/lifter/history        meet history            |
-      |    POST /api/lifter/manual         validated manual entry  |
+      |   Endpoints: see the API surface table below               |
       +---------------------------+--------------------------------+
                                   |
                       HTTPS (CORS + VITE_API_BASE)
@@ -75,6 +65,33 @@ readers who want the depth.
 ```
 
 ## Backend
+
+### API surface
+
+Every route in `backend/app/main.py`. Regenerate this list with
+`grep -nE '@app\.(get|post|api_route)' backend/app/main.py` if it looks stale.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET/HEAD | `/api/health` | Liveness. Does not touch DuckDB. HEAD for UptimeRobot. |
+| GET/HEAD | `/api/ready` | Readiness. Runs `SELECT 1`; 503 if the views are broken. |
+| GET | `/api/meta/freshness` | Newest meet date + row count, for the staleness badge. |
+| GET | `/api/filters` | Enumerated dropdown values. `lru_cache`d. |
+| GET | `/api/cohort/progression` | Cohort aggregation with trendline and projection. |
+| GET | `/api/cohort/lift_progression` | Per-lift (S/B/D) cohort view. SBD-only in practice. |
+| GET | `/api/rankings` | Leaderboard, 24-month active window, paginated. Raw SBD only. |
+| GET | `/api/rankings/percentiles` | Per-sex GLP percentile curve (101 floats). |
+| GET | `/api/lifters/search` | Name search. Wildcards escaped, capped at 200. |
+| GET | `/api/lifters/{name}/history` | Full meet history for one lifter. |
+| GET | `/api/athlete/{name}/projection` | Per-lift forecast, Engine C or D, with PIs. |
+| GET | `/api/athlete/projection-engines` | Which engines are available (Engine D gate). |
+| GET | `/api/meet` | One meet's results as a record, grouped and never ranked. |
+| GET | `/api/qt/standards` | Historical QT table (pre-2025 / 2025). |
+| GET | `/api/qt/coverage` | Historical QT coverage. |
+| GET | `/api/qt/live/filters` | Live QT feed filter lists. Degrades if unavailable. |
+| GET | `/api/qt/live/coverage` | Live QT coverage, federal + provincial. |
+| POST | `/api/manual/trajectory` | Validated manual entry. Rate limited 30/min per IP. |
+| POST | `/api/scout/report` | Scouting report fan-out. Rate limited 10/min per IP. |
 
 ### DuckDB over Parquet
 
@@ -232,22 +249,66 @@ Every chart:
 See [DATA.md](DATA.md) for the full data-flow, schema, and QT-standard
 details.
 
+## Discoverability
+
+### Sitemaps
+
+`data/generate_sitemap.py` reads the parquet and writes four files into
+`frontend/public/`, which Vercel serves as ordinary static assets:
+
+| File | Contents |
+|---|---|
+| `sitemap.xml` | The index. Keeps this filename so `robots.txt` and anything search engines already have on file stay valid. |
+| `sitemap-core.xml` | The seven tab views. |
+| `sitemap-athletes.xml` | One URL per lifter, ~21k, ordered by most recent meet. |
+| `sitemap-meets.xml` | One URL per (meet, date), ~2.8k. |
+
+Two decisions worth keeping:
+
+- **Static files, not a backend endpoint.** Render's free tier can take
+  ~50 s to wake and a crawler gives up in 5-10 s, so serving sitemaps from
+  the API would mean the crawl fails exactly when the site is idle, which
+  is most of the time. The cost is that sitemaps refresh weekly with the
+  data rather than on demand.
+- **Encoding must match `route.ts` byte for byte.** The slug is the
+  URL-encoded exact OpenIPF name. A mismatch does not 404 (the SPA rewrite
+  catches every `/athlete/*`), it renders "lifter not found" while still
+  returning 200, so only `backend/tests/test_generate_sitemap.py` catches
+  it. Do not change `encode_segment` without running those tests.
+
+The weekly refresh regenerates the sitemaps and opens an auto-merging PR
+rather than pushing to `main`, because `main` requires status checks that a
+freshly pushed commit cannot have.
+
+### Analytics
+
+Vercel Web Analytics, mounted in `main.tsx`. Cookieless, so no consent
+banner. Custom events go through `src/lib/analytics.ts`, which exists so
+the event vocabulary is a type rather than a set of scattered string
+literals. Two rules hold there: no user-typed or identifying values as
+properties, and bucket unbounded numbers before sending. Athlete-page
+popularity comes from ordinary pageviews of the real `/athlete/*` paths;
+the custom events cover behaviour the URL cannot show, starting with which
+tab is open, since tabs live in the query string.
+
 ## Testing
 
-- **Backend**: pytest + Hypothesis property tests. 371 tests passing,
+- **Backend**: pytest + Hypothesis property tests. 406 tests passing,
   1 skipped. Covers progression aggregation, rankings (leaderboard +
   GLP percentile curves), lifter search, PR detection, manual-entry
   validation, QT coverage (federal + 6 provincial scrapers), athlete
   projection (Engine C + Engine D), scout report generation, per-IP
-  rate limiting, concurrency (32 parallel threads against DuckDB), and
-  weight-class canonicalization.
+  rate limiting, sitemap URL encoding, concurrency (32 parallel threads
+  against DuckDB), and weight-class canonicalization.
 - **Frontend**: Vite production build + strict TypeScript serve as the
-  primary gate. 52 Vitest unit tests (useUrlState + MethodPill +
-  Banner + meetTier + AthleteCard) and 6 Playwright E2E smoke tests,
-  all running in CI.
-- **CI**: `.github/workflows/ci.yml` runs both on every push and PR in
-  parallel, target wall-clock under 3 minutes. Branch protection on
-  `main` requires the frontend check to pass.
+  primary gate. 107 Vitest unit tests (ogMeta + route + percentile +
+  useUrlState + MethodPill + Banner + meetTier + AthleteCard + Scout
+  roster/override helpers) and 6 Playwright E2E smoke tests, all
+  running in CI.
+- **CI**: `.github/workflows/ci.yml` runs all three jobs on every push
+  and PR in parallel, target wall-clock under 3 minutes. Branch
+  protection on `main` requires all three: `Frontend (tsc + build)`,
+  `Backend (pytest)`, and `E2E (Playwright smoke)`.
 
 ## Deploy topology
 

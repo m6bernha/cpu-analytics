@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://cpu-analytics.vercel.app/</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=rankings</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=projection</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=lookup</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=qt</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=scout</loc>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/?tab=about</loc>
+  </url>
+</urlset>

@@ -6,10 +6,14 @@
 // Page breaks can land mid-row, same as browser print. Acceptable for v1;
 // row-aware slicing would need per-element measurement.
 
+import { trackEvent } from './analytics'
+
 export async function exportReportPdf(
   node: HTMLElement,
   filename: string,
+  surface: string,
 ): Promise<void> {
+  trackEvent('export_used', { kind: 'pdf', surface })
   const [{ toPng }, { jsPDF }] = await Promise.all([
     import('html-to-image'),
     import('jspdf'),

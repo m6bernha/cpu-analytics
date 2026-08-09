@@ -13,8 +13,9 @@
 // depends on the lifter's latest_weight_class. The era toggle switches between
 // 2025 and 2027 standards.
 
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { sizeBucket, trackEvent } from '../lib/analytics'
 import { useUrlState } from '../lib/useUrlState'
 import { useDebouncedValue } from '../lib/useDebouncedValue'
 import { usePinnedLifters } from '../lib/pinnedLifters'
@@ -538,6 +539,21 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
     () => parseLifters(urlState.lifters),
     [urlState.lifters],
   )
+  // Compare is three clicks deep from the landing page, so whether anyone
+  // reaches it with an actual comparison (2+ lifters) is the question. The
+  // ref reports each distinct lifter count once per compare session rather
+  // than on every re-render while the view is open.
+  const lastCompareReported = useRef<number>(0)
+  useEffect(() => {
+    if (mode !== 'compare' || compareNames.length < 2) {
+      lastCompareReported.current = 0
+      return
+    }
+    if (lastCompareReported.current === compareNames.length) return
+    lastCompareReported.current = compareNames.length
+    trackEvent('compare_used', { lifter_count: compareNames.length })
+  }, [mode, compareNames.length])
+
   const era: LookupEra =
     urlState.era === 'pre2025' || urlState.era === '2025' || urlState.era === '2027'
       ? (urlState.era as LookupEra)
@@ -611,6 +627,10 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
         return entry
       })
       return postManualTrajectory({ name: '(manual entry)', sex, entries })
+    },
+    // Success only: a validation-rejected submit is not a use of the feature.
+    onSuccess: (_data, vars) => {
+      trackEvent('manual_entry_used', { meets_bucket: sizeBucket(vars.rows.length) })
     },
   })
 
@@ -705,7 +725,7 @@ export default function LifterLookup({ isActive }: { isActive: boolean }) {
               compare list. Hide it on the bare search landing + manual form. */}
           {((mode === 'search' && selectedName) ||
             (mode === 'compare' && compareNames.length > 0)) && (
-            <ShareButton ariaLabel="Copy shareable link to this lookup" />
+            <ShareButton surface="lifter_lookup" ariaLabel="Copy shareable link to this lookup" />
           )}
         </div>
       </div>

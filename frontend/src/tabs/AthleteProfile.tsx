@@ -59,7 +59,7 @@ export default function AthleteProfile({ name }: { name: string }) {
 
       <div className="flex items-center gap-3 flex-wrap">
         <h1 className="text-zinc-100 text-xl font-semibold">{name}</h1>
-        <ShareButton ariaLabel="Copy shareable link to this athlete" />
+        <ShareButton surface="athlete_profile" ariaLabel="Copy shareable link to this athlete" />
         <a
           href={`/?tab=projection&ap_lifter=${encodeURIComponent(name)}`}
           onClick={(e) => {

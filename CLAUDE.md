@@ -245,31 +245,37 @@ specifically, not the first meet of any kind.
 - **Backtest is offline-only.** `data/backtest_projection.py` walks forward over lifters with >= 15 SBD Raw meets, holds out last 3, projects via Engine C, and reports MAPE at 3/6/12/18 months vs log-linear and Gompertz baselines. NOT imported by any production module, NOT in CI. Artifact at `data/backtest_results.json` is committed for the About page. Ship gates: Engine C MAPE < 6% at 6mo, < 12% at 12mo; Engine C must not lose by > 2pp to alternatives at 12mo. Baseline (50-lifter Canada+IPF sample, commit `32918ad`) passes all gates.
 - **Render env var pinning enforced in CI.** Every `os.environ.get("*_URL")` call in `backend/app/` must have its key pinned in `render.yaml` under `envVars`. Enforced by `scripts/check_env_var_pinning.py`, run in the backend CI job before pytest. The pattern matters because env vars set only in the Render dashboard get silently dropped on a Blueprint re-provision, which surfaces as the corresponding feature regressing to its empty state. Rule landed 2026-04-26 after `QT_CURRENT_CSV_URL` (and `ATHLETE_PROJ_TABLES_URL` three days earlier) shipped through that exact failure mode. Same-day fix path when the check fires: (1) add `- key: <NAME>` plus `value: <url>` to render.yaml envVars, (2) verify in the Render dashboard the live value matches, (3) commit. To intentionally exclude a var (local-dev-only, etc.), add it to `ALLOWLIST` in the script with an inline reason comment.
 - **Scout endpoint is a fan-out wrapper, not a new model.** `backend/app/scout.py` `build_scout_report` resolves each roster name via `search_lifters()` (exact case-insensitive match, top-1), then projects each match via `shrinkage_projection()` directly (no HTTP self-loop). Per-lift PIs are summed in quadrature across S/B/D: `sqrt(sum((upper-lower)^2/4))`. Status tags derive from `n_meets + tenure_days` per the locked cutoffs (Rookie / Developing / Established / Veteran / Frozen / Unmatched); see `classify_status()` for the exact ladder. Class blocks sort ascending by projected #1-vs-#2 gap, stale lifters (>2 yr since last meet) excluded from the gap calc but still shown. Do NOT replace the fan-out with a separate aggregate SQL — the projection math relies on `_load_lifter_history` + bracket logic that has to run per-lifter. If projection performance becomes an issue, the right fix is caching at the projection layer, not at the scout layer.
+- **Analytics events go through `frontend/src/lib/analytics.ts`, never `track()` directly.** The `EventMap` type there is the whole event vocabulary, so adding a member is the only way to add an event and a typo is a compile error rather than a row that silently never appears in the dashboard. Two rules the file exists to enforce: (1) **no user-typed or identifying strings as property values** — no lifter names, no search queries, no roster contents; athlete-page popularity is already answerable from pageviews of the real `/athlete/*` paths. (2) **Bucket unbounded numbers** via `sizeBucket()` before sending; Vercel indexes per distinct property value, so a raw roster size of 1..200 burns 200 slots to answer what five buckets answer. Instrumentation lives at the CHOKEPOINTS, not the call sites: `ShareButton` takes a required `surface` prop, and `downloadCsv` / `exportCardToPng` / `exportReportPdf` each take a required `surface` argument. That is deliberate — a new share or download button cannot ship uninstrumented, because it will not compile without one. Mutation-driven events (`scout_report_generated`, `manual_entry_used`) fire from `onSuccess` so a failed or rate-limited attempt is not counted as adoption.
+- **Sitemap URL encoding must match `route.ts` byte for byte.** `data/generate_sitemap.py` emits `/athlete/{name}` and `/meet/{name}/{date}` URLs whose slug is the URL-encoded EXACT OpenIPF name, exactly as `athletePath()` / `meetPath()` build them. `encode_segment` uses `quote(value, safe="!*'()")` because that reproduces `encodeURIComponent` (Python's `quote` already leaves `-_.~` alone). **A mismatch fails silently and invisibly**: `vercel.json` rewrites every `/athlete/*` to index.html, so a wrongly encoded URL still returns 200 and still renders the shell, it just says "lifter not found". Neither the build nor a status-code smoke test catches that — only `backend/tests/test_generate_sitemap.py` does, and its expected strings were confirmed against the live site. Do not touch `encode_segment` without running them.
+- **The weekly sitemap refresh opens a PR, it does not push to main.** `main` requires three status checks, and a freshly pushed commit has none passing, so GitHub rejects a direct push from `github-actions[bot]` (not an admin, and admins are the only bypass). The refresh workflow therefore pushes a branch, opens a PR, and enables auto-merge. **The `qt_refresh.yml` history-snapshot step still uses a bare `git push` and has never actually run in production** (CPU revises standards every ~2 years, so no run has hit that path). It will fail the same way when it eventually fires. Fix it the same way when that happens.
 - **Bodyweight bucket x-axis is ordinal, not time.** `backend/app/progression.py` `_ORDINAL_AXES = {"Career quartile", "Bodyweight bucket"}` gates the projection short-circuit — trendline still computes but the forward-projection band is skipped because a lifter doesn't progress through bodyweight buckets in time order (they can move up or down classes). Bucket derivation is `(BodyweightKg // 10) * 10`, requires non-null `BodyweightKg` (filtered out at the pandas step). Backend SELECT now always includes `BodyweightKg`. Frontend dropdown order: time axes first, then Career quartile, then Bodyweight bucket. The per-lift function rejects both ordinal axes with an `_empty_lift_response` because deriving them per-lift would need a separate SQL — a future session can backfill if needed.
 
 ## Pre-push checklist
 
 - `cd frontend && npm run build` -- catches TypeScript strict errors.
 - `cd cpu-analytics && .venv/Scripts/python -m pytest backend/tests/ -v` --
-  389 backend tests, 1 skipped, ~80 s, covering rankings, meets, progression (incl.
+  406 backend tests, 1 skipped, ~140 s, covering rankings, meets, progression (incl.
   Bodyweight bucket + per-lift guard), lifters, projection, athlete
   projection (Engine C + D), QT (federal + provincial scrapers), manual
-  entry, scout (incl. manual-override recency), rate limiting,
-  security, weight class Hypothesis, and concurrency.
+  entry, scout (incl. manual-override recency), rate limiting, sitemap
+  URL encoding, security, weight class Hypothesis, and concurrency.
+  On this Windows box the suite can fail with ~139 temp-dir permission
+  errors; that is a local ACL lock, not a regression. Pass
+  `--basetemp=.pytest_tmp` to bypass it. CI is authoritative.
   Always use `python -m pytest`, NOT plain `pytest`, or the `backend.app`
   imports fail with `ModuleNotFoundError`.
 - `cd frontend && npm run test` -- 107 Vitest unit tests (ogMeta + route + percentile + useUrlState
   key collisions + MethodPill cross-nav picker + Banner tone classes +
   meet-tier resolver + AthleteCard + Scout roster/override helpers).
   Runs in jsdom, ~4 s.
-- `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Now
-  also runs in CI via the `e2e` job (Arc 7, commit `166c5ff`) with
-  `continue-on-error: true` until the suite is hardened. Requires
-  `npx playwright install chromium` on first local run.
+- `cd frontend && npm run test:e2e` -- 6 Playwright smoke tests. Runs in
+  CI against a real backend on synthetic fixtures, `continue-on-error`
+  removed. Requires `npx playwright install chromium` on first local run.
 - CI runs three parallel jobs on every push and PR via
   `.github/workflows/ci.yml`: frontend (tsc+build), backend (pytest),
-  e2e (Playwright). A local failure will also fail CI, so fix before
-  pushing rather than relying on the remote run.
+  e2e (Playwright). **All three are required checks on `main`** as of
+  2026-08-09. A local failure will also fail CI, so fix before pushing
+  rather than relying on the remote run.
 
 ## Scope
 

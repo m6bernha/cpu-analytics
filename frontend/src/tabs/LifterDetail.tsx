@@ -181,7 +181,7 @@ export default function LifterDetail({
   })
   const handleExportCard = async () => {
     const safeName = history.name.replace(/[^a-zA-Z0-9_-]+/g, '_')
-    await exportCardToPng(cardRef.current, `${safeName}-card.png`)
+    await exportCardToPng(cardRef.current, `${safeName}-card.png`, 'athlete_card')
   }
   const viewMode = viewModeProp ?? viewModeLocal
   const setViewMode = setViewModeProp ?? setViewModeLocal
@@ -347,7 +347,7 @@ export default function LifterDetail({
           percentileCurves={percentileQ.data}
         />
         <div className="mt-2 flex justify-center gap-2 max-w-sm mx-auto">
-          <ShareButton ariaLabel="Copy shareable link to this lifter" />
+          <ShareButton surface="lifter_detail" ariaLabel="Copy shareable link to this lifter" />
           <button
             type="button"
             onClick={handleExportCard}
@@ -665,6 +665,7 @@ export default function LifterDetail({
                   m.Best3DeadliftKg, m.TotalKg, m.Goodlift,
                   m.is_pr ? 'yes' : '',
                 ]),
+                'lifter_meet_history',
               )
             }
             className="px-2.5 py-1.5 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"

@@ -4,7 +4,7 @@
 // links are shareable. Tabs are kept mounted (display: none for inactive
 // ones) so local state survives switches.
 
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 
 import About from './tabs/About'
 import AthleteProjection from './tabs/AthleteProjection'
@@ -14,6 +14,7 @@ import LifterLookup from './tabs/LifterLookup'
 import Rankings from './tabs/Rankings'
 import Scout from './tabs/Scout'
 import { WelcomeHero } from './components/WelcomeHero'
+import { trackEvent } from './lib/analytics'
 import { ErrorBoundary } from './lib/ErrorBoundary'
 import { FreshnessBadge } from './lib/FreshnessBadge'
 import { LoadingSkeleton } from './lib/QueryStatus'
@@ -58,6 +59,22 @@ export default function App() {
   const onMeetPage = route.kind === 'meet'
   // Any non-shell route hides the tab stack and suppresses tab isActive.
   const onSubPage = onAthletePage || onMeetPage
+
+  // Report the visible tab. The ref makes this fire once per actual change:
+  // StrictMode double-invokes effects in dev, and any unrelated re-render
+  // would otherwise re-report the same tab.
+  const lastTabReported = useRef<string | null>(null)
+  useEffect(() => {
+    // A sub-page is a real path and reports itself as an automatic pageview.
+    // Clearing the ref means returning to the shell re-reports the tab.
+    if (onSubPage) {
+      lastTabReported.current = null
+      return
+    }
+    if (lastTabReported.current === tab) return
+    lastTabReported.current = tab
+    trackEvent('tab_viewed', { tab })
+  }, [tab, onSubPage])
 
   // Tab clicks always return to the app shell. From a sub-page that is a
   // real navigation; from the shell it is just a query-string change.

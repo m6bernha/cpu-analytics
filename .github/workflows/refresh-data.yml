@@ -8,6 +8,9 @@ name: Refresh OpenIPF data
 #   3. Runs preprocess.py to produce openipf.parquet and qt_standards.parquet
 #   4. Publishes both parquet files as a GitHub Release tagged "data-YYYY-MM-DD"
 #      AND updates the rolling "data-latest" release to point at the newest files
+#   5. Regenerates frontend/public/sitemap*.xml from the fresh parquet and,
+#      when they changed, opens an auto-merging PR so Vercel redeploys with a
+#      sitemap covering every athlete and meet page.
 #
 # The backend reads OPENIPF_PARQUET_URL and QT_PARQUET_URL env vars, both
 # pointing at the "data-latest" release assets, so a fresh container always
@@ -21,6 +24,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write   # sitemap refresh opens + auto-merges a PR
 
 jobs:
   refresh:
@@ -28,6 +32,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # Needed by the sitemap commit step below.
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -102,3 +109,38 @@ jobs:
             data/processed/openipf.parquet
             data/processed/qt_standards.parquet
             data/processed/athlete_projection_tables.json
+
+      # Sitemaps ship as static files on Vercel rather than from a backend
+      # endpoint: Render's free tier can take ~50 s to wake and a crawler
+      # gives up long before that. Runs after the release upload so a failed
+      # publish does not leave a sitemap advertising data that never shipped.
+      - name: Regenerate sitemaps
+        run: python data/generate_sitemap.py
+
+      # Opens a PR rather than pushing to main directly. main requires the
+      # "Frontend (tsc + build)" and "Backend (pytest)" checks, and a direct
+      # push of a brand-new commit has no passing checks yet, so GitHub
+      # rejects it -- github-actions[bot] is not an admin and admins are the
+      # only bypass configured. Auto-merge lands the PR the moment those two
+      # checks go green, so this stays hands-off despite the extra hop.
+      - name: Open sitemap refresh PR if changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- frontend/public; then
+            echo "Sitemaps unchanged; nothing to do."
+            exit 0
+          fi
+          DATE="$(date -u +%Y-%m-%d)"
+          BRANCH="chore/sitemap-$DATE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add frontend/public/sitemap*.xml
+          git commit -m "chore(seo): refresh sitemaps for $DATE data"
+          git push -f -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore(seo): refresh sitemaps for $DATE data" \
+            --body "Automated by the weekly OpenIPF refresh. Regenerates frontend/public/sitemap*.xml so newly imported lifters and meets are crawlable. Auto-merges once CI is green." \
+            || echo "PR already open for $BRANCH; reusing it."
+          gh pr merge "$BRANCH" --auto --squash --delete-branch
