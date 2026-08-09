@@ -354,6 +354,14 @@ export default function AthleteProjection({ isActive }: { isActive: boolean }) {
                 outer limit of plausibility, not a forecast.
               </Banner>
             )}
+            {projectionQuery.data.meta?.damping_tau_days != null && horizon >= 12 && (
+              <Banner tone="info">
+                Projected gain flattens with horizon on purpose. Extrapolating
+                the trend in a straight line ran 5 percent high at 12 months
+                and 12 percent high at 36 against real held-out meets, so
+                growth is damped toward a ceiling.
+              </Banner>
+            )}
             {projectionQuery.data.horizon_capped && !projectionQuery.data.meta?.small_n_warning && (
               <Banner tone="info">
                 Horizon capped server-side to {projectionQuery.data.horizon_months} months.

@@ -7,12 +7,11 @@
 
 import backtestResults from '../data/backtest_results.json'
 
-type EngineKey =
-  | 'engine_c'
-  | 'log_linear'
-  | 'gompertz'
-  | 'flat_last'
-  | 'flat_level'
+// Deliberately a plain string rather than a union. The harness derives the
+// engine list from the data, so a sweep artifact carries `damped_tau*` keys
+// that no union could enumerate, and a union here would be a type that
+// lies about what the JSON can contain.
+type EngineKey = string
 
 interface HorizonCell {
   mape: number | null
@@ -53,6 +52,7 @@ interface BacktestArtifact {
     holdout_span_months: number
     horizons_months: number[]
     bootstrap_resamples: number
+    damping_tau_days?: number | null
   }
   summary: {
     engines: EngineSummary[]
@@ -70,8 +70,9 @@ interface BacktestArtifact {
   }
 }
 
-const ENGINE_LABEL: Record<EngineKey, string> = {
+const ENGINE_LABEL: Record<string, string> = {
   engine_c: 'Engine C (GLP-bracket shrinkage)',
+  engine_c_undamped: 'Engine C before damping',
   log_linear: 'Log-linear in time',
   gompertz: 'Gompertz',
   flat_last: 'No change from last meet',
@@ -79,15 +80,29 @@ const ENGINE_LABEL: Record<EngineKey, string> = {
 }
 
 // Short forms for table headers, where the full label does not fit.
-const ENGINE_SHORT: Record<EngineKey, string> = {
+const ENGINE_SHORT: Record<string, string> = {
   engine_c: 'Engine C',
+  engine_c_undamped: 'Engine C (undamped)',
   log_linear: 'Log-linear',
   gompertz: 'Gompertz',
   flat_last: 'No change',
   flat_level: 'Level only',
 }
 
+// A sweep run adds `damped_tau*` engines that have no fixed label. Falling
+// back to the raw key keeps the table readable rather than blank, and a
+// sweep artifact is never what ships.
+function engineLabel(key: string): string {
+  return ENGINE_LABEL[key] ?? key
+}
+
+function engineShort(key: string): string {
+  return ENGINE_SHORT[key] ?? key
+}
+
 export default function About({ isActive: _isActive }: { isActive: boolean }) {
+  const artifact = backtestResults as unknown as BacktestArtifact
+  const damping = artifact.inputs.damping_tau_days ?? null
   return (
     <article className="max-w-3xl text-zinc-300 text-sm leading-relaxed">
       <header className="mb-8">
@@ -187,6 +202,54 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
           + (1 &minus; w<sub>p</sub>)² · (sigma<sub>cohort-slope</sub> · k<sub>KM</sub> · t<sub>offset</sub>)²
           ). Widens quadratically. The cohort term is inflated by a
           Kaplan-Meier dropout multiplier.
+        </p>
+      </Section>
+
+      <Section title="Saturating slope: why projections flatten">
+        <p>
+          Projected gain is not the slope multiplied by elapsed time. It is
+          slope · tau · (1 &minus; exp(&minus;t / tau)), so the gain
+          approaches a ceiling of slope · tau instead of growing without
+          limit. The instantaneous rate at t = 0 is still exactly the fitted
+          slope, so the first weeks are unchanged. The further out the
+          horizon, the more the line bends toward flat.
+          {damping != null && (
+            <>
+              {' '}The constant in production is tau = {damping} days.
+            </>
+          )}
+        </p>
+        <p>
+          This was added because the straight-line version was measurably,
+          one-directionally wrong. Backtested against real held-out meets it
+          projected {' '}
+          <span className="text-zinc-200">5.09 percent high</span> at 12
+          months and{' '}
+          <span className="text-zinc-200">12.06 percent high</span> at 36,
+          against a 36-month mean absolute error of 12.72 percent. In other
+          words nearly the whole error was overshoot rather than noise. The
+          table below carries the before and after.
+        </p>
+        <p>
+          The overshoot was the slope, not the starting level. Holding
+          Engine C&apos;s own level flat with no growth at all was the most
+          accurate predictor tested, at every horizon. That is also why the
+          projection can look pessimistic: the starting level is already the
+          sum of your best squat, bench and deadlift from your last three
+          meets, which is frequently a total you have not hit in any single
+          meet. Growth on top of an optimistic starting point is a harder
+          thing to earn than growth on top of your last result.
+        </p>
+        <p className="text-zinc-400">
+          Calibration limitation, stated plainly: the constant is fitted on
+          lifters with at least 15 career meets whose training data ends 36
+          months before their final meet. That pool contains no true
+          novices. A lifter in their first year is on the steepest part of
+          the curve and is the case this calibration speaks to least. The
+          gate table includes a guard for the shortest-history lifters in
+          the pool, but it cannot stand in for data that is not there.
+          Full reasoning in{' '}
+          <code className="text-zinc-400">docs/adr/0004</code>.
         </p>
       </Section>
 
@@ -304,7 +367,7 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
           for what these numbers led to.
         </p>
 
-        <BacktestTable artifact={backtestResults as unknown as BacktestArtifact} />
+        <BacktestTable artifact={artifact} />
       </Section>
 
       <Section title="Kaplan-Meier dropout correction">
@@ -536,7 +599,7 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                       e.engine === 'engine_c' ? 'text-zinc-100 font-medium' : ''
                     }
                   >
-                    {ENGINE_LABEL[e.engine]}
+                    {engineLabel(e.engine)}
                   </span>
                 </td>
                 {horizons.map((h) => {
@@ -581,7 +644,7 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                       e.engine === 'engine_c' ? 'text-zinc-100 font-medium' : ''
                     }
                   >
-                    {ENGINE_LABEL[e.engine]}
+                    {engineLabel(e.engine)}
                   </span>
                 </td>
                 {horizons.map((h) => {
@@ -729,8 +792,8 @@ function PairedTable({
     <div className="overflow-x-auto">
       <table className="text-xs w-full border-collapse">
         <caption className="text-left text-zinc-400 text-xs pb-1.5">
-          {ENGINE_LABEL[h2h.challenger]} against{' '}
-          {ENGINE_LABEL[h2h.baseline]}, paired. Negative means the challenger
+          {engineLabel(h2h.challenger)} against{' '}
+          {engineLabel(h2h.baseline)}, paired. Negative means the challenger
           was closer.
         </caption>
         <thead>
@@ -738,10 +801,10 @@ function PairedTable({
             <th className="text-left font-medium py-1.5 pr-3">Horizon</th>
             <th className="text-right font-medium py-1.5 px-2">Paired n</th>
             <th className="text-right font-medium py-1.5 px-2">
-              {ENGINE_SHORT[h2h.baseline]}
+              {engineShort(h2h.baseline)}
             </th>
             <th className="text-right font-medium py-1.5 px-2">
-              {ENGINE_SHORT[h2h.challenger]}
+              {engineShort(h2h.challenger)}
             </th>
             <th className="text-right font-medium py-1.5 px-2">Difference</th>
             <th className="text-right font-medium py-1.5 px-2">95% CI</th>

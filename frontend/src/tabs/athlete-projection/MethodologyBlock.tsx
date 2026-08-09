@@ -14,10 +14,23 @@ function MethodologyBlock() {
         </p>
         <p>
           <span className="text-zinc-400 font-medium">Engine D (Advanced):</span>{' '}
-          Mixed-effects model with random intercept + slope per lifter, fixed
-          effects for age division and GLP bracket. Advanced is currently a
-          placeholder that delegates to Simple; MixedLM wiring ships in a
-          follow-up release.
+          Mixed-effects model with a random intercept per lifter and a fixed
+          effect for years since first meet, fitted per age division and GLP
+          bracket cell. Cells that fail to converge, or that fall below 20
+          lifters and 60 meets, fall back to Simple for that lift.
+        </p>
+        <p>
+          <span className="text-zinc-400 font-medium">
+            Why the line flattens:
+          </span>{' '}
+          Two things hold it down, and both are deliberate. The starting
+          point is your best squat, bench and deadlift from your last three
+          meets, added together, which is often a total you have not hit in
+          any single meet. Growth on top of that is then damped, because
+          projecting a straight line ran 5 percent high at 12 months and 12
+          percent high at 36 when it was measured against real held-out
+          meets. Projected gain now approaches a ceiling instead of growing
+          forever.
         </p>
         <p>
           <span className="text-zinc-400 font-medium">Prediction interval:</span>{' '}

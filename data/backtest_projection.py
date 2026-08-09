@@ -70,6 +70,11 @@ from backend.app.athlete_projection_tables import (  # noqa: E402
     LIFT_COLS,
     GlpCohortCell,
 )
+from backend.app.constants import SLOPE_DAMPING_TAU_DAYS  # noqa: E402
+
+
+def damped_key(tau: float) -> str:
+    return f"damped_tau{int(round(tau))}"
 
 logger = logging.getLogger("backtest")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -105,7 +110,14 @@ MIN_MEETS_FOR_BACKTEST = 15
 # NOT clamp the horizon down to 6 months.
 MIN_TRAIN_MEETS = 5
 
-ENGINE_KEYS = ("engine_c", "log_linear", "gompertz", "flat_last", "flat_level")
+ENGINE_KEYS = (
+    "engine_c",
+    "engine_c_undamped",
+    "log_linear",
+    "gompertz",
+    "flat_last",
+    "flat_level",
+)
 
 BOOTSTRAP_RESAMPLES = 2000
 BOOTSTRAP_SEED = 20260809
@@ -282,6 +294,8 @@ def engine_c_predict(
     name: str,
     elapsed_months: float,
     cohort_lookup,
+    damping_tau_days: float | None = None,
+    fit_cache: dict | None = None,
 ) -> float | None:
     """Project a total via the production Engine C code path.
 
@@ -302,6 +316,8 @@ def engine_c_predict(
         cohort_lookup=cohort_lookup,
         km_lookup=lambda _division: None,
         clamp_horizon=False,
+        damping_tau_days=damping_tau_days,
+        fit_cache=fit_cache,
     )
     if result is None or not result.total_projected_points:
         return None
@@ -557,6 +573,7 @@ def collect_observations(
     df: pd.DataFrame,
     cohort_lookup,
     max_lifters: int | None = None,
+    sweep_taus: list[float] | None = None,
 ) -> tuple[list[Observation], dict[str, int]]:
     observations: list[Observation] = []
     counters = {"eligible": 0, "split_rejected": 0, "no_bucket": 0, "scored": 0}
@@ -576,14 +593,40 @@ def collect_observations(
             counters["no_bucket"] += 1
             continue
 
+        # One Huber fit per lift for this lifter, reused across every
+        # horizon bucket and every candidate damping constant. Damping
+        # changes only how the fitted slope is spent over time, never the
+        # fit, so without this a five-value sweep would refit the same
+        # data thirty times per lifter.
+        fit_cache: dict = {}
+
         for horizon, elapsed_months, actual in scoring:
             obs = Observation(
                 name=name, horizon=horizon,
                 elapsed_months=elapsed_months, actual_total=actual,
             )
-            pred_c = engine_c_predict(train, name, elapsed_months, cohort_lookup)
+            pred_c = engine_c_predict(
+                train, name, elapsed_months, cohort_lookup,
+                damping_tau_days=SLOPE_DAMPING_TAU_DAYS, fit_cache=fit_cache,
+            )
             if pred_c is not None:
                 obs.predictions["engine_c"] = pred_c
+            # The undamped engine is kept permanently as the control, so
+            # the artifact always shows what the damping bought rather
+            # than only the post-change numbers.
+            pred_undamped = engine_c_predict(
+                train, name, elapsed_months, cohort_lookup,
+                damping_tau_days=None, fit_cache=fit_cache,
+            )
+            if pred_undamped is not None:
+                obs.predictions["engine_c_undamped"] = pred_undamped
+            for tau in sweep_taus or []:
+                pred_tau = engine_c_predict(
+                    train, name, elapsed_months, cohort_lookup,
+                    damping_tau_days=tau, fit_cache=fit_cache,
+                )
+                if pred_tau is not None:
+                    obs.predictions[damped_key(tau)] = pred_tau
             pred_ll = log_linear_predict(train, elapsed_months)
             if pred_ll is not None:
                 obs.predictions["log_linear"] = pred_ll
@@ -622,6 +665,23 @@ def load_observations(path: Path) -> list[Observation]:
     return out
 
 
+def engines_present(observations: list[Observation]) -> list[str]:
+    """Engine keys to summarise, derived from the data rather than declared.
+
+    A sweep adds `damped_tau*` keys that are not in ENGINE_KEYS, and a
+    rebuild via --from-observations has no idea which sweep produced the
+    dump it is reading. Taking the union keeps both paths honest, with the
+    declared engines first so the table reads in a fixed order.
+    """
+    seen = {k for obs in observations for k in obs.predictions}
+    declared = [k for k in ENGINE_KEYS if k in seen]
+    extra = sorted(
+        (k for k in seen if k not in ENGINE_KEYS),
+        key=lambda k: (len(k), k),
+    )
+    return declared + extra
+
+
 def build_artifact(
     observations: list[Observation],
     input_path: Path,
@@ -636,9 +696,15 @@ def build_artifact(
             "holdout_span_months": HOLDOUT_SPAN_MONTHS,
             "horizons_months": list(HORIZONS_MONTHS),
             "bootstrap_resamples": BOOTSTRAP_RESAMPLES,
+            # Recorded so the About page can state the shipped constant
+            # without hardcoding it in two places.
+            "damping_tau_days": SLOPE_DAMPING_TAU_DAYS,
         },
         "summary": {
-            "engines": [summarize_engine(observations, e) for e in ENGINE_KEYS],
+            "engines": [
+                summarize_engine(observations, e)
+                for e in engines_present(observations)
+            ],
             "scored_lifters": len({o.name for o in observations}),
             "observations": len(observations),
             "pool_lifters": pool_lifters,
@@ -697,6 +763,7 @@ def run_backtest(
     input_path: Path,
     output_path: Path,
     max_lifters: int | None = None,
+    sweep_taus: list[float] | None = None,
 ) -> None:
     logger.info("Loading parquet: %s", input_path)
     conn = load_parquet_into_duckdb(input_path)
@@ -731,7 +798,9 @@ def run_backtest(
     cohort_lookup = make_cohort_lookup(cells)
 
     logger.info("Scoring lifters")
-    observations, counters = collect_observations(df, cohort_lookup, max_lifters)
+    observations, counters = collect_observations(
+        df, cohort_lookup, max_lifters, sweep_taus,
+    )
     logger.info(
         "Observations: %d from %d lifters (%d rejected at split, %d with no "
         "held-out meet in any horizon bucket)",
@@ -850,6 +919,19 @@ def main() -> None:
         default=0,
         help="Pool size to record when rebuilding with --from-observations.",
     )
+    p.add_argument(
+        "--sweep-taus",
+        type=float,
+        nargs="*",
+        default=None,
+        metavar="DAYS",
+        help=(
+            "Candidate slope-damping time constants to evaluate alongside "
+            "the configured one, e.g. --sweep-taus 30 45 60 90 120. Each "
+            "appears as its own engine. Cheap, because damping reuses the "
+            "cached Huber fit rather than refitting."
+        ),
+    )
     args = p.parse_args()
 
     if args.from_observations is not None:
@@ -864,7 +946,10 @@ def main() -> None:
     if not args.input.exists():
         logger.error("Input parquet not found: %s", args.input)
         sys.exit(1)
-    run_backtest(args.input, args.output, max_lifters=args.max_lifters)
+    run_backtest(
+        args.input, args.output,
+        max_lifters=args.max_lifters, sweep_taus=args.sweep_taus,
+    )
 
 
 if __name__ == "__main__":

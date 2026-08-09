@@ -18,6 +18,7 @@ the public surface of all three.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -38,6 +39,7 @@ from .constants import (
     HORIZON_MONTHS_WARN,
     OUTLIER_SIGMA,
     SHRINKAGE_K,
+    SLOPE_DAMPING_TAU_DAYS,
     SMALL_N_THRESHOLD,
     Z_95,
 )
@@ -60,6 +62,10 @@ from .athlete_projection_tables import (
 # backed by cells fit on training rows only.
 CohortLookup = Callable[[str, str, str], "GlpCohortCell | None"]
 KmLookup = Callable[[str], "KMTable | None"]
+
+# `None` is a meaningful value for damping_tau_days (it means "no damping"),
+# so it cannot double as "caller did not specify". Hence a sentinel.
+_UNSET_TAU: Any = object()
 
 
 # =============================================================================
@@ -144,6 +150,8 @@ def project_from_history(
     cohort_lookup: CohortLookup | None = None,
     km_lookup: KmLookup | None = None,
     clamp_horizon: bool = True,
+    damping_tau_days: float | None = _UNSET_TAU,
+    fit_cache: dict[str, Any] | None = None,
 ) -> AthleteProjectionResult | None:
     """The Engine C projection itself, on an already-loaded history frame.
 
@@ -162,12 +170,26 @@ def project_from_history(
     `clamp_horizon=False` disables the production 18-month cap and the
     small-n 6-month clamp. Only the backtest does this, to read horizons the
     UI deliberately refuses to serve.
+
+    `damping_tau_days` defaults to the configured `SLOPE_DAMPING_TAU_DAYS`.
+    Pass an explicit value (including None, for no damping) to override,
+    which is how the backtest sweeps candidate constants.
     """
     if lifter_df is None or lifter_df.empty:
         return None
 
+    if damping_tau_days is _UNSET_TAU:
+        damping_tau_days = SLOPE_DAMPING_TAU_DAYS
+
     get_cell = cohort_lookup if cohort_lookup is not None else get_cohort_cell
     get_km = km_lookup if km_lookup is not None else get_km_table
+
+    # One Huber fit per lift, shared across both bracket passes. A caller
+    # evaluating the same lifter repeatedly (the backtest, across horizon
+    # buckets and candidate damping constants) can pass its own dict to
+    # share the fit across all of those calls too.
+    if fit_cache is None:
+        fit_cache = {}
 
     age_division = _assign_division(lifter_df)
     if age_division is None:
@@ -195,6 +217,8 @@ def project_from_history(
             horizon_months=effective_horizon,
             n_points=n_points,
             km_multiplier=km_multiplier,
+            damping_tau_days=damping_tau_days,
+            fit_cache=fit_cache,
         )
 
     # Determine bracket per horizon point from pass-1 totals.
@@ -219,6 +243,8 @@ def project_from_history(
                 n_points=n_points,
                 km_multiplier=km_multiplier,
                 cohort_cells_per_point=cells_per_point,
+                damping_tau_days=damping_tau_days,
+                fit_cache=fit_cache,
             )
 
     outlier_lifts = [
@@ -268,6 +294,7 @@ def project_from_history(
             "long_horizon_warning": horizon_months > HORIZON_MONTHS_WARN,
             "brackets_per_point": list(brackets_per_point),
             "bracket_transitions": bracket_transitions,
+            "damping_tau_days": damping_tau_days,
         },
     )
 
@@ -428,6 +455,24 @@ def compute_current_level(values: list[float]) -> float | None:
     return float(valid[-1])
 
 
+def _effective_days(t: float, tau: float | None) -> float:
+    """Time multiplier the slope actually earns by elapsed day `t`.
+
+    Undamped this is just `t`, so gain = slope * t. Damped it is
+    `tau * (1 - exp(-t / tau))`, so gain approaches an asymptote of
+    `slope * tau`. The derivative at t=0 is 1 either way, which is what
+    keeps near-term projections unchanged in character.
+
+    Used for the projected level AND for the cohort term of the prediction
+    interval, because d(gain)/d(slope) is exactly this quantity: once the
+    mean saturates, a band that keeps widening linearly would imply the
+    cohort slope can still deliver gains the mean says it cannot.
+    """
+    if tau is None or tau <= 0:
+        return t
+    return tau * (1.0 - math.exp(-t / tau))
+
+
 def _project_single_lift(
     lifter_df: pd.DataFrame,
     lift: str,
@@ -436,6 +481,8 @@ def _project_single_lift(
     n_points: int,
     km_multiplier: float,
     cohort_cells_per_point: list[GlpCohortCell | None] | None = None,
+    damping_tau_days: float | None = None,
+    fit_cache: dict[str, Any] | None = None,
 ) -> LiftProjection:
     """Project one lift across n_points using a cohort cell for the cohort slope.
 
@@ -490,7 +537,17 @@ def _project_single_lift(
     t_mean_days: float | None = None
 
     if n_meets >= 2 and len(np.unique(days)) >= 2:
-        fit = _robust_slope(days, np.asarray(values))
+        # The Huber fit depends only on (lifter, lift), but the two-pass
+        # bracket logic calls this function twice with identical inputs,
+        # and the offline backtest calls it once per horizon bucket per
+        # candidate damping constant. Caching collapses all of that to one
+        # fit per lift. Inert when no cache is passed.
+        if fit_cache is not None and lift in fit_cache:
+            fit = fit_cache[lift]
+        else:
+            fit = _robust_slope(days, np.asarray(values))
+            if fit_cache is not None:
+                fit_cache[lift] = fit
         if fit is not None:
             slope_personal, _intercept, sigma_personal = fit
         t_mean_days = float(np.mean(days))
@@ -538,7 +595,6 @@ def _project_single_lift(
         running_day = last_meet_day
         for i in range(1, n_points + 1):
             next_day = last_meet_day + step_days * i
-            segment_days = next_day - running_day
 
             # Pick segment cohort cell.
             if cohort_cells_per_point is not None and (i - 1) < len(cohort_cells_per_point):
@@ -560,10 +616,19 @@ def _project_single_lift(
             else:
                 seg_slope = 0.0
 
-            running_level = running_level + seg_slope * segment_days
+            # Damped gain for this segment. Written as the DIFFERENCE of
+            # effective times rather than a closed form over the whole
+            # horizon, so that a bracket transition mid-horizon (which
+            # changes seg_slope) still composes correctly. With a constant
+            # slope the segments telescope back to
+            # slope * tau * (1 - exp(-t / tau)), and with tau=None they
+            # telescope to slope * t, exactly as before.
+            eff_prev = _effective_days(running_day - last_meet_day, damping_tau_days)
+            eff_next = _effective_days(next_day - last_meet_day, damping_tau_days)
+            running_level = running_level + seg_slope * (eff_next - eff_prev)
 
             # PI variance at this horizon point.
-            t_offset = next_day - last_meet_day
+            t_offset = _effective_days(next_day - last_meet_day, damping_tau_days)
             if s_xx is not None and s_xx > 0 and sigma_personal is not None and n_meets >= 2:
                 var_personal_at_t = sigma_personal ** 2 * (
                     1.0 + 1.0 / n_meets

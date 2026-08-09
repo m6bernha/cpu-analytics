@@ -9,6 +9,83 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Saturating slope in Engine C SHIPPED (upgrade arc, session 5)
+
+Implements the "go" half of ADR 0004. Projected gain is now
+`slope * tau * (1 - exp(-t / tau))` instead of `slope * t`, so it
+approaches a ceiling of `slope * tau` while the instantaneous rate at
+t=0 stays exactly the fitted slope. **tau = 60 days.** Full reasoning in
+[ADR 0005](docs/adr/0005-saturating-slope.md).
+
+**Every ADR 0004 gate now passes.** Signed bias at 12 months goes from
++5.09 pp to +1.55, at 18 months from +6.13 to +0.55, and for the
+short-history guard from +4.10 to -0.76. MAPE improves at every horizon
+as a by-product, most sharply at the long end (36 months: 12.72% to
+6.86%).
+
+**Choosing tau was a trade, not an optimum.** 30 / 45 / 60 / 90 all pass
+all six gates with MAPEs within 0.04 pp of each other; 120 and 180 fail
+the 12-month bias gate. A shorter constant suits the numerous
+long-history lifters, a longer one suits the climbing and short-history
+groups that a short constant over-damps. 60 is the minimax choice on
+worst-stratum bias (2.31 pp, against 2.64 at tau=30 and 2.60 at tau=90).
+**Do not raise it past 90 without re-running the sweep.**
+
+**Two measurements decided the shape, both from the committed
+observations dump with no re-score:**
+
+1. Engine C's projected gain barely materialised. Over observations where
+   it projected at least 5 kg, the mean projected gain at 12 months was
+   26.3 kg against 0.9 kg realised, and at 36 months 73.3 kg against 7.1
+   kg. Median realised-to-projected ratio ran 0.00 to 0.20 at every
+   horizon.
+2. Zeroing the slope is NOT equally safe per stratum, which revises ADR
+   0004's framing. Bias of "Engine C's level held flat" at 12 months is
+   -0.74% for strongly climbing lifters and -1.68% for short-history
+   ones, but **+4.75% for flat-or-declining ones**. For lifters who have
+   already plateaued the LEVEL is what runs high (Engine C +5.27% vs
+   level-only +4.75%), so damping the slope cannot fix that group. That
+   is a separate defect in the max-of-last-3 level convention and is
+   deliberately NOT addressed here. See "Level convention" below.
+
+**Implementation notes worth knowing before touching it:**
+
+- The damping is applied per segment as a difference of effective times,
+  not as one closed form over the horizon, because Engine C re-projects
+  with a different cohort slope per segment when a lifter crosses a GLP
+  bracket mid-horizon. With a constant slope the segments telescope back
+  to the closed form, locked by a test.
+- The same effective time replaces elapsed time in the PI's cohort term,
+  since `d(gain)/d(slope)` is exactly that quantity. The personal term
+  still uses raw elapsed time and is therefore deliberately conservative.
+- `SLOPE_DAMPING_TAU_DAYS = None` restores the old linear behaviour
+  exactly, which is why `project_from_history` needs a sentinel to tell
+  "no damping" apart from "caller did not specify".
+- Engine D feeds a slope into the same machinery, so it inherits the fix.
+
+**Also landed:** a per-lifter Huber fit cache (the two-pass bracket logic
+was refitting identical data on every bracket-crossing projection, and the
+backtest refit once per horizon bucket per candidate constant); backtest
+support for sweeping candidate constants as separate engines in one
+scoring pass; `engine_c_undamped` kept permanently in the artifact as the
+control, so the About page always shows what the damping bought rather
+than only the after numbers; and a fix to the projection tab's methodology
+block, which still described Engine D as "a placeholder that delegates to
+Simple" nearly four months after it went live at 100% convergence.
+
+### Level convention -- OPEN, not scheduled
+
+The flat-or-declining stratum carries +4.75% bias at 12 months on the
+LEVEL alone, before any slope. The level is the sum of each lift's
+max-of-last-3, an envelope a lifter need never have hit in one meet.
+Damping does not touch it. Fixing it means revisiting the level
+convention, which is a larger change with its own user-visible
+consequences (every projection's starting point moves) and deserves its
+own measurement rather than being bundled in. The backtest already has
+the control needed to evaluate it: `flat_level` versus `flat_last`.
+
+---
+
 ## 2026-08-09 -- Long-horizon backtest + cascade decision SHIPPED (upgrade arc, session 4)
 
 Session 4 was scoped as "extend the backtest to 24/36 months, then draft the
