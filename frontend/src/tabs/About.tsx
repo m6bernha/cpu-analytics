@@ -600,8 +600,16 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
         </table>
       </div>
 
+      {/* Key on challenger AND baseline. Gompertz appears twice, once
+          against Engine C and once against the no-change control, so
+          keying on the challenger alone collides and React may drop or
+          duplicate a table. */}
       {artifact.head_to_head.map((h2h) => (
-        <PairedTable key={h2h.challenger} h2h={h2h} horizons={horizons} />
+        <PairedTable
+          key={`${h2h.challenger}-vs-${h2h.baseline}`}
+          h2h={h2h}
+          horizons={horizons}
+        />
       ))}
 
       <div className="text-zinc-400 text-xs space-y-1">

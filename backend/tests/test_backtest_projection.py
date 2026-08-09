@@ -33,13 +33,16 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from data.backtest_projection import (  # noqa: E402
+    ENGINE_KEYS,
     HOLDOUT_SPAN_MONTHS,
     HORIZON_BUCKETS,
     HORIZONS_MONTHS,
     MIN_TRAIN_MEETS,
+    SHIP_GATES,
     Observation,
     _cluster_bootstrap_ci,
     bucket_for,
+    build_artifact,
     head_to_head,
     select_scoring_meets,
     split_train_holdout,
@@ -285,3 +288,39 @@ def test_clustering_widens_the_interval_versus_treating_rows_as_independent():
 
 def test_bootstrap_declines_to_guess_from_a_single_lifter():
     assert _cluster_bootstrap_ci({"only": [1.0, 2.0]}, resamples=100, seed=3) == (None, None)
+
+
+# ---------------------------------------------------------------------------
+# Artifact shape
+# ---------------------------------------------------------------------------
+
+
+def test_head_to_head_pairs_are_unique():
+    """A challenger may appear more than once, but never against the same
+    baseline twice.
+
+    The About page renders one table per head-to-head entry. When the
+    Gompertz-vs-no-change comparison was added, Gompertz appeared twice and
+    the React list was still keyed on the challenger alone, which is a
+    duplicate key: React may drop or duplicate a table, and the resulting
+    console error failed all seven Playwright smoke tests, because the
+    About tab stays mounted behind every other tab. The invariant that
+    makes the key safe belongs here, at the source of the list.
+    """
+    observations = [_obs("a", 12, 100.0, engine_c=101.0, gompertz=102.0, flat_last=103.0)]
+    artifact = build_artifact(observations, Path("dummy.parquet"), pool_lifters=1)
+    pairs = [(h["challenger"], h["baseline"]) for h in artifact["head_to_head"]]
+    assert len(pairs) == len(set(pairs)), f"duplicate head-to-head pair in {pairs}"
+
+
+def test_every_engine_key_is_summarized():
+    observations = [_obs("a", 12, 100.0, engine_c=101.0)]
+    artifact = build_artifact(observations, Path("dummy.parquet"), pool_lifters=1)
+    assert [e["engine"] for e in artifact["summary"]["engines"]] == list(ENGINE_KEYS)
+
+
+def test_ship_gates_cover_bias_not_just_magnitude():
+    """The gate set superseded on 2026-08-09 was all MAPE thresholds, and
+    every one of them passed on an engine running 5-6% high at both served
+    horizons. At least one gate must constrain the SIGN of the error."""
+    assert any("bias" in key for key in SHIP_GATES)
