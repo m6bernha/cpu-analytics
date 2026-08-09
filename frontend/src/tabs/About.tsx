@@ -7,30 +7,66 @@
 
 import backtestResults from '../data/backtest_results.json'
 
-type EngineKey = 'engine_c' | 'log_linear' | 'gompertz'
+type EngineKey =
+  | 'engine_c'
+  | 'log_linear'
+  | 'gompertz'
+  | 'flat_last'
+  | 'flat_level'
+
+interface HorizonCell {
+  mape: number | null
+  median_ape: number | null
+  bias: number | null
+  n: number
+  coverage: number | null
+}
 
 interface EngineSummary {
   engine: EngineKey
-  lifter_count: number
-  mape_by_horizon: Record<string, number>
-  sample_sizes_by_horizon: Record<string, number>
+  by_horizon: Record<string, HorizonCell>
+}
+
+interface HeadToHeadCell {
+  n_paired: number
+  n_lifters: number
+  mape_baseline: number | null
+  mape_challenger: number | null
+  mean_diff: number | null
+  ci_low: number | null
+  ci_high: number | null
+  challenger_win_rate: number | null
+}
+
+interface HeadToHead {
+  challenger: EngineKey
+  baseline: EngineKey
+  by_horizon: Record<string, HeadToHeadCell>
 }
 
 interface BacktestArtifact {
+  schema_version: number
   inputs: {
     parquet: string
-    min_meets: number
-    holdout: number
+    min_career_meets: number
+    min_train_meets: number
+    holdout_span_months: number
     horizons_months: number[]
+    bootstrap_resamples: number
   }
   summary: {
     engines: EngineSummary[]
-    processed_lifters: number
+    scored_lifters: number
+    observations: number
+    pool_lifters: number
   }
+  head_to_head: HeadToHead[]
   ship_gate: {
+    engine_c_bias_12mo_limit_pp: number
+    engine_c_bias_18mo_limit_pp: number
     engine_c_mape_6mo_limit: number
     engine_c_mape_12mo_limit: number
-    log_linear_margin_12mo_limit_pp: number
+    challenger_margin_12mo_limit_pp: number
   }
 }
 
@@ -38,6 +74,17 @@ const ENGINE_LABEL: Record<EngineKey, string> = {
   engine_c: 'Engine C (GLP-bracket shrinkage)',
   log_linear: 'Log-linear in time',
   gompertz: 'Gompertz',
+  flat_last: 'No change from last meet',
+  flat_level: "No change from Engine C's starting level",
+}
+
+// Short forms for table headers, where the full label does not fit.
+const ENGINE_SHORT: Record<EngineKey, string> = {
+  engine_c: 'Engine C',
+  log_linear: 'Log-linear',
+  gompertz: 'Gompertz',
+  flat_last: 'No change',
+  flat_level: 'Level only',
 }
 
 export default function About({ isActive: _isActive }: { isActive: boolean }) {
@@ -57,11 +104,11 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
           cpu-analytics is a public web app for Canadian raw powerlifters
           competing in CPU- and IPF-sanctioned meets. It aggregates every
           Canadian IPF-affiliated meet in the OpenIPF bulk export and
-          surfaces five working views: cohort progression over time, a
-          per-lift Athlete Projection (BETA), an individual lifter lookup,
-          live qualifying-total coverage for CPU and all ten provinces,
-          and this methodology page. A sixth view, Scout, is a meet
-          scouting report generator that is still a work in progress.
+          surfaces seven views: cohort progression over time, rankings of
+          currently active lifters, a per-lift Athlete Projection (BETA),
+          an individual lifter lookup, live qualifying-total coverage for
+          CPU and all ten provinces, Scout (BETA) for meet scouting
+          reports from a pasted roster, and this methodology page.
         </p>
       </Section>
 
@@ -217,16 +264,47 @@ export default function About({ isActive: _isActive }: { isActive: boolean }) {
 
       <Section title="Plateau-model comparison (backtest)">
         <p>
-          The GLP-bracket approach is benchmarked against log-linear-in-time
-          and Gompertz fits using a walk-forward backtest on lifters with
-          15+ career meets. Mean absolute percentage error at 3, 6, 12, and
-          18 months is the comparison metric. Ship thresholds: if GLP-bracket
-          loses by more than 2 percentage points at the 12-month horizon,
-          swap to the winner. If MAPE exceeds 6 percent at 6 months or 12
-          percent at 12 months for Engine C, escalate.
+          Engine C is benchmarked against log-linear-in-time and Gompertz
+          fits using a walk-forward backtest. Every career in the pool is
+          split at 36 months before its final meet. The engines see only the
+          training side and project forward to the exact date of each
+          held-out meet, which is then bucketed by how far it sits from the
+          last training meet.
+        </p>
+        <p className="text-zinc-400">
+          Two reading instructions matter more than the numbers. First, the
+          per-engine table below reports each engine on its OWN sample, and
+          those columns are not comparable to each other: Gompertz only
+          answers when its curve fit converges, so it declines exactly the
+          careers that are hardest to fit. Every cross-engine claim comes
+          from the paired tables underneath, computed only on observations
+          where both engines answered. Second, the 24 and 36 month rows are
+          diagnostic. The app caps projections at 18 months and will keep
+          doing so, so those rows exist to show how the engines diverge, not
+          to advertise a horizon you can request.
+        </p>
+        <p className="text-zinc-400">
+          Two of the entries are deliberately trivial controls rather than
+          candidate engines. &ldquo;No change from last meet&rdquo; predicts
+          the lifter&apos;s last training total forever, and &ldquo;no change
+          from Engine C&apos;s starting level&rdquo; keeps Engine C&apos;s
+          level but removes its slope. A model that projects growth should
+          beat both. Where it does not, the honest reading is that the model
+          is extrapolating too far, and the pair of controls separates how
+          much of that comes from the level definition and how much from the
+          slope. See{' '}
+          <a
+            href="https://github.com/m6bernha/cpu-analytics/blob/main/docs/adr/0004-projection-engine-cascade.md"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-zinc-300"
+          >
+            ADR 0004
+          </a>{' '}
+          for what these numbers led to.
         </p>
 
-        <BacktestTable artifact={backtestResults as BacktestArtifact} />
+        <BacktestTable artifact={backtestResults as unknown as BacktestArtifact} />
       </Section>
 
       <Section title="Kaplan-Meier dropout correction">
@@ -386,42 +464,59 @@ function Section({
   )
 }
 
+function fmtPct(value: number | null | undefined, digits = 2): string {
+  return value == null ? '\u2014' : `${value.toFixed(digits)}%`
+}
+
 function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
   const horizons = artifact.inputs.horizons_months
   const engines = artifact.summary.engines
-  const engineC = engines.find((e) => e.engine === 'engine_c')
-  const logLinear = engines.find((e) => e.engine === 'log_linear')
-  const gompertz = engines.find((e) => e.engine === 'gompertz')
   const gates = artifact.ship_gate
 
-  const engineCMape6 = engineC?.mape_by_horizon['6']
-  const engineCMape12 = engineC?.mape_by_horizon['12']
-  const logLinearMape12 = logLinear?.mape_by_horizon['12']
-  const gompertzMape12 = gompertz?.mape_by_horizon['12']
+  const engineC = engines.find((e) => e.engine === 'engine_c')
+  const engineCMape6 = engineC?.by_horizon['6']?.mape ?? null
+  const engineCMape12 = engineC?.by_horizon['12']?.mape ?? null
+  const engineCBias12 = engineC?.by_horizon['12']?.bias ?? null
+  const engineCBias18 = engineC?.by_horizon['18']?.bias ?? null
+
+  const gateBias12 =
+    engineCBias12 == null
+      ? null
+      : Math.abs(engineCBias12) <= gates.engine_c_bias_12mo_limit_pp
+  const gateBias18 =
+    engineCBias18 == null
+      ? null
+      : Math.abs(engineCBias18) <= gates.engine_c_bias_18mo_limit_pp
+
+  // The margin gate reads the PAIRED difference, not the gap between two
+  // own-sample MAPEs. mean_diff is (challenger - baseline), so the most
+  // negative value is Engine C's worst loss. Comparisons whose baseline is
+  // NOT Engine C (the Gompertz vs no-change control) must be excluded, or
+  // a result that says nothing about Engine C would drive its gate.
+  const worstPairedDiff12 = artifact.head_to_head
+    .filter((h2h) => h2h.baseline === 'engine_c')
+    .reduce<number | null>((worst, h2h) => {
+      const diff = h2h.by_horizon['12']?.mean_diff
+      if (diff == null) return worst
+      return worst == null || diff < worst ? diff : worst
+    }, null)
 
   const gate6mo =
-    engineCMape6 == null
-      ? null
-      : engineCMape6 <= gates.engine_c_mape_6mo_limit
+    engineCMape6 == null ? null : engineCMape6 <= gates.engine_c_mape_6mo_limit
   const gate12mo =
-    engineCMape12 == null
-      ? null
-      : engineCMape12 <= gates.engine_c_mape_12mo_limit
-  const bestAlt12mo = (() => {
-    const alts: number[] = []
-    if (logLinearMape12 != null) alts.push(logLinearMape12)
-    if (gompertzMape12 != null) alts.push(gompertzMape12)
-    return alts.length ? Math.min(...alts) : null
-  })()
+    engineCMape12 == null ? null : engineCMape12 <= gates.engine_c_mape_12mo_limit
   const gateMargin =
-    engineCMape12 == null || bestAlt12mo == null
+    worstPairedDiff12 == null
       ? null
-      : engineCMape12 - bestAlt12mo <= gates.log_linear_margin_12mo_limit_pp
+      : -worstPairedDiff12 <= gates.challenger_margin_12mo_limit_pp
 
   return (
-    <div className="mt-3 space-y-3">
+    <div className="mt-3 space-y-4">
       <div className="overflow-x-auto">
         <table className="text-xs w-full border-collapse">
+          <caption className="text-left text-zinc-400 text-xs pb-1.5">
+            MAPE by engine, each on its own sample. Not comparable across rows.
+          </caption>
           <thead>
             <tr className="border-b border-zinc-700 text-zinc-400">
               <th className="text-left font-medium py-1.5 pr-3">Engine</th>
@@ -430,15 +525,11 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                   {h} mo
                 </th>
               ))}
-              <th className="text-right font-medium py-1.5 pl-2">Lifters</th>
             </tr>
           </thead>
           <tbody>
             {engines.map((e) => (
-              <tr
-                key={e.engine}
-                className="border-b border-zinc-800 text-zinc-300"
-              >
+              <tr key={e.engine} className="border-b border-zinc-800 text-zinc-300">
                 <td className="py-1.5 pr-3">
                   <span
                     className={
@@ -449,55 +540,135 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                   </span>
                 </td>
                 {horizons.map((h) => {
-                  const key = String(h)
-                  const mape = e.mape_by_horizon[key]
-                  const n = e.sample_sizes_by_horizon[key]
+                  const cell = e.by_horizon[String(h)]
                   return (
-                    <td
-                      key={h}
-                      className="text-right py-1.5 px-2 tabular-nums"
-                    >
-                      {mape != null ? `${mape.toFixed(2)}%` : '\u2014'}
-                      {n != null && (
-                        <span className="text-zinc-400 ml-1">
-                          (n={n})
-                        </span>
+                    <td key={h} className="text-right py-1.5 px-2 tabular-nums">
+                      {fmtPct(cell?.mape)}
+                      {cell != null && (
+                        <span className="text-zinc-400 ml-1">(n={cell.n})</span>
                       )}
                     </td>
                   )
                 })}
-                <td className="text-right py-1.5 pl-2 text-zinc-400 tabular-nums">
-                  {e.lifter_count}
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
+      <div className="overflow-x-auto">
+        <table className="text-xs w-full border-collapse">
+          <caption className="text-left text-zinc-400 text-xs pb-1.5">
+            Signed bias. Positive means the engine projected above what the
+            lifter actually totalled.
+          </caption>
+          <thead>
+            <tr className="border-b border-zinc-700 text-zinc-400">
+              <th className="text-left font-medium py-1.5 pr-3">Engine</th>
+              {horizons.map((h) => (
+                <th key={h} className="text-right font-medium py-1.5 px-2">
+                  {h} mo
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {engines.map((e) => (
+              <tr key={e.engine} className="border-b border-zinc-800 text-zinc-300">
+                <td className="py-1.5 pr-3">
+                  <span
+                    className={
+                      e.engine === 'engine_c' ? 'text-zinc-100 font-medium' : ''
+                    }
+                  >
+                    {ENGINE_LABEL[e.engine]}
+                  </span>
+                </td>
+                {horizons.map((h) => {
+                  const bias = e.by_horizon[String(h)]?.bias
+                  return (
+                    <td key={h} className="text-right py-1.5 px-2 tabular-nums">
+                      {bias == null
+                        ? '\u2014'
+                        : `${bias > 0 ? '+' : ''}${bias.toFixed(2)}%`}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {artifact.head_to_head.map((h2h) => (
+        <PairedTable key={h2h.challenger} h2h={h2h} horizons={horizons} />
+      ))}
+
       <div className="text-zinc-400 text-xs space-y-1">
         <p>
-          {artifact.summary.processed_lifters} lifters, holdout last{' '}
-          {artifact.inputs.holdout} meets, minimum{' '}
-          {artifact.inputs.min_meets} career meets. Per-horizon{' '}
-          <code className="text-zinc-400">n</code> is the subset of lifters
-          whose held-out meets include one at that horizon (within a
-          tolerance window).
+          Pool: {artifact.summary.pool_lifters} lifters with at least{' '}
+          {artifact.inputs.min_career_meets} career meets, of which{' '}
+          {artifact.summary.scored_lifters} survived the split with at least{' '}
+          {artifact.inputs.min_train_meets} training meets and a held-out meet
+          in some horizon bucket, giving {artifact.summary.observations}{' '}
+          scored observations. Confidence intervals are bootstrap percentile
+          intervals over {artifact.inputs.bootstrap_resamples} resamples,
+          drawn by lifter rather than by observation, because one lifter
+          contributes several correlated observations.
         </p>
         <p>
-          Numbers come from a full run over the global OpenIPF export, not
-          just the Canadian subset, to maximize sample size. The engines and
-          parameters are identical to what serves the Canadian data in
-          production (see{' '}
-          <code className="text-zinc-400">data/backtest_projection.py</code>).
+          Numbers come from a run over the global OpenIPF export, not just
+          the Canadian subset, to maximise sample size. Engine C runs through{' '}
+          <code className="text-zinc-400">project_from_history</code>, the
+          same function the API calls, so the measured engine is the shipped
+          engine. Cohort cells are fit on training meets only.
+        </p>
+        <p>
+          Known limitation: the longest buckets are enriched for meets late
+          in a career, since holding out the final 36 months is what makes a
+          36-month reading possible at all. A lifter who stopped competing
+          after a poor meet is over-represented there relative to the
+          3-month bucket.
         </p>
       </div>
 
       <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
-        <h4 className="text-zinc-200 text-xs font-medium mb-2">
-          Ship gates
-        </h4>
+        <h4 className="text-zinc-200 text-xs font-medium mb-2">Ship gates</h4>
+        <p className="text-zinc-400 text-xs mb-2">
+          Bias gates lead because the earlier gate set was all MAPE
+          thresholds, and every one of them passed on an engine running 5 to
+          6 percent high at both horizons the app serves. A threshold on the
+          size of an error cannot see the direction of it.
+        </p>
         <ul className="space-y-1 text-xs">
+          <Gate
+            pass={gateBias12}
+            label={
+              <>
+                Engine C bias at 12 months within &plusmn;
+                {gates.engine_c_bias_12mo_limit_pp.toFixed(1)} pp
+              </>
+            }
+            value={
+              engineCBias12 == null
+                ? 'unavailable'
+                : `${engineCBias12 > 0 ? '+' : ''}${engineCBias12.toFixed(2)} pp`
+            }
+          />
+          <Gate
+            pass={gateBias18}
+            label={
+              <>
+                Engine C bias at 18 months within &plusmn;
+                {gates.engine_c_bias_18mo_limit_pp.toFixed(1)} pp
+              </>
+            }
+            value={
+              engineCBias18 == null
+                ? 'unavailable'
+                : `${engineCBias18 > 0 ? '+' : ''}${engineCBias18.toFixed(2)} pp`
+            }
+          />
           <Gate
             pass={gate6mo}
             label={
@@ -506,11 +677,7 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                 {gates.engine_c_mape_6mo_limit.toFixed(1)}%
               </>
             }
-            value={
-              engineCMape6 != null
-                ? `${engineCMape6.toFixed(2)}%`
-                : 'unavailable'
-            }
+            value={fmtPct(engineCMape6)}
           />
           <Gate
             pass={gate12mo}
@@ -520,29 +687,103 @@ function BacktestTable({ artifact }: { artifact: BacktestArtifact }) {
                 {gates.engine_c_mape_12mo_limit.toFixed(1)}%
               </>
             }
-            value={
-              engineCMape12 != null
-                ? `${engineCMape12.toFixed(2)}%`
-                : 'unavailable'
-            }
+            value={fmtPct(engineCMape12)}
           />
           <Gate
             pass={gateMargin}
             label={
               <>
                 Engine C does not lose by more than{' '}
-                {gates.log_linear_margin_12mo_limit_pp.toFixed(1)} pp to
-                best alternative at 12 months
+                {gates.challenger_margin_12mo_limit_pp.toFixed(1)} pp to any
+                challenger at 12 months, paired
               </>
             }
             value={
-              engineCMape12 != null && bestAlt12mo != null
-                ? `${(engineCMape12 - bestAlt12mo >= 0 ? '+' : '') + (engineCMape12 - bestAlt12mo).toFixed(2)} pp`
-                : 'unavailable'
+              worstPairedDiff12 == null
+                ? 'unavailable'
+                : `${worstPairedDiff12 > 0 ? '+' : ''}${worstPairedDiff12.toFixed(2)} pp`
             }
           />
         </ul>
       </div>
+    </div>
+  )
+}
+
+function PairedTable({
+  h2h,
+  horizons,
+}: {
+  h2h: HeadToHead
+  horizons: number[]
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="text-xs w-full border-collapse">
+        <caption className="text-left text-zinc-400 text-xs pb-1.5">
+          {ENGINE_LABEL[h2h.challenger]} against{' '}
+          {ENGINE_LABEL[h2h.baseline]}, paired. Negative means the challenger
+          was closer.
+        </caption>
+        <thead>
+          <tr className="border-b border-zinc-700 text-zinc-400">
+            <th className="text-left font-medium py-1.5 pr-3">Horizon</th>
+            <th className="text-right font-medium py-1.5 px-2">Paired n</th>
+            <th className="text-right font-medium py-1.5 px-2">
+              {ENGINE_SHORT[h2h.baseline]}
+            </th>
+            <th className="text-right font-medium py-1.5 px-2">
+              {ENGINE_SHORT[h2h.challenger]}
+            </th>
+            <th className="text-right font-medium py-1.5 px-2">Difference</th>
+            <th className="text-right font-medium py-1.5 px-2">95% CI</th>
+            <th className="text-right font-medium py-1.5 pl-2">Win rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {horizons.map((h) => {
+            const cell = h2h.by_horizon[String(h)]
+            const decisive =
+              cell?.ci_low != null &&
+              cell?.ci_high != null &&
+              (cell.ci_high < 0 || cell.ci_low > 0)
+            return (
+              <tr key={h} className="border-b border-zinc-800 text-zinc-300">
+                <td className="py-1.5 pr-3 tabular-nums">{h} mo</td>
+                <td className="text-right py-1.5 px-2 tabular-nums text-zinc-400">
+                  {cell?.n_paired ?? 0}
+                </td>
+                <td className="text-right py-1.5 px-2 tabular-nums">
+                  {fmtPct(cell?.mape_baseline)}
+                </td>
+                <td className="text-right py-1.5 px-2 tabular-nums">
+                  {fmtPct(cell?.mape_challenger)}
+                </td>
+                <td
+                  className={
+                    'text-right py-1.5 px-2 tabular-nums' +
+                    (decisive ? ' text-zinc-100 font-medium' : '')
+                  }
+                >
+                  {cell?.mean_diff == null
+                    ? '\u2014'
+                    : `${cell.mean_diff > 0 ? '+' : ''}${cell.mean_diff.toFixed(2)} pp`}
+                </td>
+                <td className="text-right py-1.5 px-2 tabular-nums text-zinc-400">
+                  {cell?.ci_low == null || cell?.ci_high == null
+                    ? '\u2014'
+                    : `${cell.ci_low > 0 ? '+' : ''}${cell.ci_low.toFixed(2)} to ${cell.ci_high > 0 ? '+' : ''}${cell.ci_high.toFixed(2)}`}
+                </td>
+                <td className="text-right py-1.5 pl-2 tabular-nums text-zinc-400">
+                  {cell?.challenger_win_rate == null
+                    ? '\u2014'
+                    : `${(cell.challenger_win_rate * 100).toFixed(0)}%`}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }

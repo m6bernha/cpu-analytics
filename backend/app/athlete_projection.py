@@ -85,6 +85,7 @@ from .athlete_projection_engine_c import (
     _load_lifter_history,
     _project_single_lift,
     compute_current_level,
+    project_from_history,
     shrinkage_projection,
     to_response_dict,
 )
@@ -136,6 +137,7 @@ __all__ = [
     "AthleteProjectionResult",
     "LiftProjection",
     "compute_current_level",
+    "project_from_history",
     "shrinkage_projection",
     "to_response_dict",
     # Engine D
