@@ -148,12 +148,74 @@ so the notice cannot drift from the fetch.
 
 7 new Vitest cases (107 -> 114).
 
-### Still open for session 3
+### Lighthouse verdict: SEO 100, but the pages have quality problems
 
-- **Google Search Console** submission (needs Matthias: DNS/dashboard).
+Mobile Lighthouse on production, all three page types:
+
+| Page | SEO | Accessibility | Best Practices | CLS |
+|---|---|---|---|---|
+| `/` | **100** | 97 | 96 | ok |
+| `/athlete/{name}` | **100** | 95 | 96 | **0.72** |
+| `/meet/{name}/{date}` | **100** | 96 | 96 | **0.59** |
+
+SEO is maxed, which is what sessions 1-2 were for. But the audit surfaced
+three real defects **on exactly the ~23k pages this arc just pushed into
+search results**, which argues for fixing them before chasing more reach.
+
+1. **Colour contrast fails WCAG AA in 27 places on one page.** Systemic,
+   not incidental: `text-zinc-500` (#71717a) on `bg-zinc-950` (#09090b)
+   measures **4.11:1** at 12px where AA needs 4.5:1, and `text-zinc-600`
+   (#52525b) measures **2.57:1**. Those two utilities carry most of the
+   site's secondary copy — methodology blocks, footers, hints, table
+   sub-labels. A fix is roughly "muted text moves up one zinc step"
+   (zinc-500 -> zinc-400 is ~7:1), but it must be reconciled with the
+   locked colour tokens rather than done ad hoc.
+2. **CLS 0.72 on athlete pages, 0.59 on meet pages** (> 0.25 is "poor").
+   Core Web Vitals is a ranking signal, so this actively works against the
+   sitemap. Likely the chart/table mounting into unreserved height after
+   the data query resolves; reserving space for the known layout should
+   fix most of it.
+3. **Four `label-content-name-mismatch` failures.** An `aria-label` that
+   does not contain the element's visible text breaks voice control:
+   saying "click CPU Powerlifting Analytics" does not match a link whose
+   accessible name is "CPU Powerlifting Analytics home". Cheap to fix.
+
+The console error Lighthouse flags is only the `/_vercel/insights/script.js`
+404 and self-resolves once Web Analytics is enabled.
+
+**Recommendation:** make session 3 "quality of the pages we just made
+discoverable" (CLS + contrast + labels) and push tier naming back. Driving
+traffic to pages that fail AA and score poor CLS spends the SEO gain
+against itself. Matthias's call.
+
+### Also open
+
+- **Google Search Console** submission (needs Matthias, see below).
 - Pre-existing lint error at `AthleteProjection.tsx:127`
   (`setState` inside the URL-bootstrap effect). Untouched here because
   fixing it changes bootstrap behaviour and deserves its own change.
+
+### Google Search Console: exact steps for Matthias
+
+Nothing here can be done from a Claude session (Google auth + DNS).
+
+1. Go to https://search.google.com/search-console and add a property.
+   Choose **URL prefix** and enter `https://cpu-analytics.vercel.app`.
+   (Domain-property verification needs DNS at the apex, which Vercel's
+   `.vercel.app` subdomain does not give you. Switch to a Domain property
+   later if the custom domain lands.)
+2. Verify with the **HTML tag** method. Google gives a
+   `<meta name="google-site-verification" content="..." />` tag. Paste the
+   content value into a session and it goes into `frontend/index.html`,
+   ships on the next deploy, then click Verify.
+   - Do NOT put it in `ogMeta.ts`'s owned tags; it is site-wide and must
+     survive on every page including `/athlete/*`.
+3. Once verified, Sitemaps -> add `sitemap.xml`. That is the index, so
+   Google picks up all three child sitemaps automatically.
+4. Expect "Discovered - currently not indexed" on most of the 23,584 URLs
+   for the first few weeks. That is normal for a new site of this size and
+   not a bug. Coverage climbs as Google decides the pages are worth it,
+   which is why the CLS and contrast items above matter.
 
 ---
 
