@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://cpu-analytics.vercel.app/meet/Saguenay%20Open%202/2026-08-01</loc>
+    <lastmod>2026-08-01</lastmod>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/meet/BCPA%20Summer%20Open/2026-07-25</loc>
+    <lastmod>2026-07-25</lastmod>
+  </url>
+  <url>
     <loc>https://cpu-analytics.vercel.app/meet/Deutsche%20Meisterschaft%20der%20Aktiven%20Classic/2026-07-24</loc>
     <lastmod>2026-07-24</lastmod>
   </url>
   <url>
     <loc>https://cpu-analytics.vercel.app/meet/Band%20of%20Barbells%20Toronto%20Summer%20Cup/2026-07-18</loc>
+    <lastmod>2026-07-18</lastmod>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/meet/GL%20Divisional%20Qualifier/2026-07-18</loc>
     <lastmod>2026-07-18</lastmod>
   </url>
   <url>
@@ -951,6 +963,10 @@
   <url>
     <loc>https://cpu-analytics.vercel.app/meet/STH%20Showdown/2024-07-20</loc>
     <lastmod>2024-07-20</lastmod>
+  </url>
+  <url>
+    <loc>https://cpu-analytics.vercel.app/meet/Cold%20Blood%20Classic/2024-07-14</loc>
+    <lastmod>2024-07-14</lastmod>
   </url>
   <url>
     <loc>https://cpu-analytics.vercel.app/meet/Bridge%20City%20Classic/2024-07-13</loc>
