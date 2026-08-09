@@ -93,6 +93,79 @@ pytest / 107 Vitest, not the documented 351 / 53.
 
 ---
 
+## 2026-08-09 -- Page quality SHIPPED (upgrade arc, session 3 of 8)
+
+Sessions 1-2 pushed ~23k pages into search. This session fixed the quality
+of those pages, because driving traffic to pages that fail WCAG AA and score
+poor CLS spends the SEO gain against itself.
+
+**Measured before/after, identical conditions** (localhost against the
+production backend, same Lighthouse, same URL, once with `frontend/src`
+reverted to `main` and once with the fix):
+
+| | before | after |
+|---|---|---|
+| CLS | 0.162 | **0.021** |
+| Colour contrast | FAIL, 27 items | **PASS** |
+| Label in name | FAIL, 4 items | **PASS** |
+| Accessibility | 95 | **99** |
+
+### Contrast was drift, not a design decision
+
+`text-zinc-500` on `bg-zinc-950` measures 4.11:1 where AA needs 4.5:1;
+`text-zinc-600` measures 2.57:1. Those two utilities carried nearly all
+secondary copy. The **locked colour tokens already specify muted text =
+`zinc-400`** (7.76:1), so the fix was to put it back, not to pick a new
+colour. 134 replacements across 21 files, no new colour in the palette.
+
+`disabled:` variants left alone: WCAG 1.4.3 exempts inactive components.
+
+### CLS was a skeleton/content size mismatch
+
+A trace put the whole score in one 0.61 burst at ~2.2 s, which is when the
+query resolves. Measured both sides: the skeleton reserves ~480 px, the
+loaded content is **2,223 px** on a profile and **9,136 px** on a meet page.
+The footer sat in the viewport and got shoved a screen and a half down.
+
+New `reserveViewport` prop on `LoadingSkeleton` holds one viewport of height
+during load, so the footer starts below the fold and stays there. Applied to
+EVERY skeleton in both routes' loading sequences -- reserving in one but not
+the next just relocates the shift to the handoff.
+
+### Three measurement traps hit in one session
+
+Worth recording, because each one produced a confident-looking wrong answer:
+
+1. **Lighthouse cannot audit a protected Vercel preview.** It drops the
+   `_vercel_share` cookie on its own reload, so it scored Vercel's *login
+   page* and reported CLS 0 / SEO 66. The giveaway was `/legal/terms` and
+   "Continue with Google" in the failure list.
+2. **`PerformanceObserver` in a non-compositing browser pane reads CLS 0**
+   regardless, because the viewport is 0x0 and shifts in a zero-height
+   viewport have zero impact. Caught only by running the same probe against
+   production, which Lighthouse says is 0.72 and which also read 0.
+3. **A 403 from production was Vercel's bot challenge**
+   (`X-Vercel-Mitigated: challenge`) triggered by ~100 automated curl
+   requests from one IP, not an outage. Confirmed healthy by fetching from
+   different infrastructure.
+
+The general rule these share: **prove the instrument can detect the defect
+before trusting it to report the defect is gone.**
+
+### Still open
+
+- `heading-order`: an `h3` with no preceding `h2` on the profile page.
+  Pre-existing, one item, untouched here.
+- **Amber/yellow drift from the locked palette.** 8 sites use `amber-*`
+  where the tokens say coral `orange-400` is the only orange-family colour
+  (`AthleteCard`, `FreshnessBadge`, `Scout`, `LifterLookup`). All pass
+  contrast, so this is consistency not accessibility. `AthleteCard.test.tsx`
+  asserts on `ring-amber-400`/`ring-amber-300`, so the fix must update those
+  tests too.
+- Pre-existing lint error at `AthleteProjection.tsx:127`.
+
+---
+
 ## 2026-08-09 -- SEO depth SHIPPED (upgrade arc, session 2 of 8)
 
 **Two of the four planned items turned out to be already done or obsolete.**
