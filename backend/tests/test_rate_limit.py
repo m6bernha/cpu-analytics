@@ -8,6 +8,7 @@ via RATE_LIMIT_ENABLED=0 in conftest.py.
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.testclient import TestClient
 
 from backend.app.rate_limit import RateLimitMiddleware
@@ -100,3 +101,61 @@ class TestRateLimitMiddleware:
             "/limited", headers={"x-forwarded-for": "1.1.1.1, 8.8.8.8"}
         )
         assert r.status_code == 200
+
+
+class TestRateLimitInteractsWithCors:
+    """The limiter is registered BEFORE CORSMiddleware in main.py.
+
+    Starlette applies middleware outside-in in reverse registration order,
+    so registering the limiter first puts CORS *outside* it, and CORS then
+    decorates the limiter's 429 short-circuit. Get that order wrong and a
+    rate-limited browser request arrives with no CORS headers, which the
+    browser surfaces as an opaque network error rather than "too many
+    requests" -- the user sees a broken site instead of a clear limit.
+    """
+
+    def _app_with_cors(self, clock, limit=2):
+        app = FastAPI()
+
+        @app.post("/limited")
+        def limited():
+            return {"ok": True}
+
+        app.add_middleware(
+            RateLimitMiddleware,
+            rules={("POST", "/limited"): (limit, 60.0)},
+            enabled=True,
+            clock=clock,
+        )
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["https://cpu-analytics.vercel.app"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        return app
+
+    def test_429_still_carries_cors_headers(self):
+        origin = "https://cpu-analytics.vercel.app"
+        client = TestClient(self._app_with_cors(FakeClock()))
+
+        ok = client.post("/limited", headers={"origin": origin})
+        assert ok.status_code == 200
+        assert ok.headers["access-control-allow-origin"] == origin
+
+        client.post("/limited", headers={"origin": origin})
+        limited = client.post("/limited", headers={"origin": origin})
+
+        assert limited.status_code == 429
+        assert limited.headers.get("access-control-allow-origin") == origin, (
+            "429 lost its CORS headers; the browser will report an opaque "
+            "network error instead of the rate limit"
+        )
+
+    def test_429_sets_retry_after(self):
+        client = TestClient(self._app_with_cors(FakeClock()))
+        for _ in range(2):
+            client.post("/limited")
+        r = client.post("/limited")
+        assert r.status_code == 429
+        assert int(r.headers["Retry-After"]) > 0
