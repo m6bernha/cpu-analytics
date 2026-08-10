@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import duckdb
-from fastapi import FastAPI, Query, Request, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
@@ -250,6 +250,26 @@ def _clean(obj: Any) -> Any:
     return obj
 
 
+def _require_choice(param: str, value: str, allowed) -> None:
+    """422 on an out-of-range enum-ish query parameter.
+
+    The query modules raise a bare ValueError for an unknown `x_axis` or
+    `metric`, which is right at their level but reached the client as an
+    unhandled 500 with a stack trace, on public GET endpoints that anyone
+    can hit. Found 2026-08-09 by the first HTTP-level test of these routes.
+
+    Validated here against the module's own constant rather than duplicated
+    into a Literal, so the allowed set has one definition. Deliberately not
+    a blanket ValueError handler: that would relabel genuine internal bugs
+    as client errors and hide them.
+    """
+    if value not in allowed:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown {param}: {value!r}. Use one of {list(allowed)}.",
+        )
+
+
 _WEEKLY_CACHE_CONTROL = "public, max-age=300"
 
 
@@ -376,6 +396,8 @@ def api_progression(
     max_gap_months: int | None = Query(None, description="Exclude lifters with any inter-meet gap longer than this many months. Filters out comeback lifters."),
     same_class_only: bool = Query(False, description="Only include lifters who stayed in the same weight class for all meets in scope."),
 ) -> dict[str, Any]:
+    _require_choice("x_axis", x_axis, progression_mod.X_AXIS_COLS)
+    _require_choice("metric", metric, progression_mod.METRIC_COLS)
     return _clean(
         progression_mod.compute_progression(
             sex=sex,
@@ -413,6 +435,7 @@ def api_lift_progression(
     # tested, age_category, max_gap_months, and same_class_only.
 ) -> dict[str, Any]:
     """Per-lift (squat, bench, deadlift) cohort progression."""
+    _require_choice("x_axis", x_axis, progression_mod.X_AXIS_COLS)
     return _clean(
         progression_mod.compute_lift_progression(
             sex=sex,

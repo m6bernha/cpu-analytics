@@ -9,6 +9,59 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Endpoint test hardening SHIPPED (session 7)
+
+**15 of 19 endpoints had no test that went through FastAPI at all.** The
+query modules underneath were well covered; everything between the module
+function and the client was not. `backend/tests/test_endpoints.py` adds a
+happy path and a rejected input for each. 465 -> 519 backend tests.
+
+**It found a live 500 on a public endpoint.** `compute_progression`
+raises a bare `ValueError` for an unknown `x_axis` or `metric`, which is
+right at the module level, but nothing translated it and there is no
+`ValueError` handler. `GET /api/cohort/progression?x_axis=Furlongs`
+returned an unhandled 500 with a stack trace, logging `CRASH`, and
+`/api/cohort/lift_progression` did the same. Anyone could hit it.
+
+Fixed with `main._require_choice`, validating against the module's own
+constant so the allowed set keeps one definition. Deliberately **not** a
+blanket `ValueError` handler: that would relabel genuine internal bugs as
+client errors and hide them. Verified by stashing the fix and confirming
+all three tests fail with the crash, then restoring it.
+
+**Three things turned out to be correct-by-coercion, not bugs**, and the
+tests now assert the coercion rather than a status code, which is the
+stronger claim:
+
+- `rankings.metric` is interpolated into `ORDER BY`, and an unwhitelisted
+  value is coerced to `glp` before it gets there. The test asserts
+  `metric == "glp"`, because a 200 alone would not prove the injected
+  string never reached SQL.
+- `search_lifters` truncates `q` at 50 chars rather than rejecting.
+- An unknown projection `engine` falls back to Engine C.
+
+**And one testing trap worth knowing.** `TestClient` defaults to
+`raise_server_exceptions=True`, so it re-raises anything reaching
+`ServerErrorMiddleware` instead of returning the response. The
+`duckdb.Error` handler looked broken for exactly this reason; it was
+fine. There is now a `raw_client` fixture for asserting on the app's own
+error envelope.
+
+Four behaviours that fail SILENTLY are now locked:
+
+| Behaviour | What breaks if it regresses |
+|---|---|
+| `/api/health` answers HEAD | UptimeRobot's free plan is HEAD-only; the keepalive quietly 405s and users meet a ~50 s cold start |
+| ETag / If-None-Match returns 304 | Cache busts on every request; the ETag flips weekly with the data refresh |
+| `duckdb.Error` maps to a 503 envelope | A driver message leaks to the client and the frontend cannot tell an outage from a bug |
+| A 429 still carries CORS headers | The browser reports an opaque network error instead of "too many requests" |
+
+The CORS one was verified by building an app with the middleware order
+reversed: the 429 comes back with no `access-control-allow-origin` at
+all, which is what the test asserts against.
+
+---
+
 ## 2026-08-09 -- Roster import SHIPPED as a parser, not a scraper (session 6)
 
 Session 6 was scoped as "SimplMeet roster import, gated on a ToS check".
