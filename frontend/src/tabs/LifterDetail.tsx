@@ -32,6 +32,8 @@ import { fmtDate, fmtDateShort, fmtKg } from '../lib/format'
 import { downloadCsv, slugify } from '../lib/csv'
 import { MethodPill } from '../components/MethodPill'
 import { AthleteCard } from '../components/AthleteCard'
+import { MeetRecapCard } from '../components/MeetRecapCard'
+import { isRecappable, latestRecappableMeet } from '../lib/meetRecap'
 import { ShareButton } from '../lib/ShareButton'
 import { exportCardToPng } from '../lib/exportCard'
 
@@ -182,6 +184,40 @@ export default function LifterDetail({
   const handleExportCard = async () => {
     const safeName = history.name.replace(/[^a-zA-Z0-9_-]+/g, '_')
     await exportCardToPng(cardRef.current, `${safeName}-card.png`, 'athlete_card')
+  }
+
+  // Meet recap card. Defaults to the most recent meet that produced a
+  // total; a lifter whose only entries were bombed or bench-only has
+  // nothing to recap and the section does not render at all.
+  const recapRef = useRef<HTMLDivElement>(null)
+  const recappableMeets = useMemo(
+    () =>
+      (history.meets ?? [])
+        .filter(isRecappable)
+        .slice()
+        .sort((a, b) => b.Date.localeCompare(a.Date)),
+    [history.meets],
+  )
+  // Identified by INDEX, not by date. A lifter can contest two divisions
+  // at the same meet on the same day, which produces two SBD rows sharing
+  // a date and meet name. Keying on the date made those a duplicate React
+  // key and made the second row unselectable.
+  const [recapIdx, setRecapIdx] = useState<number | null>(null)
+  const defaultRecap = useMemo(
+    () => latestRecappableMeet(history.meets ?? []),
+    [history.meets],
+  )
+  const recapMeet =
+    (recapIdx !== null ? recappableMeets[recapIdx] : undefined) ?? defaultRecap
+
+  const handleExportRecap = async () => {
+    if (!recapMeet) return
+    const safeName = history.name.replace(/[^a-zA-Z0-9_-]+/g, '_')
+    await exportCardToPng(
+      recapRef.current,
+      `${safeName}-${recapMeet.Date}-recap.png`,
+      'meet_recap_card',
+    )
   }
   const viewMode = viewModeProp ?? viewModeLocal
   const setViewMode = setViewModeProp ?? setViewModeLocal
@@ -358,6 +394,62 @@ export default function LifterDetail({
           </button>
         </div>
       </section>
+
+      {/* Meet recap -- one meet, shareable. Keyed on a meet rather than a
+          calendar year because 62.9% of lifter-years hold exactly one
+          meet, so a yearly card would be empty for most people. */}
+      {recapMeet && (
+        <section className="mb-6">
+          <MeetRecapCard
+            ref={recapRef}
+            lifter={history}
+            meet={recapMeet}
+            percentileCurves={percentileQ.data}
+          />
+          <div className="mt-2 flex flex-col items-center gap-2 max-w-sm mx-auto">
+            {recappableMeets.length > 1 && (
+              <label className="text-xs text-zinc-400 w-full">
+                <span className="sr-only">Meet to recap</span>
+                <select
+                  value={
+                    recapIdx !== null
+                      ? recapIdx
+                      : Math.max(0, recappableMeets.indexOf(recapMeet))
+                  }
+                  onChange={(e) => setRecapIdx(Number(e.target.value))}
+                  className="block w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-zinc-600"
+                  aria-label="Meet to recap"
+                >
+                  {/* Division AND equipment are both in the label because a
+                      lifter can enter the same meet twice: Erik Willis has a
+                      Raw and a Single-ply entry at Nationals 2020-03-03, and
+                      without equipment the two options read identically. */}
+                  {recappableMeets.map((m, i) => (
+                    <option key={i} value={i}>
+                      {[
+                        m.Date,
+                        m.MeetName ?? 'Unnamed meet',
+                        m.Division,
+                        m.Equipment,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <button
+              type="button"
+              onClick={handleExportRecap}
+              className="px-3 py-2 text-xs rounded border text-zinc-400 border-zinc-700 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+              aria-label="Download PNG of the meet recap"
+            >
+              Download PNG
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* QT proximity: how far from each qualifying standard */}
       {regionalsQt != null && history.best_total_kg != null && (
