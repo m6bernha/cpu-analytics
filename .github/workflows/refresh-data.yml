@@ -139,8 +139,27 @@ jobs:
           git add frontend/public/sitemap*.xml
           git commit -m "chore(seo): refresh sitemaps for $DATE data"
           git push -f -u origin "$BRANCH"
-          gh pr create --base main --head "$BRANCH" \
-            --title "chore(seo): refresh sitemaps for $DATE data" \
-            --body "Automated by the weekly OpenIPF refresh. Regenerates frontend/public/sitemap*.xml so newly imported lifters and meets are crawlable. Auto-merges once CI is green." \
-            || echo "PR already open for $BRANCH; reusing it."
+          # `|| echo` here used to swallow EVERY failure and print "PR
+          # already open", which is what happened on 2026-08-09: the real
+          # error was that Actions is not allowed to create PRs at all, and
+          # the run reported the wrong cause. Distinguish the benign case
+          # (a PR genuinely already exists for this branch) from anything
+          # else, and fail loudly with the actual message.
+          if ! CREATE_ERR="$(gh pr create --base main --head "$BRANCH" \
+                --title "chore(seo): refresh sitemaps for $DATE data" \
+                --body "Automated by the weekly OpenIPF refresh. Regenerates frontend/public/sitemap*.xml so newly imported lifters and meets are crawlable. Auto-merges once CI is green." 2>&1)"; then
+            if echo "$CREATE_ERR" | grep -qi "already exists"; then
+              echo "PR already open for $BRANCH; reusing it."
+            elif echo "$CREATE_ERR" | grep -qi "not permitted to create"; then
+              echo "::error::GitHub Actions cannot open pull requests in this repo."
+              echo "The branch $BRANCH was pushed and holds the refreshed sitemaps."
+              echo "Fix: Settings > Actions > General > Workflow permissions >"
+              echo "     tick 'Allow GitHub Actions to create and approve pull requests'."
+              echo "Until then, open the PR by hand: gh pr create --head $BRANCH"
+              exit 1
+            else
+              echo "::error::gh pr create failed: $CREATE_ERR"
+              exit 1
+            fi
+          fi
           gh pr merge "$BRANCH" --auto --squash --delete-branch
