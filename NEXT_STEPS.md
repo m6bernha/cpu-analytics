@@ -9,6 +9,50 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Meet recap card SHIPPED (session 8, the "Wrapped" bet)
+
+The parked P7 viral bet, resolved by data before design.
+
+**The Wrapped framing does not survive contact with the pool.** 62.9% of
+lifter-years in Canada+IPF contain exactly ONE meet, so a Spotify-style
+year in review would tell most lifters "you did 1 meet". 2026 had 51
+lifters at 2+ meets when this was built, mid-year. Rolling 12 months does
+not help, because the sparsity is per-lifter rather than per-window.
+
+**Keyed on a meet instead**, chosen with Matthias: "your day at Nationals
+2026". Works for 100% of lifters rather than 37%, and the moment someone
+wants to post is the evening after competing.
+
+Also his calls: one new 3:4 card rather than a scroll story (reuses
+`exportCard.ts` and the locked tokens), and the card leads with **total,
+the three lifts, and IPF GL Points with the cohort percentile**. He
+explicitly did NOT pick PR flags or change-since-last-meet, so the card
+is the performance, not a progress narrative. `AthleteCard` already
+carries the career arc, and both of those need a second meet to mean
+anything. A test asserts they stay off.
+
+**Two exclusions are load-bearing** and live in
+`frontend/src/lib/meetRecap.ts`. A bombed meet (null total) has no
+performance to show, and reconstructing one from partial lifts would
+claim a total nobody hit. A non-SBD entry carries a partial `TotalKg`, so
+a bench-only 90 kg would render under a heading reading "Total". The card
+is exported and posted publicly, which makes a wrong number a public
+claim about a real person, so neither exclusion should be relaxed.
+
+**One real bug found in verification.** A lifter can enter the same meet
+twice: Erik Willis has a Raw entry and a Single-ply entry at Nationals
+2020-03-03, 950.0 kg and 1067.5 kg. Keying the picker on date + meet name
+was a duplicate React key AND made the second entry unselectable. Keyed
+on index now, with equipment in the option label so the two do not read
+identically. Same class as the About-page key bug CI caught in session 4;
+this one was caught locally before pushing.
+
+Verified against a real profile: 44 selectable meets, picker switches the
+card, both same-day entries reachable and distinct, no console errors.
+18 new Vitest cases, 156 total.
+
+---
+
 ## 2026-08-09 -- Endpoint test hardening SHIPPED (session 7)
 
 **15 of 19 endpoints had no test that went through FastAPI at all.** The
