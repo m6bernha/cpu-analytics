@@ -4,9 +4,12 @@
 // print so users can browser-print the report straight to PDF as a v1
 // stopgap (Phase 4 of the Scout plan is a native PDF export).
 //
-// Roster format in the textarea: one name per line. Lines starting with
-// `@` are homies (highlighted in the report). Names that don't match
-// OpenIPF fall to the Unranked appendix.
+// Roster format in the textarea: a list of names, or a pasted spreadsheet
+// column. `parseRosterDetailed` works out which and reports its guess back
+// to the user, because a wrong guess still returns names and the only
+// symptom would be a report where half the field is unranked. Lines
+// starting with `@` are homies (highlighted in the report). Names that
+// don't match OpenIPF fall to the Unranked appendix.
 
 import { useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
@@ -24,8 +27,9 @@ import { fmtInt, fmtKg } from '../lib/format'
 import {
   EMPTY_OVERRIDE,
   buildRosterEntries,
-  parseRoster,
+  parseRosterDetailed,
   type OverrideDraft,
+  type RosterParseResult,
 } from '../lib/scoutOverrides'
 
 interface ScoutProps {
@@ -102,7 +106,11 @@ export default function Scout({ isActive }: ScoutProps) {
     },
   })
 
-  const roster = useMemo(() => parseRoster(form.rosterText), [form.rosterText])
+  const parsed = useMemo(
+    () => parseRosterDetailed(form.rosterText),
+    [form.rosterText],
+  )
+  const roster = parsed.entries
 
   const canSubmit =
     form.meetName.trim().length > 0
@@ -305,7 +313,8 @@ export default function Scout({ isActive }: ScoutProps) {
             <span>
               Roster ({roster.length} {roster.length === 1 ? 'name' : 'names'}) *
               <span className="text-zinc-400 ml-2">
-                One name per line. Prefix with @ to tag as a homie.
+                Paste a list of names, or a spreadsheet column. Prefix with @
+                to tag as a homie.
               </span>
             </span>
             <textarea
@@ -316,6 +325,7 @@ export default function Scout({ isActive }: ScoutProps) {
               className="block w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-sm text-zinc-100 font-mono focus:outline-none focus:border-zinc-600"
               placeholder={'Jane Doe\nJohn Smith\n@My Lifter'}
             />
+            <RosterParseSummary parsed={parsed} />
           </label>
 
           <div className="md:col-span-2 space-y-2">
@@ -765,6 +775,66 @@ function StatusChip({ tag }: { tag: ScoutStatusTag }) {
       }
     >
       {tag}
+    </span>
+  )
+}
+
+/**
+ * What the roster parser understood.
+ *
+ * The parser guesses a format, and a wrong guess fails silently: it still
+ * returns names, they are just the wrong names, and the first symptom is a
+ * report where half the field landed in the unranked appendix. Showing the
+ * guess and what it discarded makes a bad paste visible before the report
+ * is generated rather than after.
+ */
+function RosterParseSummary({ parsed }: { parsed: RosterParseResult }) {
+  if (!parsed.entries.length) return null
+
+  const FORMAT_LABEL: Record<RosterParseResult['format'], string> = {
+    lines: 'one name per line',
+    tab: 'tab-separated columns',
+    comma: 'comma-separated columns',
+    'last-first': '"Last, First" names',
+  }
+
+  const notes: string[] = []
+  if (parsed.discardedColumns > 0) {
+    notes.push(
+      `ignored ${parsed.discardedColumns} other ` +
+      `${parsed.discardedColumns === 1 ? 'column' : 'columns'}`,
+    )
+  }
+  if (parsed.droppedHeader) notes.push('dropped a header row')
+  if (parsed.duplicates > 0) {
+    notes.push(
+      `merged ${parsed.duplicates} ` +
+      `${parsed.duplicates === 1 ? 'duplicate' : 'duplicates'}`,
+    )
+  }
+  const homies = parsed.entries.filter((e) => e.is_homie).length
+  if (homies > 0) {
+    notes.push(`${homies} tagged as ${homies === 1 ? 'a homie' : 'homies'}`)
+  }
+
+  const noteText = notes.length
+    ? notes.join(', ').replace(/^./, (c) => c.toUpperCase())
+    : ''
+
+  return (
+    <span className="block text-zinc-400 text-[11px] mt-1">
+      Read as {FORMAT_LABEL[parsed.format]}
+      {noteText && <>. {noteText}</>}. First:{' '}
+      <span className="text-zinc-300">{parsed.entries[0].name}</span>
+      {parsed.entries.length > 1 && (
+        <>
+          , last:{' '}
+          <span className="text-zinc-300">
+            {parsed.entries[parsed.entries.length - 1].name}
+          </span>
+        </>
+      )}
+      .
     </span>
   )
 }

@@ -9,6 +9,66 @@ Ordering is a judgment call between impact and effort.
 
 ---
 
+## 2026-08-09 -- Roster import SHIPPED as a parser, not a scraper (session 6)
+
+Session 6 was scoped as "SimplMeet roster import, gated on a ToS check".
+The gate did its job and killed the plan, so the user value was delivered
+a different way.
+
+**SimplMeet does not exist.** Two independent web searches return nothing
+for the name in a powerlifting context, and `simplmeet.com` serves an
+expired TLS certificate. It appears nowhere in this repo except the
+backlog line proposing a scraper for it.
+
+**LiftingCast is real but blocked.** Its `robots.txt` disallows exactly
+the paths a roster import needs (`/meets/*/lifter/*`,
+`/meets/*/division/*/weightClass/*`, `/meets/*/team/*`). The registration
+path is not disallowed, but the site is a JS SPA and no terms of service
+is reachable at `/terms` or linked from the landing page. Automating
+against a site whose terms cannot be read, to collect athlete names, is
+not a unilateral call. **Still needs Matthias.** Details and the verbatim
+robots.txt are in the Scout Phase 2 backlog section below.
+
+**And it would have missed the real case anyway.** Sunny Daze 2026, the
+meet the Scout MVP was validated against, is an OPA meet, and OPA
+publishes no entry list at all. Its registration page is a blank form.
+
+**What shipped instead.** The actual pain was never the fetch, it was
+that `parseRoster` understood exactly one shape: a bare name per line.
+Real entry lists are spreadsheet exports with weight class, division and
+team columns, "Last, First" lists, numbered lists, or text dragged out of
+a PDF. That gap is *why* the Sunny Daze roster had to be reconstructed by
+hand. The parser now reads all of those, with no third-party dependency
+and nothing to keep working when someone else's markup changes.
+
+The risky part of a format-guessing parser is that it fails silently: it
+still returns names, they are just the wrong names, and the first symptom
+is a report where half the field is unranked. Two heuristics were
+dangerous enough to need explicit guards, both verified to break the
+naive implementation before the guard was written:
+
+- **"Last, First" detection.** A naive rule ("two comma-separated fields,
+  both alphabetic") turns `Jane Doe, Open` into `Open Jane Doe` and
+  `Jane Doe, Vireo Powerlifting` into `Vireo Powerlifting Jane Doe`. The
+  discriminator is that a surname is one token while a full name is two,
+  plus a stop-list so a division or sex value can never be read as a
+  given name.
+- **Trailing weight class.** A naive trailing-token strip turns
+  `Anthony Wong #2` into `Anthony Wong`, which would unrank a real
+  OpenIPF lifter whose `#2` suffix is part of the name the backend
+  matches on. Only bare numbers, optionally with `kg` or `+`, are
+  stripped.
+
+The parser reports its guess back to the user under the textarea (format
+read, columns ignored, header dropped, duplicates merged, first and last
+name parsed), because a silent wrong guess is the whole failure mode.
+
+24 new Vitest cases, most of them negative controls, including the real
+80-name Sunny Daze roster as a regression fixture in both its original
+form and as a spreadsheet paste.
+
+---
+
 ## 2026-08-09 -- Saturating slope in Engine C SHIPPED (upgrade arc, session 5)
 
 Implements the "go" half of ADR 0004. Projected gain is now
@@ -2383,8 +2443,43 @@ Phased rollout:
    + frontend `Scout.tsx` tab. Status classification (Rookie /
    Developing / Established / Veteran / Frozen) derived from `n_meets +
    tenure`.
-2. SimplMeet scraper (`data/scrapers/simplmeet.py`).
-3. LiftingCast scraper (`data/scrapers/liftingcast.py`).
+2. ~~SimplMeet scraper (`data/scrapers/simplmeet.py`)~~ **CANCELLED
+   2026-08-09, the platform does not exist.** Two independent web
+   searches return nothing for "SimplMeet" in powerlifting, and
+   `simplmeet.com` serves an expired TLS certificate. The name appears
+   nowhere outside this backlog. Whatever it was meant to refer to, it
+   is not a scrapeable roster source.
+3. ~~LiftingCast scraper (`data/scrapers/liftingcast.py`)~~ **BLOCKED
+   2026-08-09 on robots.txt.** LiftingCast is real and widely used, but
+   its `robots.txt` disallows precisely the paths a roster import needs:
+
+   ```
+   User-agent: *
+   Disallow: /meets/*/lifter/*
+   Disallow: /meets/*/lifter/*/*
+   Disallow: /meets/*/division/*/weightClass/*
+   Disallow: /meets/*/team/*
+   ```
+
+   `/meets/{id}/registration` is not disallowed, so a registration-page
+   import is arguably permitted, but the site is a JS SPA (a plain fetch
+   returns an empty shell) and no terms of service is reachable at
+   `/terms` or linked from the landing page. Automating against a site
+   whose terms cannot be read, to collect athlete names, is not a call to
+   make unilaterally. **Needs Matthias.**
+
+   Worth knowing before that conversation: the meet the Scout MVP was
+   actually validated against, Sunny Daze 2026, is an **OPA** meet, and
+   OPA publishes no entry list at all. Its `Meet Registration.php` page
+   is a blank entry form, and its `robots.txt` is fully permissive
+   (`Crawl-delay: 1`, empty `Disallow`) but there is nothing there to
+   fetch. So a LiftingCast scraper would not have covered the reference
+   use case even if the terms were clear.
+
+**What shipped instead (2026-08-09):** a roster parser that accepts the
+formats entry lists actually arrive in, which removes the manual work
+without depending on any third-party platform. See the session entry at
+the top of this file.
 4. Native PDF export via Playwright screenshot OR the existing
    `html-to-image` dep used by `exportCard.ts`.
 5. Per-user persistence (saved reports, shareable URLs) -- gated on
