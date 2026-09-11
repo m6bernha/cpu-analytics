@@ -299,6 +299,12 @@ class TestLifters:
         body = client.get("/api/lifters/Nobody At All/history").json()
         assert body["found"] is False
 
+    def test_history_rejects_an_oversized_name(self, client):
+        """The path parameter is capped like every other string input;
+        a 5 KB name is a 422, not a DuckDB round trip."""
+        r = client.get("/api/lifters/" + ("x" * 5000) + "/history")
+        assert r.status_code == 422
+
 
 class TestMeets:
     def test_returns_a_known_meet(self, client):

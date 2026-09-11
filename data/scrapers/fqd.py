@@ -19,12 +19,11 @@ API field mapping:
   * ``ac``:       already Open / Sub-Junior / Junior / Master 1-4
   * ``total``:    QT in kg
 
-The FQD API response does not carry an effective year, so the scraper
-emits rows with the configured year (default 2026 -- the year the
-scraper was written against). If FQD revises their standards the API
-payload changes and the orchestrator's diff picks it up; a human
-should then update ``DEFAULT_EFFECTIVE_YEAR`` to bind the new data to
-the correct year.
+The FQD API response does not carry an effective year, so the caller
+must pass one; the orchestrator uses ``base.YEAR_BINDINGS["fqd"]``,
+which ``base.check_year_bindings`` refuses to let go stale. If FQD
+revises their standards the API payload changes and the orchestrator's
+diff picks it up; a human then bumps the binding in ``base.py``.
 
 Nationals rows from this API are ignored. The CPU scraper already
 covers Nationals globally, and we don't want two sources writing into
@@ -44,11 +43,6 @@ FQD_LANDING_URL = "https://www.fqd-quebec.com/standards"
 FQD_API_URL = "https://sheltered-inlet-15640.herokuapp.com/api/v1/standards"
 _USER_AGENT = "cpu-analytics-scraper/1.0 (+contact matthias.bernhard7@gmail.com)"
 _HTTP_TIMEOUT = 30.0
-
-# The API does not report an effective year. Bind the scraped data to
-# this year unless a caller overrides. Bump it when FQD publishes a
-# revision confirmed against the CPU calendar.
-DEFAULT_EFFECTIVE_YEAR = 2026
 
 # weight-class canonicalisation: "-83 kg" -> "83", "120+ kg" -> "120+"
 _WC_RE = re.compile(r"^\s*-?\s*(\d+\+?)\s*kg\s*$", re.IGNORECASE)
@@ -101,7 +95,8 @@ def _normalise_wc(raw: str) -> str | None:
 
 def parse_api_payload(
     records: list[dict],
-    effective_year: int = DEFAULT_EFFECTIVE_YEAR,
+    *,
+    effective_year: int,
 ) -> list[dict]:
     """Convert FQD API records into the common scraper row shape.
 
@@ -149,14 +144,14 @@ def parse_api_payload(
     return out
 
 
-def parse_json_file(path: Path, effective_year: int = DEFAULT_EFFECTIVE_YEAR) -> list[dict]:
+def parse_json_file(path: Path, *, effective_year: int) -> list[dict]:
     """Read a committed snapshot JSON and parse it."""
     import json
     records = json.loads(path.read_text(encoding="utf-8"))
     return parse_api_payload(records, effective_year=effective_year)
 
 
-def scrape(effective_year: int = DEFAULT_EFFECTIVE_YEAR) -> list[dict]:
+def scrape(*, effective_year: int) -> list[dict]:
     """One-shot convenience: fetch the API and return parsed rows."""
     records = fetch_api_json()
     return parse_api_payload(records, effective_year=effective_year)

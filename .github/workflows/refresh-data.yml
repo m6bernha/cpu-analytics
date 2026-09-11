@@ -39,14 +39,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
 
       - name: Install backend deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install --require-hashes -r backend/requirements.lock
 
       - name: Download openipf-latest.zip
         run: |
@@ -109,6 +109,28 @@ jobs:
             data/processed/openipf.parquet
             data/processed/qt_standards.parquet
             data/processed/athlete_projection_tables.json
+
+      # The backend downloads its parquet ONLY when the file is absent, and
+      # the container is rebuilt only on a deploy, so a new data-latest
+      # release reaches production only if something redeploys the service.
+      # Between 2026-08-10 and 2026-09-11 four releases landed while
+      # production kept serving the parquet it booted with. The sitemap PR
+      # below normally triggers that redeploy on merge, but it is a
+      # different failure domain (it needs the Actions PR permission), so
+      # the redeploy is requested directly here. Render exposes a per-service
+      # deploy hook URL (dashboard > service > Settings > Deploy Hook); store
+      # it as the RENDER_DEPLOY_HOOK_URL repository secret. Until the secret
+      # exists this step only warns, so the data upload above stays green.
+      - name: Redeploy the backend so it picks up the new parquet
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL secret is not set; the backend keeps serving the parquet it booted with until the next push to main. Add the secret from the Render dashboard deploy hook."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" -o /dev/null
+          echo "Render deploy requested."
 
       # Sitemaps ship as static files on Vercel rather than from a backend
       # endpoint: Render's free tier can take ~50 s to wake and a crawler

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import logging
+from datetime import date
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -67,6 +68,91 @@ QT_MAX_KG = 900.0
 # the upper bound grows.
 MIN_EXPECTED_ROWS = 100
 MAX_EXPECTED_ROWS = 5000
+
+# Sources whose published standards carry NO effective year anywhere in
+# the payload (the OPA xlsx has no year cell; the FQD JSON API has no
+# year field). The year is therefore a hand-maintained binding, kept in
+# this ONE table so it cannot go stale silently: the parsers take the
+# year as a required argument (no in-parser default), and
+# ``check_year_bindings`` runs at the top of every orchestrator run,
+# warning when a binding is one calendar year behind and FAILING the
+# run when it is two behind. When a federation publishes revised
+# standards, bump its entry here in the same commit as the fixture
+# refresh. Sources that DO carry a year (CPU titles, MPA filename, NSPL
+# per-year tabs, NLPA creation date) are not listed.
+YEAR_BINDINGS: dict[str, int] = {
+    "opa": 2026,
+    "fqd": 2026,
+}
+
+
+class StaleYearBindingError(Exception):
+    """A hand-maintained effective-year binding is too old to trust."""
+
+
+def check_year_bindings(
+    today: date | None = None,
+    bindings: dict[str, int] | None = None,
+) -> list[str]:
+    """Return one warning per binding that is one year behind ``today``.
+
+    Raise ``StaleYearBindingError`` for any binding two or more years
+    behind. Provincial standards for competition year Y are published
+    during Y-1, so a binding that still reads Y-2 in year Y means the
+    federation has almost certainly revised twice since we last looked,
+    and every row we emit under it is mislabelled.
+    """
+    today = today or date.today()
+    bindings = YEAR_BINDINGS if bindings is None else bindings
+    warnings: list[str] = []
+    stale: list[str] = []
+    for source, year in bindings.items():
+        behind = today.year - year
+        if behind >= 2:
+            stale.append(f"{source}={year} ({behind} years behind {today.year})")
+        elif behind == 1:
+            warnings.append(
+                f"{source} effective_year binding is {year}; it is now "
+                f"{today.year}. Check whether the federation has revised "
+                f"and bump base.YEAR_BINDINGS."
+            )
+    if stale:
+        raise StaleYearBindingError(
+            "effective_year bindings too old to trust, refusing to publish "
+            "mislabelled rows: " + "; ".join(stale)
+            + ". Bump data/scrapers/base.py YEAR_BINDINGS after checking "
+            "the source."
+        )
+    for w in warnings:
+        log.warning("%s", w)
+    return warnings
+
+
+def check_federal_coverage(rows: Iterable[dict], today: date | None = None) -> int:
+    """Fail loudly if the CPU federal scrape has no rows for the current year.
+
+    ``cpu.py`` recognises PDF titles per year and crawls a fixed list of
+    landing pages, so a new season (a ``/2028qualifications`` page with new
+    title wording) silently produces NO rows rather than wrong rows. By
+    January of year Y the year-Y standards have been published for months,
+    so their absence means the crawler needs a new landing URL or title
+    pattern. Returns the newest federal year found.
+    """
+    today = today or date.today()
+    years = {
+        int(r["effective_year"]) for r in rows
+        if r.get("level") in ("Nationals", "Regionals")
+    }
+    if not years:
+        raise StaleYearBindingError("no CPU federal rows at all")
+    newest = max(years)
+    if newest < today.year:
+        raise StaleYearBindingError(
+            f"newest CPU federal effective_year is {newest} but it is "
+            f"{today.year}; add the new season's landing URL and title "
+            f"patterns to data/scrapers/cpu.py"
+        )
+    return newest
 
 
 class ValidationError(Exception):

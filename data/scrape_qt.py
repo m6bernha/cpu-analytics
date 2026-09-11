@@ -173,6 +173,11 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     fetched_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     all_rows: list[dict] = []
 
+    # Hand-maintained year bindings (OPA, FQD) must not be stale. Raises
+    # and fails the weekly run once a binding is two years behind; a
+    # warning at one year behind. See base.YEAR_BINDINGS.
+    base.check_year_bindings()
+
     # CPU federal scrape (Nationals + Regionals).
     sources = discover_pdf_urls()
     if not sources:
@@ -184,6 +189,10 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
             r["source_pdf"] = s["url"]
             r["fetched_at"] = fetched_at
         all_rows.extend(rows)
+    # A new CPU season (new landing URL, new title wording) yields NO
+    # rows rather than wrong rows; fail loudly instead of publishing a
+    # CSV that silently lacks the current year.
+    base.check_federal_coverage(all_rows)
 
     # OPA provincial scrape (Ontario). Graceful degrade -- a scraper
     # failure here must not take the whole pipeline down, since the CPU
@@ -191,7 +200,9 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     try:
         opa_url = opa_scraper.discover_xlsx_url()
         opa_path = opa_scraper.download_xlsx(opa_url, tmpdir)
-        opa_rows = opa_scraper.parse_xlsx(opa_path)
+        opa_rows = opa_scraper.parse_xlsx(
+            opa_path, effective_year=base.YEAR_BINDINGS["opa"],
+        )
         for r in opa_rows:
             r["source_pdf"] = opa_url
             r["fetched_at"] = fetched_at
@@ -279,7 +290,9 @@ def _scrape_to_rows(tmpdir: Path) -> list[dict]:
     # backend so Playwright is not required. Same graceful-degrade.
     try:
         fqd_snapshot = fqd_scraper.download_api_snapshot(tmpdir)
-        fqd_rows = fqd_scraper.parse_json_file(fqd_snapshot)
+        fqd_rows = fqd_scraper.parse_json_file(
+            fqd_snapshot, effective_year=base.YEAR_BINDINGS["fqd"],
+        )
         for r in fqd_rows:
             r["source_pdf"] = fqd_scraper.FQD_LANDING_URL
             r["fetched_at"] = fetched_at

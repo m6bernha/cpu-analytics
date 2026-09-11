@@ -10,7 +10,6 @@ Uses the synthetic fixture from conftest.py. The fixture has:
 
 from __future__ import annotations
 
-import pytest
 from backend.app.progression import (
     METRIC_COLS,
     compute_lift_progression,
@@ -42,9 +41,8 @@ class TestBasicProgression:
             x_axis="Days",
         )
         # Only Alice qualifies (3 meets, female, 2+ meets)
-        assert result["n_lifters"] == 1
-        names_in_data = set()
         # The response doesn't expose names, but n_lifters == 1 confirms Dana is excluded
+        assert result["n_lifters"] == 1
 
     def test_first_point_is_zero(self, test_conn):
         """At x=0 (first meet), TotalDiffFromFirst should be ~0."""

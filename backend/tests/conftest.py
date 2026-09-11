@@ -8,8 +8,6 @@ read from the fixture instead of the real data.
 from __future__ import annotations
 
 import os
-import tempfile
-from pathlib import Path
 
 # Rate limiting is covered by dedicated unit tests (test_rate_limit.py)
 # against their own app instance; the shared TestClient suites would trip
@@ -19,8 +17,6 @@ os.environ.setdefault("RATE_LIMIT_ENABLED", "0")
 
 import duckdb
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pytest
 
 # ---------------------------------------------------------------------------

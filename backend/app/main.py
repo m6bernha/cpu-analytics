@@ -11,12 +11,11 @@ import logging
 import math
 import os
 import time
-import traceback
 from contextlib import asynccontextmanager
 from typing import Any
 
 import duckdb
-from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi import FastAPI, HTTPException, Path, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
@@ -476,7 +475,9 @@ def api_lifters_search(
 
 
 @app.get("/api/lifters/{name}/history")
-def api_lifter_history(name: str) -> dict[str, Any]:
+def api_lifter_history(
+    name: str = Path(..., min_length=1, max_length=200),
+) -> dict[str, Any]:
     return _clean(lifters_mod.get_lifter_history(name))
 
 
