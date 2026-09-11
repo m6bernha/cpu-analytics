@@ -946,7 +946,8 @@ the approved roadmap, all deployed and verified live:
 ## 2026-07-02 -- Scout WIP lock + bundle regression fixed
 
 - **Scout locked as WIP** (`SCOUT_LOCKED = true` in
-  `frontend/src/tabs/Scout.tsx`, commit `b2f38c7`). Tab stays public, page
+  `frontend/src/tabs/Scout.tsx`, commit `b2f38c7`; UNLOCKED again
+  2026-08-04, see that entry). Tab stays public, page
   shows a WIP notice with the form greyed out and disabled. Matthias's
   call: the page was vibe-coded and needs validation before anyone uses
   it. Unlock checklist before flipping the flag: manual-override form UI,

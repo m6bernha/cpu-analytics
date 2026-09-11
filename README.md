@@ -226,14 +226,15 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 ### Tests
 
 ```bash
-# Backend tests (371 passing, 1 skipped)
+# Backend tests. Counts as of 2026-09-11: 519 pytest (1 skipped), 158 Vitest,
+# 7 Playwright. This is the ONE place counts are recorded; other docs point here.
 .venv/Scripts/python -m pytest backend/tests/ -v
 
-# Frontend unit tests (72 Vitest passing — percentile + useUrlState + MethodPill
-#   + Banner + meetTier + AthleteCard + Scout roster/override helpers)
+# Frontend unit tests (Vitest: percentile, useUrlState, MethodPill, Banner,
+#   meetTier, AthleteCard, MeetRecapCard, ogMeta, route, Scout roster/override helpers)
 cd frontend && npm run test
 
-# Frontend E2E smoke (6 Playwright tests, a real CI gate; first local run
+# Frontend E2E smoke (Playwright, a real CI gate; first local run
 #   needs `npx playwright install chromium`. NOTE: routes 4-5 assert on the
 #   synthetic fixture lifters, so a real preprocessed parquet fails them —
 #   back up data/processed/ and run scripts/make_synthetic_data.py --force)
@@ -306,7 +307,7 @@ cpu-analytics/
       lifters.py         Search + per-lifter history
       manual.py          Manual-entry trajectory builder (validated)
       weight_class.py    Canonical M/F class mapping
-    tests/               pytest + Hypothesis (158 tests)
+    tests/               pytest + Hypothesis (count: see Tests section)
     requirements.txt
   data/
     preprocess.py        CSV -> Parquet, applies Canada+IPF filter

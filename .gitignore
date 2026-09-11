@@ -23,8 +23,11 @@ frontend/node_modules/
 frontend/dist/
 .DS_Store
 
-# Claude Code per-project hook/config/launch directory.
-.claude/
+# Claude Code per-project hook/config/launch directory. launch.json is
+# tracked so the desktop app's preview_start finds both dev servers on
+# either machine; settings.local.json stays machine-local.
+.claude/*
+!.claude/launch.json
 
 # Verification scratch files from VSCode Claude verification runs.
 # These are ad-hoc curl dumps, not source of truth.
