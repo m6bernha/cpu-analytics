@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import { type AthleteProjectionResponse } from '../../lib/api'
+import { addDaysISO, parseIsoDateParts } from '../../lib/format'
 
 type LiftKey = 'total' | 'squat' | 'bench' | 'deadlift'
 
@@ -33,18 +34,10 @@ type ChartRow = {
   piBand?: [number, number]
 }
 
-function addDaysISO(isoDate: string, days: number): string {
-  const [y, m, d] = isoDate.split('-').map(Number)
-  const dt = new Date(Date.UTC(y, m - 1, d))
-  dt.setUTCDate(dt.getUTCDate() + Math.round(days))
-  const yy = dt.getUTCFullYear()
-  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(dt.getUTCDate()).padStart(2, '0')
-  return `${yy}-${mm}-${dd}`
-}
-
 function fmtDateLong(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
+  const parts = parseIsoDateParts(iso)
+  if (!parts) return iso
+  const [y, m, d] = parts
   const dt = new Date(Date.UTC(y, m - 1, d))
   return dt.toLocaleDateString('en-CA', {
     timeZone: 'UTC',
