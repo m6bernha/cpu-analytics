@@ -20,6 +20,9 @@ jobs:
   frontend:
     name: Frontend (tsc + build)
     runs-on: ubuntu-latest
+    # A wedged uvicorn boot or a hung npm install would otherwise run to
+    # GitHub's 6 h default; the slowest green job is ~4 min.
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -43,6 +46,9 @@ jobs:
   backend:
     name: Backend (pytest)
     runs-on: ubuntu-latest
+    # A wedged uvicorn boot or a hung npm install would otherwise run to
+    # GitHub's 6 h default; the slowest green job is ~4 min.
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -81,6 +87,9 @@ jobs:
   e2e:
     name: E2E (Playwright smoke)
     runs-on: ubuntu-latest
+    # A wedged uvicorn boot or a hung npm install would otherwise run to
+    # GitHub's 6 h default; the slowest green job is ~4 min.
+    timeout-minutes: 15
     # Smoke suite: 6 tests covering the public routes (Progression,
     # Qualifying Totals, Lifter Lookup search/detail/compare/manual).
     # A REAL backend runs against the synthetic pytest fixtures
