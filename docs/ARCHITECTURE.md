@@ -319,18 +319,18 @@ tab is open, since tabs live in the query string.
 
 ## Testing
 
-- **Backend**: pytest + Hypothesis property tests. 406 tests passing,
-  1 skipped. Covers progression aggregation, rankings (leaderboard +
+- **Backend**: pytest + Hypothesis property tests (count in README's
+  Tests section). Covers progression aggregation, rankings (leaderboard +
   GLP percentile curves), lifter search, PR detection, manual-entry
   validation, QT coverage (federal + 6 provincial scrapers), athlete
   projection (Engine C + Engine D), scout report generation, per-IP
   rate limiting, sitemap URL encoding, concurrency (32 parallel threads
   against DuckDB), and weight-class canonicalization.
 - **Frontend**: Vite production build + strict TypeScript serve as the
-  primary gate. 107 Vitest unit tests (ogMeta + route + percentile +
-  useUrlState + MethodPill + Banner + meetTier + AthleteCard + Scout
-  roster/override helpers) and 6 Playwright E2E smoke tests, all
-  running in CI.
+  primary gate. Vitest unit tests (ogMeta + route + percentile +
+  useUrlState + MethodPill + Banner + meetTier + AthleteCard +
+  MeetRecapCard + Scout roster/override helpers) and Playwright E2E smoke
+  tests, all running in CI. Counts live in README.
 - **CI**: `.github/workflows/ci.yml` runs all three jobs on every push
   and PR in parallel, target wall-clock under 3 minutes. Branch
   protection on `main` requires all three: `Frontend (tsc + build)`,

@@ -536,7 +536,8 @@ def mixed_effects_projection(
         total_projected = list(base.total_projected_points)
 
     # Engine D is "available" for this response only when:
-    #   1. The global gate is on (live precompute >= 90% convergence).
+    #   1. The global gate is on (live precompute >= ENGINE_D_GLOBAL_GATE_THRESHOLD,
+    #      0.70 since 2026-04-30; see athlete_projection_tables.py).
     #   2. At least one lift actually used MixedLM (not all-fallback).
     engine_d_available = (
         tables.is_engine_d_globally_available() and not all_fell_back
