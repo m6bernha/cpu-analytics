@@ -226,7 +226,7 @@ http://127.0.0.1:8000. Override with `VITE_API_BASE` env var.
 ### Tests
 
 ```bash
-# Backend tests. Counts as of 2026-09-11: 519 pytest (1 skipped), 158 Vitest,
+# Backend tests. Counts as of 2026-09-13 (audit PR stack #28-#33): 567 pytest (1 skipped), 173 Vitest,
 # 7 Playwright. This is the ONE place counts are recorded; other docs point here.
 .venv/Scripts/python -m pytest backend/tests/ -v
 
