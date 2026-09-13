@@ -179,9 +179,12 @@ class TestQt:
         body = client.get("/api/qt/standards").json()
         assert isinstance(body, list) and body
 
-    def test_coverage_happy_path(self, client):
-        r = client.get("/api/qt/coverage")
-        assert r.status_code == 200
+    def test_legacy_coverage_endpoint_is_gone(self, client):
+        # Removed 2026-09-11: no frontend consumer since the unified live
+        # view (2026-04-22), and an unconsumed public GET that runs a
+        # DuckDB aggregate is attack surface. compute_coverage() itself
+        # stays, with its own tests, behind /api/qt/standards' narrative.
+        assert client.get("/api/qt/coverage").status_code == 404
 
     def test_live_filters_reports_availability(self, client):
         body = client.get("/api/qt/live/filters").json()

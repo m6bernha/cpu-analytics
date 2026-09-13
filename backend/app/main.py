@@ -358,26 +358,6 @@ def api_qt_standards(request: Request, response: Response) -> Any:
     return _clean(df.to_dict(orient="records"))
 
 
-@app.get("/api/qt/coverage")
-def api_qt_coverage(
-    country: str = Query("Canada"),
-    federation: str = Query("CPU"),
-    equipment: str = Query("Raw"),
-    tested: str = Query("Yes"),
-    event: str = Query("SBD"),
-    age_filter: str = Query("open", description="'open' or 'all'"),
-) -> list[dict[str, Any]]:
-    df = qt_mod.compute_coverage(
-        country=country,
-        federation=federation,
-        equipment=equipment,
-        tested=tested,
-        event=event,
-        age_filter=age_filter,
-    )
-    return _clean(df.to_dict(orient="records"))
-
-
 @app.get("/api/cohort/progression")
 def api_progression(
     sex: str | None = Query(None),

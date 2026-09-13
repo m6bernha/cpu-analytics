@@ -22,6 +22,7 @@ import {
   type QtLiveFilters,
 } from '../lib/api'
 import { LoadingSkeleton, QueryErrorCard } from '../lib/QueryStatus'
+import { resolveEffectiveYear } from '../lib/effectiveYear'
 
 function fmtPct(v: number | null | undefined): string {
   if (v == null || Number.isNaN(v)) return '—'
@@ -85,7 +86,10 @@ export default function QtLiveCoveragePanel() {
   const [sex, setSex] = useState<SexT>('M')
   const [level, setLevel] = useState<LevelT>('Nationals')
   const [division, setDivision] = useState<string>('Open')
-  const [effectiveYear, setEffectiveYear] = useState<number>(2027)
+  // null = "newest year the backend knows about". Resolved once the
+  // filters load, so a 2028 standards drop changes the default without
+  // a code edit. 2027 is only the pre-load fallback; it is NOT a data fact.
+  const [effectiveYearPick, setEffectiveYearPick] = useState<number | null>(null)
   const [region, setRegion] = useState<string>('')
   const [province, setProvince] = useState<string>('Ontario')
 
@@ -95,6 +99,9 @@ export default function QtLiveCoveragePanel() {
     staleTime: 10 * 60 * 1000,
     retry: 3,
   })
+  const effectiveYear = resolveEffectiveYear(
+    effectiveYearPick, filtersQuery.data?.effective_years,
+  )
 
   const regionApplies = level === 'Regionals' && effectiveYear === 2027
   const provinceApplies = level === 'Provincials'
@@ -236,7 +243,7 @@ export default function QtLiveCoveragePanel() {
           <select
             className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded px-2 py-1 text-sm"
             value={effectiveYear}
-            onChange={(e) => setEffectiveYear(Number(e.target.value))}
+            onChange={(e) => setEffectiveYearPick(Number(e.target.value))}
           >
             {(filters.effective_years ?? [2026, 2027]).map((y) => (
               <option key={y} value={y}>{y}</option>
