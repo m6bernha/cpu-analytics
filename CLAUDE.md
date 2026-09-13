@@ -31,7 +31,7 @@ Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 
 ## Stack
 
-- **Backend:** FastAPI + DuckDB over Parquet, Python 3.11+ (prod runs 3.12 via Docker).
+- **Backend:** FastAPI + DuckDB over Parquet, Python 3.12 everywhere that matters (Dockerfile, CI, both data workflows, all aligned 2026-09-11). The local venv may be newer; `backend/requirements.lock` is resolved for 3.12.
 - **Frontend:** Vite + React 19 + TypeScript + TanStack Query + Recharts + Tailwind v3.
 - **Data pipeline:** GitHub Actions workflow (Sundays 06:13 UTC) downloads openipf-latest.zip, runs `data/preprocess.py`, publishes parquet to a rolling `data-latest` GitHub Release.
 - **Backend hosting:** Render.com free tier (`render.yaml`). 15-min idle spindown, ~20-50 s cold start.
@@ -45,7 +45,7 @@ Data source: OpenPowerlifting OpenIPF bulk export, refreshed weekly.
 cd cpu-analytics
 python -m venv .venv
 .venv/Scripts/activate      # Windows
-pip install -r backend/requirements.txt
+pip install -r backend/requirements.txt   # local dev; prod/CI use requirements.lock
 
 # Preprocess (requires sibling openipf-2025-11-08/ directory with the CSV)
 python data/preprocess.py
@@ -321,6 +321,10 @@ Backend defaults enforce Country=Canada, ParentFederation=IPF (see `backend/app/
 
 - `data/preprocess.py` writes `openipf.parquet` + `qt_standards.parquet` to `data/processed/` (gitignored).
 - Production containers download these two files from the `data-latest` GitHub Release on first request (`backend/app/data_loader.py`).
+- **A new release reaches production only via a redeploy** (found 2026-09-11). `ensure_parquets` downloads only when the file is absent and the container is rebuilt only on a deploy, so the weekly release is invisible until something redeploys the service. Four releases went unused between 2026-08-10 and 2026-09-11. `refresh-data.yml` now POSTs the Render deploy hook right after the upload (secret `RENDER_DEPLOY_HOOK_URL`; the step only warns until the secret exists). The sitemap PR merge is the other trigger and depends on the Actions PR permission.
+- **Dependencies are locked.** `backend/requirements.txt` is the human-edited input; `backend/requirements.lock` (exact pins + hashes, `uv pip compile ... --python-version 3.12 --universal`) is what Docker, CI, and both data workflows install with `--require-hashes`. Edit the txt, regenerate the lock (command in the txt header), commit both. Verified 2026-09-11 by running the full suite on a 3.12 venv synced from the lock.
+- **`ruff check backend data scripts` is a CI gate** (pyflakes rules only, config in `ruff.toml`). It found two undefined names and a dozen dead imports on first run. The facade `athlete_projection.py` is exempt from F401 because its private re-exports are the point.
+- **Effective-year bindings for OPA and FQD live in `data/scrapers/base.py` `YEAR_BINDINGS`.** Neither source publishes a year, so the parsers take `effective_year` as a required keyword and the orchestrator passes the binding. `check_year_bindings` warns at one calendar year behind and FAILS the weekly run at two; `check_federal_coverage` fails the run if the newest CPU federal year is older than the current year (a new `/2028qualifications` page would otherwise yield zero rows, silently). When a federation revises, bump the binding in the same commit as the fixture refresh.
 - `data/qualifying_totals_canpl.csv` is vendored into git (32 rows, hand-curated). Historical pre-2025 / 2025 values only. CI needs it available without the 285 MB OpenIPF CSV. Once the live QT pipeline (see below) is wired through, this file is also the bootstrap fallback when the scraped CSV can't be fetched.
 - **Live QT scraper** (Phase 1a + 1b + 1c-backend + 1c-frontend-MVP shipped 2026-04-21). `data/scrapers/cpu.py` parses CPU qualifying-total PDFs from powerlifting.ca via pdfplumber. Shared schema + validation at `data/scrapers/base.py`. Orchestrator at `data/scrape_qt.py` (CLI: `--once --output-dir OUT [--existing CSV]`, `--dry-run`, `--regenerate-fixtures`). Fixture tests at `backend/tests/test_scrape_qt.py` lock parser output row-for-row. Scope: Classic + SBD only; Equipped and Bench Only filtered out by orchestrator.
 - **Weekly QT refresh workflow** at `.github/workflows/qt_refresh.yml`: Sundays 06:43 UTC + manual dispatch. Downloads last-published `qt_current.csv` from the `data-latest` release, reruns scraper, and on diff: uploads new CSV, opens an issue with the row-level diff, commits a snapshot to `data/qt_history/YYYY-MM-DD.csv`. Uses default `GITHUB_TOKEN`; no new secrets.

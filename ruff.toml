@@ -1,0 +1,15 @@
+# Backend lint gate, added 2026-09-11. Pyflakes only (unused imports,
+# undefined names, unused variables): the classes of defect that read as
+# fine and fail at runtime. Style rules are deliberately NOT enabled; the
+# codebase predates the linter and a style sweep would be noise.
+target-version = "py312"
+line-length = 120
+extend-exclude = [".venv", ".pytest_tmp", "node_modules", "frontend"]
+
+[lint]
+select = ["F"]
+
+[lint.per-file-ignores]
+# The facade re-exports private helpers so tests and offline scripts can
+# reach them through one import path; ruff sees "imported but unused".
+"backend/app/athlete_projection.py" = ["F401"]

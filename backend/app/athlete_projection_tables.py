@@ -26,6 +26,7 @@ from __future__ import annotations
 import logging
 import warnings
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -285,17 +286,16 @@ def _tables_to_dict() -> dict[str, Any]:
     }
 
 
-def serialize_tables(path: "Path") -> None:
+def serialize_tables(path: Path) -> None:
     """Write the in-memory cohort + K-M tables to ``path`` as JSON.
 
     The companion loader is load_serialized_tables(). Intended for
     data/preprocess.py which runs in CI after openipf.parquet is written.
     """
     import json
-    from pathlib import Path as _Path
 
-    if not isinstance(path, _Path):
-        path = _Path(path)
+    if not isinstance(path, Path):
+        path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(_tables_to_dict(), f, separators=(",", ":"))
@@ -305,7 +305,7 @@ def serialize_tables(path: "Path") -> None:
     )
 
 
-def load_serialized_tables(path: "Path") -> dict[str, int]:
+def load_serialized_tables(path: Path) -> dict[str, int]:
     """Populate module-level tables from a serialized artifact on disk.
 
     Replaces a full ``precompute_tables(cursor)`` call when the artifact
@@ -319,14 +319,13 @@ def load_serialized_tables(path: "Path") -> dict[str, int]:
     Returns the same stats shape as precompute_tables.
     """
     import json
-    from pathlib import Path as _Path
 
     global _COHORT, _KM, _MIXEDLM
     global _MIXEDLM_CONVERGED_PCT, _ENGINE_D_GLOBAL_AVAILABLE
     global _PRECOMPUTED
 
-    if not isinstance(path, _Path):
-        path = _Path(path)
+    if not isinstance(path, Path):
+        path = Path(path)
     with path.open("r", encoding="utf-8") as f:
         doc = json.load(f)
 

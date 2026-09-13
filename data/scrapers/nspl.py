@@ -28,7 +28,6 @@ effective years and keeps whichever tabs return non-empty data.
 from __future__ import annotations
 
 import csv
-import io
 import logging
 from datetime import datetime, timezone
 from pathlib import Path

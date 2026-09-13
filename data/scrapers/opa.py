@@ -194,9 +194,12 @@ def _parse_qt(value) -> float | None:
         return None
 
 
-def parse_xlsx(xlsx_path: Path) -> list[dict]:
+def parse_xlsx(xlsx_path: Path, *, effective_year: int) -> list[dict]:
     """
     Parse the OPA Classic sheet into QT rows.
+
+    The sheet carries no effective year anywhere, so the caller must
+    supply one (the orchestrator passes ``base.YEAR_BINDINGS["opa"]``).
 
     Scope: Classic + SBD only. Equipped and Bench sheets are skipped.
     Returns a list of row dicts matching ``data.scrapers.base.CSV_FIELDS``
@@ -262,7 +265,7 @@ def parse_xlsx(xlsx_path: Path) -> list[dict]:
                 "event": "SBD",
                 "weight_class": wc,
                 "qt": qt,
-                "effective_year": 2026,
+                "effective_year": effective_year,
                 "province": "Ontario",
             })
 
@@ -270,8 +273,8 @@ def parse_xlsx(xlsx_path: Path) -> list[dict]:
     return rows
 
 
-def parse_xlsxes(paths: Iterable[Path]) -> list[dict]:
+def parse_xlsxes(paths: Iterable[Path], *, effective_year: int) -> list[dict]:
     out: list[dict] = []
     for p in paths:
-        out.extend(parse_xlsx(p))
+        out.extend(parse_xlsx(p, effective_year=effective_year))
     return out

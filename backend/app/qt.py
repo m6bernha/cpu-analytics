@@ -11,13 +11,12 @@ Canada/CPU/Raw/Tested/SBD scope.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import lru_cache
 
 import numpy as np
 import pandas as pd
 
 from .data import get_cursor, is_qt_current_available
-from .scope import DEFAULT_COUNTRY, DEFAULT_PARENT_FEDERATION
+from .scope import DEFAULT_COUNTRY
 
 
 # =========================

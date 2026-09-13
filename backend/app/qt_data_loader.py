@@ -74,10 +74,13 @@ def _download(url: str, dest: Path, max_retries: int = 3) -> None:
             TimeoutError,
             ConnectionResetError,
         ) as exc:
-            is_retryable = (
-                isinstance(exc, urllib.error.HTTPError)
-                and exc.code in (429, 500, 502, 503, 504)
-            ) or isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionResetError))
+            # HTTPError is a subclass of URLError, so it must be classified
+            # FIRST: a 404 or 403 is a permanent answer, not a transient
+            # fault, and retrying it only delays boot.
+            if isinstance(exc, urllib.error.HTTPError):
+                is_retryable = exc.code in (429, 500, 502, 503, 504)
+            else:
+                is_retryable = True
             if not is_retryable or attempt >= max_retries - 1:
                 raise
             wait_secs = backoff_secs[min(attempt, len(backoff_secs) - 1)]

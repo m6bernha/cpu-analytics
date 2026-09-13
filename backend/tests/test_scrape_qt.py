@@ -304,7 +304,7 @@ OPA_FIXTURE = FIXTURE_DIR / "opa_provincial_classic.xlsx"
 
 
 def test_opa_parse_xlsx_expected_shape() -> None:
-    rows = opa_scraper.parse_xlsx(OPA_FIXTURE)
+    rows = opa_scraper.parse_xlsx(OPA_FIXTURE, effective_year=2026)
     # OPA Classic: 7 divisions x 2 sexes, 9 weight classes each, minus
     # "-" entries. Observed total: 116 rows.
     assert 100 <= len(rows) <= 130, f"unexpected row count {len(rows)}"
@@ -318,7 +318,7 @@ def test_opa_parse_xlsx_expected_shape() -> None:
 
 def test_opa_open_rows_match_known_values() -> None:
     """Spot-check well-known QTs from the OPA Classic Open 2026 table."""
-    rows = opa_scraper.parse_xlsx(OPA_FIXTURE)
+    rows = opa_scraper.parse_xlsx(OPA_FIXTURE, effective_year=2026)
     by_key = {
         (r["sex"], r["division"], r["weight_class"]): r["qt"]
         for r in rows
@@ -331,7 +331,7 @@ def test_opa_open_rows_match_known_values() -> None:
 
 
 def test_opa_rows_pass_validation() -> None:
-    for row in opa_scraper.parse_xlsx(OPA_FIXTURE):
+    for row in opa_scraper.parse_xlsx(OPA_FIXTURE, effective_year=2026):
         base.validate_row(row)
 
 
@@ -702,7 +702,7 @@ def test_fqd_snapshot_fixture_present() -> None:
 def test_fqd_parse_matches_expected_csv() -> None:
     expected_csv = FQD_SNAPSHOT.with_suffix(".expected.csv")
     assert expected_csv.exists(), f"missing {expected_csv.name}"
-    actual = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    actual = fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026)
     expected = _load_expected(expected_csv)
     assert len(actual) == len(expected), (
         f"row count drift: parser={len(actual)} fixture={len(expected)}"
@@ -713,7 +713,7 @@ def test_fqd_parse_matches_expected_csv() -> None:
 
 def test_fqd_classic_sbd_open_rows_match_audit_values() -> None:
     """Audit spot checks (Provincial Classic + SBD only)."""
-    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026)
     scope = [
         r for r in rows if r["equipment"] == "Classic" and r["event"] == "SBD"
     ]
@@ -736,17 +736,17 @@ def test_fqd_drops_nationals_rows() -> None:
     assert nats_count > 0, (
         "fixture should contain nationals records to prove the filter"
     )
-    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026)
     assert all(r["level"] == "Provincials" for r in rows)
 
 
 def test_fqd_rows_pass_row_validation() -> None:
-    for row in fqd_scraper.parse_json_file(FQD_SNAPSHOT):
+    for row in fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026):
         base.validate_row(row)
 
 
 def test_fqd_province_locked() -> None:
-    for r in fqd_scraper.parse_json_file(FQD_SNAPSHOT):
+    for r in fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026):
         assert r["province"] == "Quebec"
         assert r["level"] == "Provincials"
         assert r["region"] is None
@@ -755,7 +755,7 @@ def test_fqd_province_locked() -> None:
 def test_fqd_weight_class_normalisation() -> None:
     """The API returns '-83 kg' / '120+ kg' / '84+ kg'. The parser must
     normalise to '83' / '120+' / '84+' to match base.VALID_WEIGHT_CLASSES."""
-    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT)
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2026)
     wcs = {r["weight_class"] for r in rows if r["sex"] == "M"}
     assert "83" in wcs
     assert "120+" in wcs
@@ -791,3 +791,82 @@ def test_run_once_emits_github_outputs(tmp_path, monkeypatch) -> None:
     assert "changed=true" in content
     assert "row_count=" in content
     assert "added_count=" in content
+
+
+# --------------------------------------------------------------------------
+# Effective-year bindings (added 2026-09-11). OPA and FQD publish no year,
+# so the year is a hand-maintained binding in base.YEAR_BINDINGS. These
+# tests lock two things: the parsers emit the year they were GIVEN (the
+# old code carried a `2026` literal, so parsing with any other year is
+# the negative control), and the freshness guard fails loudly instead of
+# letting the binding rot.
+# --------------------------------------------------------------------------
+from datetime import date as _date  # noqa: E402
+
+
+def test_opa_emits_the_bound_year_not_a_literal() -> None:
+    rows = opa_scraper.parse_xlsx(OPA_FIXTURE, effective_year=2031)
+    assert rows, "fixture parsed to zero rows"
+    assert {r["effective_year"] for r in rows} == {2031}
+
+
+def test_fqd_emits_the_bound_year_not_a_literal() -> None:
+    rows = fqd_scraper.parse_json_file(FQD_SNAPSHOT, effective_year=2031)
+    assert rows, "fixture parsed to zero rows"
+    assert {r["effective_year"] for r in rows} == {2031}
+
+
+def test_year_parsers_refuse_to_default() -> None:
+    # No hidden default: a caller that forgets the year gets a TypeError,
+    # not silently-2026 rows.
+    with pytest.raises(TypeError):
+        opa_scraper.parse_xlsx(OPA_FIXTURE)  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        fqd_scraper.parse_json_file(FQD_SNAPSHOT)  # type: ignore[call-arg]
+
+
+def test_year_bindings_current_today() -> None:
+    # The committed table must be usable today. If this fails in January,
+    # the fix is to check the federations and bump base.YEAR_BINDINGS.
+    warnings = base.check_year_bindings()
+    assert warnings == [], warnings
+
+
+def test_year_bindings_warn_at_one_year_behind() -> None:
+    warnings = base.check_year_bindings(
+        today=_date(2027, 3, 1), bindings={"opa": 2026, "fqd": 2027},
+    )
+    assert len(warnings) == 1
+    assert "opa" in warnings[0] and "2026" in warnings[0]
+
+
+def test_year_bindings_fail_at_two_years_behind() -> None:
+    with pytest.raises(base.StaleYearBindingError, match="opa=2026"):
+        base.check_year_bindings(
+            today=_date(2028, 1, 15), bindings={"opa": 2026, "fqd": 2028},
+        )
+
+
+def test_federal_coverage_passes_when_current_year_present() -> None:
+    rows = [
+        {"level": "Nationals", "effective_year": 2026},
+        {"level": "Regionals", "effective_year": 2027},
+        {"level": "Provincials", "effective_year": 2030},  # ignored
+    ]
+    assert base.check_federal_coverage(rows, today=_date(2027, 6, 1)) == 2027
+
+
+def test_federal_coverage_fails_when_new_season_missing() -> None:
+    # The crawler's landing-URL list did not pick up /2028qualifications,
+    # so the newest federal year is still 2027 in 2028.
+    rows = [{"level": "Nationals", "effective_year": 2027}]
+    with pytest.raises(base.StaleYearBindingError, match="2027 but it is 2028"):
+        base.check_federal_coverage(rows, today=_date(2028, 2, 1))
+
+
+def test_federal_coverage_fails_on_zero_federal_rows() -> None:
+    with pytest.raises(base.StaleYearBindingError, match="no CPU federal rows"):
+        base.check_federal_coverage(
+            [{"level": "Provincials", "effective_year": 2027}],
+            today=_date(2027, 1, 1),
+        )

@@ -20,4 +20,7 @@ jobs:
         with:
           comment-pr: true
           claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          exclude-directories: 'data/'
+          # data/scrapers/ parses untrusted third-party PDFs, xlsx, docx,
+          # HTML and JSON, so it must stay IN scope. Only vendored history
+          # snapshots and hand-transcribed tables are excluded.
+          exclude-directories: 'data/qt_history/,data/scrapers/apu_transcribed/'

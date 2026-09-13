@@ -5,7 +5,6 @@ Uses the synthetic fixture from conftest.py.
 
 from __future__ import annotations
 
-import pytest
 from backend.app.lifters import search_lifters, get_lifter_history
 
 

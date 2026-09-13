@@ -1,3 +1,8 @@
+# Human-edited INPUT. Production, CI, and the data workflows install from
+# backend/requirements.lock (exact pins + hashes, resolved for Python 3.12).
+# After editing this file, regenerate the lock and commit both:
+#   uv pip compile backend/requirements.txt --python-version 3.12 \n#     --universal --generate-hashes -o backend/requirements.lock
+# Local dev on the 3.14 venv may still `pip install -r requirements.txt`.
 fastapi>=0.110
 uvicorn[standard]>=0.29
 duckdb>=1.0
@@ -28,3 +33,5 @@ Brotli>=1.1
 # for Engine D MixedLM once the toggle is unblocked.
 scipy>=1.12
 statsmodels>=0.14
+# Lint gate (pyflakes rules only; see ruff.toml). CI runs `ruff check`.
+ruff>=0.6
