@@ -473,6 +473,79 @@ def _effective_days(t: float, tau: float | None) -> float:
     return tau * (1.0 - math.exp(-t / tau))
 
 
+def _blend_slopes(
+    slope_personal: float | None,
+    slope_cohort: float | None,
+    w_personal: float,
+) -> float | None:
+    """Slope-only Bayesian shrinkage: w * personal + (1 - w) * cohort.
+
+    Falls back to whichever slope exists when the other is missing, and
+    returns None when neither does. Pure; used for the reported headline
+    slope and again for every horizon segment (whose cohort slope can
+    change at a GLP-bracket transition while the personal slope stays
+    fixed).
+    """
+    if slope_personal is not None and slope_cohort is not None:
+        return w_personal * slope_personal + (1.0 - w_personal) * slope_cohort
+    if slope_personal is not None:
+        return slope_personal
+    if slope_cohort is not None:
+        return slope_cohort
+    return None
+
+
+def _pi_variance_at(
+    next_day: float,
+    t_offset: float,
+    *,
+    n_meets: int,
+    slope_personal: float | None,
+    sigma_personal: float | None,
+    s_xx: float | None,
+    t_mean_days: float | None,
+    seg_slope_cohort: float | None,
+    seg_sigma_cohort: float,
+    km_multiplier: float,
+    w_personal: float,
+    sigma_resid: float,
+) -> float:
+    """Prediction-interval variance at one horizon point.
+
+      var_personal = sigma_personal^2 * (1 + 1/n + (t - t_mean)^2 / S_xx)
+      var_cohort   = (cohort_slope_std * km_mult * t_offset)^2
+      var_total    = w_p^2 * var_personal + (1 - w_p)^2 * var_cohort
+
+    ``t_offset`` is the EFFECTIVE (damped) elapsed time, since d(gain)/d(slope)
+    is exactly that quantity; the personal term keeps raw ``next_day`` and is
+    therefore deliberately conservative. The weights collapse to a single
+    source when the other side has no data, and to a neutral
+    ``sigma_resid^2`` band when neither does. Pure.
+    """
+    if s_xx is not None and s_xx > 0 and sigma_personal is not None and n_meets >= 2:
+        var_personal_at_t = sigma_personal ** 2 * (
+            1.0 + 1.0 / n_meets
+            + (next_day - (t_mean_days or 0.0)) ** 2 / s_xx
+        )
+    else:
+        var_personal_at_t = 0.0
+    var_cohort_at_t = (seg_sigma_cohort * km_multiplier * t_offset) ** 2
+
+    w2_personal = w_personal ** 2
+    w2_cohort = (1.0 - w_personal) ** 2
+    if slope_personal is None:
+        w2_cohort = 1.0
+        w2_personal = 0.0
+    if seg_slope_cohort is None:
+        w2_cohort = 0.0
+        w2_personal = 1.0 if slope_personal is not None else 0.0
+    var_total = w2_personal * var_personal_at_t + w2_cohort * var_cohort_at_t
+    if w2_personal == 0 and w2_cohort == 0:
+        # No data whatsoever, show a neutral band from sigma_resid.
+        var_total = sigma_resid ** 2
+    return var_total
+
+
 def _project_single_lift(
     lifter_df: pd.DataFrame,
     lift: str,
@@ -562,16 +635,8 @@ def _project_single_lift(
 
     # Combined slope (for the reported top-level metric; segments may differ).
     w_personal = n_meets / (n_meets + SHRINKAGE_K)
-    slope_combined: float | None = None
-    if slope_personal is not None and initial_slope_cohort is not None:
-        slope_combined = (
-            w_personal * slope_personal
-            + (1 - w_personal) * initial_slope_cohort
-        )
-    elif slope_personal is not None:
-        slope_combined = slope_personal
-    elif initial_slope_cohort is not None:
-        slope_combined = initial_slope_cohort
+    slope_combined = _blend_slopes(slope_personal, initial_slope_cohort, w_personal)
+    if slope_personal is None and initial_slope_cohort is not None:
         w_personal = 0.0  # no personal data -> pure cohort
 
     # Instantaneous kg noise. Prefer the lifter's own residual std.
@@ -604,16 +669,8 @@ def _project_single_lift(
             seg_slope_cohort, seg_sigma_cohort = _cell_slope(seg_cell)
 
             # Segment combined slope with slope-only shrinkage.
-            if slope_personal is not None and seg_slope_cohort is not None:
-                seg_slope = (
-                    w_personal * slope_personal
-                    + (1 - w_personal) * seg_slope_cohort
-                )
-            elif slope_personal is not None:
-                seg_slope = slope_personal
-            elif seg_slope_cohort is not None:
-                seg_slope = seg_slope_cohort
-            else:
+            seg_slope = _blend_slopes(slope_personal, seg_slope_cohort, w_personal)
+            if seg_slope is None:
                 seg_slope = 0.0
 
             # Damped gain for this segment. Written as the DIFFERENCE of
@@ -629,32 +686,14 @@ def _project_single_lift(
 
             # PI variance at this horizon point.
             t_offset = _effective_days(next_day - last_meet_day, damping_tau_days)
-            if s_xx is not None and s_xx > 0 and sigma_personal is not None and n_meets >= 2:
-                var_personal_at_t = sigma_personal ** 2 * (
-                    1.0 + 1.0 / n_meets
-                    + (next_day - (t_mean_days or 0.0)) ** 2 / s_xx
-                )
-            else:
-                var_personal_at_t = 0.0
-            var_cohort_at_t = (
-                seg_sigma_cohort * km_multiplier * t_offset
-            ) ** 2
-
-            w2_personal = w_personal ** 2
-            w2_cohort = (1.0 - w_personal) ** 2
-            if slope_personal is None:
-                w2_cohort = 1.0
-                w2_personal = 0.0
-            if seg_slope_cohort is None:
-                w2_cohort = 0.0
-                w2_personal = 1.0 if slope_personal is not None else 0.0
-            var_total = (
-                w2_personal * var_personal_at_t
-                + w2_cohort * var_cohort_at_t
+            var_total = _pi_variance_at(
+                next_day, t_offset,
+                n_meets=n_meets, slope_personal=slope_personal,
+                sigma_personal=sigma_personal, s_xx=s_xx, t_mean_days=t_mean_days,
+                seg_slope_cohort=seg_slope_cohort, seg_sigma_cohort=seg_sigma_cohort,
+                km_multiplier=km_multiplier, w_personal=w_personal,
+                sigma_resid=sigma_resid,
             )
-            if w2_personal == 0 and w2_cohort == 0:
-                # No data whatsoever, show a neutral band from sigma_resid.
-                var_total = sigma_resid ** 2
             pi_half = Z_95 * float(np.sqrt(max(var_total, 0.0)))
 
             projected.append({

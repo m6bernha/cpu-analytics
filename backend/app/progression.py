@@ -163,6 +163,88 @@ def _build_filter_clauses(
     return clauses, params
 
 
+# ---------------------------------------------------------------------------
+# Shared cohort filters (extracted 2026-09-11). compute_progression and
+# compute_lift_progression carried two near-identical copies of each of
+# these; a fix landing in one and not the other was the failure mode.
+# All three are behaviour-preserving extractions of the previous inline code.
+# ---------------------------------------------------------------------------
+
+def _apply_gap_filter(df: pd.DataFrame, max_gap_months: int | None) -> pd.DataFrame:
+    """Drop every lifter with any inter-meet gap longer than max_gap_months.
+
+    "Comeback" lifters contaminate progression curves because their
+    long-break gains get averaged into the same x-buckets as continuous
+    competitors. No-op when the filter is off or the frame is empty.
+    """
+    if max_gap_months is None or df.empty:
+        return df
+    max_gap_days = max_gap_months * 30.44
+    df = df.sort_values(["Name", "DaysFromFirst"])
+    df["_prev_days"] = df.groupby("Name")["DaysFromFirst"].shift(1)
+    df["_gap"] = df["DaysFromFirst"] - df["_prev_days"]
+    max_gaps = df.groupby("Name")["_gap"].max()
+    long_gap_names = set(max_gaps[max_gaps > max_gap_days].index)
+    if long_gap_names:
+        df = df[~df["Name"].isin(long_gap_names)]
+    return df.drop(columns=["_prev_days", "_gap"])
+
+
+def _apply_same_class_filter(df: pd.DataFrame, same_class_only: bool) -> pd.DataFrame:
+    """Keep only lifters whose CanonicalWeightClass never changed in scope.
+
+    ClassCount is the SQL-side COUNT(DISTINCT CanonicalWeightClass) per
+    lifter; a frame without that column is passed through untouched.
+    """
+    if not same_class_only or df.empty or "ClassCount" not in df.columns:
+        return df
+    return df[df["ClassCount"] == 1]
+
+
+def _apply_age_filter_and_rebaseline(
+    df: pd.DataFrame,
+    age_category: str | None,
+    value_to_diff: dict[str, str],
+) -> pd.DataFrame:
+    """Filter rows to one age category, then re-anchor each lifter's deltas.
+
+    Age is sparse and the category boundaries align with no column literal,
+    so the filter runs in pandas. After dropping rows outside the category
+    every lifter MUST be rebaselined to their first SURVIVING meet: an Open
+    lifter who started as a Junior would otherwise have deltas measured
+    from an invisible Junior-era baseline, inflating the Open cohort curve.
+
+    ``value_to_diff`` maps each value column to the diff column it feeds
+    (``{"Value": "DiffFromFirst"}`` for the total/bodyweight/GLP metric,
+    the three Best3*Kg -> *Diff pairs for the per-lift view). Lifters left
+    with fewer than two meets in the category are dropped. When the frame
+    carries ``MeetNumber`` it is renumbered within the category.
+    """
+    if not age_category or age_category == "All":
+        return df
+    df["AgeCategory"] = df["Age"].apply(age_to_category)
+    df = df[df["AgeCategory"] == age_category]
+    if df.empty:
+        return df
+
+    first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
+    rename = {col: f"_First_{col}" for col in value_to_diff}
+    rename["DaysFromFirst"] = "_FirstDays"
+    first_vals = (
+        df.loc[first_idx, ["Name", *value_to_diff, "DaysFromFirst"]]
+        .rename(columns=rename)
+    )
+    df = df.merge(first_vals, on="Name")
+    for col, diff_col in value_to_diff.items():
+        df[diff_col] = df[col] - df[f"_First_{col}"]
+    df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
+    if "MeetNumber" in df.columns:
+        df["MeetNumber"] = df.groupby("Name").cumcount() + 1
+    meet_counts = df.groupby("Name")["DaysFromFirst"].transform("count")
+    df = df[meet_counts >= 2]
+    return df.drop(columns=[*rename.values()])
+
+
 def compute_progression(
     sex: str | None = None,
     equipment: str | None = None,
@@ -284,22 +366,7 @@ def compute_progression(
     n_all_lifters = int(surv_row[0]) if surv_row else 0
     avg_first_value = round(float(surv_row[1]), 1) if surv_row and surv_row[1] is not None else None
 
-    # Optional gap filter: exclude lifters who have any inter-meet gap
-    # longer than max_gap_months. These "comeback" lifters contaminate
-    # progression curves because their long-break gains are averaged
-    # into the same x-buckets as continuous competitors.
-    if max_gap_months is not None and not df.empty:
-        max_gap_days = max_gap_months * 30.44
-        df = df.sort_values(["Name", "DaysFromFirst"])
-        df["_prev_days"] = df.groupby("Name")["DaysFromFirst"].shift(1)
-        df["_gap"] = df["DaysFromFirst"] - df["_prev_days"]
-        # A lifter has a long gap if any of their inter-meet gaps exceed the threshold
-        max_gaps = df.groupby("Name")["_gap"].max()
-        long_gap_names = set(max_gaps[max_gaps > max_gap_days].index)
-        if long_gap_names:
-            df = df[~df["Name"].isin(long_gap_names)]
-        df = df.drop(columns=["_prev_days", "_gap"])
-
+    df = _apply_gap_filter(df, max_gap_months)
     if df.empty:
         return _empty_response(x_axis, metric)
 
@@ -308,61 +375,21 @@ def compute_progression(
     # same-class filter's drops.
     n_lifters_before_age_filter = int(df["Name"].nunique())
 
-    # Optional same-class filter: only keep lifters who stayed in the same
-    # weight class for their entire career in scope. ClassCount is computed
-    # in the SQL as COUNT(DISTINCT CanonicalWeightClass) per lifter.
-    if same_class_only and not df.empty and "ClassCount" in df.columns:
-        df = df[df["ClassCount"] == 1]
+    df = _apply_same_class_filter(df, same_class_only)
 
-    # Apply optional age category filter in pandas -- Age is sparse and the
-    # category boundaries don't align with any column literal in the dataset.
-    #
-    # IMPORTANT: after filtering, we recompute DiffFromFirst and DaysFromFirst
-    # relative to the first meet *within the surviving rows*. Without this, an
-    # Open lifter who started as Junior sees their delta measured from the
-    # invisible Junior-era baseline, which produces inflated progression curves
-    # for the Open cohort. This rebaseline applies for all three metrics.
-    if age_category and age_category != "All":
-        df["AgeCategory"] = df["Age"].apply(age_to_category)
-        df = df[df["AgeCategory"] == age_category]
-        if df.empty:
-            return {
-                "x_label": X_AXIS_COLS[x_axis][1],
-                "x_axis": x_axis,
-                "metric": metric,
-                "y_label": y_label,
-                "points": [],
-                "trend": None,
-                "n_lifters": 0,
-                "n_meets": 0,
-            }
-
-        # Recompute baseline from first meet that survived the age filter.
-        first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
-        first_vals = (
-            df.loc[first_idx, ["Name", "Value", "DaysFromFirst"]]
-            .rename(columns={"Value": "_FirstValue", "DaysFromFirst": "_FirstDays"})
-        )
-        df = df.merge(first_vals, on="Name")
-        df["DiffFromFirst"] = df["Value"] - df["_FirstValue"]
-        df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
-        # Re-number meets within this age category
-        df["MeetNumber"] = df.groupby("Name").cumcount() + 1
-        # Drop lifters with only one meet in this category
-        meet_counts = df.groupby("Name")["MeetNumber"].transform("max")
-        df = df[meet_counts >= 2]
-        df = df.drop(columns=["_FirstValue", "_FirstDays"])
-        if df.empty:
-            return {
-                "x_label": X_AXIS_COLS[x_axis][1],
-                "x_axis": x_axis,
-                "metric": metric,
-                "y_label": y_label,
-                "points": [],
-                "trend": None,
-                "n_lifters": 0,
-                "n_meets": 0,
-            }
+    # Age filter + rebaseline to the first surviving meet (see helper).
+    df = _apply_age_filter_and_rebaseline(df, age_category, {"Value": "DiffFromFirst"})
+    if df.empty:
+        return {
+            "x_label": X_AXIS_COLS[x_axis][1],
+            "x_axis": x_axis,
+            "metric": metric,
+            "y_label": y_label,
+            "points": [],
+            "trend": None,
+            "n_lifters": 0,
+            "n_meets": 0,
+        }
 
     # Derive the requested x-axis column from DaysFromFirst.
     df["WeeksFromFirst"] = (df["DaysFromFirst"] / 7).round().astype(int)
@@ -616,66 +643,19 @@ def compute_lift_progression(
     if df.empty:
         return _empty_lift_response(x_axis)
 
-    # Optional gap filter: mirror compute_progression. Lifters with any
-    # inter-meet gap longer than max_gap_months are dropped before aggregation.
-    if max_gap_months is not None:
-        max_gap_days = max_gap_months * 30.44
-        df = df.sort_values(["Name", "DaysFromFirst"])
-        df["_prev_days"] = df.groupby("Name")["DaysFromFirst"].shift(1)
-        df["_gap"] = df["DaysFromFirst"] - df["_prev_days"]
-        max_gaps = df.groupby("Name")["_gap"].max()
-        long_gap_names = set(max_gaps[max_gaps > max_gap_days].index)
-        if long_gap_names:
-            df = df[~df["Name"].isin(long_gap_names)]
-        df = df.drop(columns=["_prev_days", "_gap"])
-        if df.empty:
-            return _empty_lift_response(x_axis)
-
-    # Optional same-class filter: keep lifters whose CanonicalWeightClass
-    # never changed in scope. ClassCount is the SQL-side DISTINCT count.
-    if same_class_only and "ClassCount" in df.columns:
-        df = df[df["ClassCount"] == 1]
-        if df.empty:
-            return _empty_lift_response(x_axis)
-
-    # Optional age-category filter. Mirrors compute_progression: after
-    # dropping rows outside the category we MUST rebaseline each lifter
-    # to their first surviving meet, otherwise the S/B/D diffs are measured
-    # from an invisible pre-category baseline (e.g. a Master's first Open
-    # meet shows a huge jump because it's diffed from their Junior first meet).
-    if age_category and age_category != "All":
-        df["AgeCategory"] = df["Age"].apply(age_to_category)
-        df = df[df["AgeCategory"] == age_category]
-        if df.empty:
-            return _empty_lift_response(x_axis)
-
-        first_idx = df.groupby("Name")["DaysFromFirst"].idxmin()
-        first_vals = (
-            df.loc[first_idx, [
-                "Name",
-                "Best3SquatKg",
-                "Best3BenchKg",
-                "Best3DeadliftKg",
-                "DaysFromFirst",
-            ]]
-            .rename(columns={
-                "Best3SquatKg": "_FirstSquat",
-                "Best3BenchKg": "_FirstBench",
-                "Best3DeadliftKg": "_FirstDeadlift",
-                "DaysFromFirst": "_FirstDays",
-            })
-        )
-        df = df.merge(first_vals, on="Name")
-        df["SquatDiff"] = df["Best3SquatKg"] - df["_FirstSquat"]
-        df["BenchDiff"] = df["Best3BenchKg"] - df["_FirstBench"]
-        df["DeadliftDiff"] = df["Best3DeadliftKg"] - df["_FirstDeadlift"]
-        df["DaysFromFirst"] = df["DaysFromFirst"] - df["_FirstDays"]
-        df = df.drop(columns=["_FirstSquat", "_FirstBench", "_FirstDeadlift", "_FirstDays"])
-        # Drop lifters with <2 meets left in this age category.
-        meet_counts = df.groupby("Name")["DaysFromFirst"].transform("count")
-        df = df[meet_counts >= 2]
-        if df.empty:
-            return _empty_lift_response(x_axis)
+    # Same three cohort filters as compute_progression, via the shared helpers.
+    df = _apply_gap_filter(df, max_gap_months)
+    if df.empty:
+        return _empty_lift_response(x_axis)
+    df = _apply_same_class_filter(df, same_class_only)
+    if df.empty:
+        return _empty_lift_response(x_axis)
+    df = _apply_age_filter_and_rebaseline(
+        df, age_category,
+        {"Best3SquatKg": "SquatDiff", "Best3BenchKg": "BenchDiff", "Best3DeadliftKg": "DeadliftDiff"},
+    )
+    if df.empty:
+        return _empty_lift_response(x_axis)
 
     # Derive time columns
     df["WeeksFromFirst"] = (df["DaysFromFirst"] / 7).round().astype(int)
